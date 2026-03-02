@@ -1,0 +1,81 @@
+// src/services/category.service.ts
+import { apiClient } from '@/lib/api/ApiClient'; // Giả sử bạn dùng axios instance này
+
+export interface CategoryTreeItem {
+  id: string;
+  name: string;
+  slug: string;
+  children?: CategoryTreeItem[]; // Mảng con đệ quy
+}
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  hasChildren: boolean;
+  path?: string; // Dùng cho search result
+}
+
+export const CategoryService = {
+  // Lấy danh sách theo parentId
+  getById: async (parentId?: string): Promise<Category[]> => {
+    const params = parentId ? { parentId } : {};
+    const response = await apiClient.get('/categories', { params });
+    return response.data;
+  },
+
+  // Tìm kiếm danh mục
+  search: async (keyword: string): Promise<Category[]> => {
+    const response = await apiClient.get('/categories/search', {
+      params: { q: keyword },
+    });
+    return response.data;
+  },
+  
+  // Lấy full tree (breadcrumbs) bằng ID danh mục lá (dùng cho edit product hoặc SEO)
+  getBreadcrumbs: async (leafId: string): Promise<Category[]> => {
+    console.log(`[CategoryService] Đang gọi API lấy breadcrumb cho ID:`, leafId);
+    
+    try {
+      const response = await apiClient.get(`/categories/${leafId}/breadcrumbs`);
+      
+      console.log(`[CategoryService] API Response Raw:`, response);
+
+      // Xử lý linh hoạt cả 2 trường hợp response bọc data hoặc không
+      // Nhiều axios interceptor sẽ trả về data trực tiếp, số khác trả về object { data: ... }
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      
+      console.log(`[CategoryService] Dữ liệu sau khi xử lý:`, data);
+      return data;
+    } catch (error) {
+      console.error(`[CategoryService] Lỗi khi gọi API:`, error);
+      return [];
+    }
+  },
+
+  getTree: async (): Promise<CategoryTreeItem[]> => {
+    const response = await apiClient.get('/categories/tree');
+    
+    // [QUAN TRỌNG] Kiểm tra cấu trúc response của ApiClient
+    // Nếu ApiClient trả về mảng trực tiếp -> dùng response
+    if (Array.isArray(response)) return response;
+    
+    // Nếu trả về object { data: [...] } -> dùng response.data
+    return response?.data || [];
+  },
+  updateOrder: async (parentId: string | null, orderedIds: string[]) => {
+    return apiClient.post('/categories/update-order', {
+      parentId,
+      orderedIds,
+    });
+  },
+  flattenTreeIds: (node: CategoryTreeItem): string[] => {
+    let ids = [node.id];
+    if (node.children) {
+      node.children.forEach(child => {
+        ids = [...ids, ...CategoryService.flattenTreeIds(child)];
+      });
+    }
+    return ids;
+  }
+};
