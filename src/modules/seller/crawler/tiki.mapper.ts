@@ -73,10 +73,21 @@ export const mapTikiToSystemProduct = (tikiData: any): TikiMappedData => {
     });
   }
 
+  let cleanDescription = tikiData.description || '';
+  cleanDescription = cleanDescription
+    .replace(/tiki\.vn/gi, 'G-Mall') // Thay thế "tiki.vn", "Tiki.vn", "TIKI.VN" -> G-Mall
+    .replace(/tiki/gi, 'G-Mall');    // Thay thế "tiki", "Tiki", "TIKI" -> G-Mall
+
+  // 2. Làm sạch Tên sản phẩm (Title) phòng trường hợp tên có chứa chữ Tiki (VD: "Sách do Tiki Trading phân phối")
+  let cleanTitle = tikiData.name || '';
+  cleanTitle = cleanTitle
+    .replace(/tiki\.vn/gi, 'G-Mall')
+    .replace(/tiki/gi, 'G-Mall');
+
   // 4. Return Data
   return {
-    title: tikiData.name,
-    description: tikiData.description, // Tiki trả sẵn HTML, rất ngon!
+    title: cleanTitle,
+    description: cleanDescription, // Tiki trả sẵn HTML, rất ngon!
     price: tikiData.price,
     regularPrice: tikiData.original_price,
     discountPercent: tikiData.discount_rate,
