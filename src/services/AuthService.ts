@@ -15,6 +15,16 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  token: string;      // OTP 6 số nhận qua email
+  newPassword: string;
+}
+
 // Định nghĩa kiểu dữ liệu gửi đi
 interface RegisterData {
   name: string;
@@ -94,9 +104,21 @@ export const AuthService = {
     return updatedUser;
   },
 
-  // [MỚI] Đổi mật khẩu
+  // Đổi mật khẩu khi đã login. BE endpoint: POST /auth/change-password
+  // (xem docs/wiki/decisions/0007-password-flows.md)
   changePassword: async (data: ChangePasswordPayload) => {
-    return api.put('/auth/change-password', data);
+    return api.post('/auth/change-password', data);
+  },
+
+  // Quên mật khẩu bước 1: gửi email nhận link + OTP reset.
+  // Response message identical dù email tồn tại hay không (chống user enumeration).
+  forgotPassword: async (data: ForgotPasswordPayload) => {
+    return api.post('/auth/forgot-password', data);
+  },
+
+  // Quên mật khẩu bước 2: nhập OTP + mật khẩu mới.
+  resetPassword: async (data: ResetPasswordPayload) => {
+    return api.post('/auth/reset-password', data);
   },
 
   // [MỚI] Upload Avatar (Giả định bạn có endpoint upload)
