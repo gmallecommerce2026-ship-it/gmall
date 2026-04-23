@@ -144,11 +144,29 @@ export default function LoginClient() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all">
+              {/* OAuth redirect — BE handle full flow, FE chỉ trỏ window sang endpoint.
+                  Dùng window.location.href thay vì <Link> vì destination là domain
+                  BE (không phải FE route) và cần full navigation để Google set
+                  cookies của mình. */}
+              <button
+                type="button"
+                onClick={() => {
+                  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+                  window.location.href = `${apiUrl}/auth/google`;
+                }}
+                className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
+              >
                 <img src="/assets/google-icon.png" alt="Google" className="w-5 h-5" onError={(e) => e.currentTarget.style.display = 'none'} />
                 <span className="text-sm font-semibold text-gray-700">Google</span>
               </button>
-              <button className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all">
+              <button
+                type="button"
+                onClick={() => {
+                  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+                  window.location.href = `${apiUrl}/auth/facebook`;
+                }}
+                className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
+              >
                 <div className="w-5 h-5 flex items-center justify-center text-[#1877F2]">
                     <svg fill="currentColor" viewBox="0 0 24 24"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v2.277h-2.628c-1.991 0-2.199.944-2.199 2.09v2.893h5.032l-1.357 4.925h-3.675v7.98H9.101Z"/></svg>
                 </div>
