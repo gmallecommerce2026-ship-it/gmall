@@ -40,11 +40,16 @@ export default function InvitePage() {
   // State cho copy link
   const [copied, setCopied] = useState(false);
   const { user } = useUserStore(); // Lấy user ID
-  
-  // Link ref động theo user ID
-  const referralLink = user?.id 
-    ? `https://lovegifts.vn/register?ref=${user.id}` 
-    : "https://lovegifts.vn/register";
+
+  // B3.6: dùng origin hiện tại (gmall.onrender.com, gmall.vn, localhost...) thay vì
+  // hardcode lovegifts.vn. SSR fallback về env NEXT_PUBLIC_SITE_URL hoặc empty string.
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_SITE_URL ?? '');
+  const referralLink = user?.id
+    ? `${origin}/register?ref=${user.id}`
+    : `${origin}/register`;
 
   // Khi chọn template, fill nội dung vào textarea
   useEffect(() => {
