@@ -201,11 +201,12 @@ const SidebarItem = ({ item, level = 0, isOpen, toggleOpen }: {
 
 // [2] Đổi tên component chính thành SellerSidebarContent
 const SellerSidebarContent = () => {
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>({ 
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({
     'orders': false,
-    'products': true 
+    'products': true
   });
   const router = useRouter();
+  const { user } = useUserStore();
   const toggleOpen = (id: string) => {
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -237,6 +238,39 @@ const SellerSidebarContent = () => {
             <span className="text-[11px] text-gray-400 font-medium">QUẢN LÝ CỬA HÀNG</span>
         </div>
       </div>
+
+      {/* Shop info block (B7.1, B7.2) — hiển thị seller đang ở shop nào.
+          Trước đây sidebar chỉ có "Seller Hub" generic, seller login nhiều
+          account không biết mình đang ở cái nào. */}
+      {user && (
+        <div className="px-4 py-3 border-b border-gray-100 bg-orange-50/40">
+          <div className="flex items-center gap-3">
+            {user.coverImage || user.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.coverImage || user.avatar}
+                alt={user.shopName || 'Shop avatar'}
+                className="w-10 h-10 rounded-lg object-cover border border-orange-100"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                {(user.shopName || user.name || 'S').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-gray-900 truncate">
+                {user.shopName || user.name || 'Shop của bạn'}
+              </p>
+              <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+              {(user as any).phone && (
+                <p className="text-[11px] text-gray-400 truncate">
+                  SĐT: {(user as any).phone}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Menu List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar py-4">
