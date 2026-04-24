@@ -136,9 +136,11 @@ export const AuthService = {
     } catch (e) {
         console.error(e);
     }
-    
+
     useUserStore.getState().logout();
-    
-    window.location.href = '/login';
+
+    // B2.5: redirect về trang chủ thay vì /login — sau logout user muốn thấy
+    // trang chủ (có thể tiếp tục xem SP), không phải ép login lại ngay.
+    window.location.href = '/';
   }
 };
