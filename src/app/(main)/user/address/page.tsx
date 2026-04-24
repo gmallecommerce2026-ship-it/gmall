@@ -5,11 +5,13 @@ import Button from '@/components/ui/Button';
 import { Plus, MoreVertical } from 'lucide-react';
 import { AddressService, IAddress } from '@/services/address.service';
 import { toast } from 'react-hot-toast';
-// import AddressFormModal from ... (Bạn cần import modal tạo địa chỉ ở đây nếu có)
+import AddressFormModal from '@/modules/user/components/AddressFormModal';
 
 export default function AddressPage() {
   const [addresses, setAddresses] = useState<IAddress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<IAddress | null>(null);
 
   const fetchAddresses = async () => {
     try {
@@ -55,7 +57,13 @@ export default function AddressPage() {
             <h1 className="text-xl font-bold text-gray-800">Địa chỉ của tôi</h1>
             <p className="text-sm text-gray-500 mt-1">Quản lý thông tin giao hàng</p>
         </div>
-        <Button className="!px-4 !py-2.5 flex items-center gap-2 text-sm">
+        <Button
+          className="!px-4 !py-2.5 flex items-center gap-2 text-sm"
+          onClick={() => {
+            setEditing(null);
+            setModalOpen(true);
+          }}
+        >
             <Plus size={16} /> Thêm địa chỉ mới
         </Button>
       </div>
@@ -88,7 +96,15 @@ export default function AddressPage() {
                 
                 <div className="flex md:flex-col items-end justify-center gap-3 md:gap-2 mt-4 md:mt-0">
                     <div className="flex items-center gap-3">
-                        <button className="text-blue-600 text-sm hover:underline font-medium">Cập nhật</button>
+                        <button
+                          onClick={() => {
+                            setEditing(addr);
+                            setModalOpen(true);
+                          }}
+                          className="text-blue-600 text-sm hover:underline font-medium"
+                        >
+                          Cập nhật
+                        </button>
                         {!addr.isDefault && (
                             <button 
                                 onClick={() => handleDelete(addr.id!)}
@@ -110,6 +126,13 @@ export default function AddressPage() {
         ))}
       </div>
       )}
+
+      <AddressFormModal
+        open={modalOpen}
+        initial={editing}
+        onClose={() => setModalOpen(false)}
+        onSaved={fetchAddresses}
+      />
     </div>
   );
 }
