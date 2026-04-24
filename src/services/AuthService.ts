@@ -5,9 +5,9 @@ import { api } from './api';
 export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
-  gender?: string;
-  dob?: string;
-  avatar?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: string; // ISO date (YYYY-MM-DD)
+  avatar?: string; // URL sau upload
 }
 
 export interface ChangePasswordPayload {
@@ -95,10 +95,10 @@ export const AuthService = {
     return null;
   },
 
-  // [MỚI] Cập nhật thông tin cá nhân
+  // Cập nhật profile. Endpoint: PUT /auth/profile (B2.1, B2.4 — trước đây
+  // gọi /users/profile không tồn tại -> 404 -> FE hiển thị "có lỗi").
   updateProfile: async (data: UpdateProfilePayload) => {
-    const res = await api.put('/users/profile', data);
-    // Cập nhật lại store sau khi update thành công
+    const res = await api.put('/auth/profile', data);
     const updatedUser = res.data || res;
     useUserStore.getState().setUser(updatedUser);
     return updatedUser;
