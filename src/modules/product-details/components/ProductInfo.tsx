@@ -260,6 +260,26 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
             <span className="w-[1px] h-4 bg-gray-300"></span>
             <span className="text-gray-500">Đã bán {product.salesCount || 0}</span>
         </div>
+
+        {/* B5.1: mô tả ngắn ngay dưới tên. Dùng shortDescription từ schema
+            nếu có; fallback sang 160 ký tự đầu của description (strip HTML). */}
+        {(() => {
+          const short =
+            (product as any).shortDescription ||
+            (product.description
+              ? String(product.description)
+                  .replace(/<[^>]*>/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .slice(0, 160)
+              : '');
+          return short ? (
+            <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+              {short}
+              {product.description && short.length === 160 ? '…' : ''}
+            </p>
+          ) : null;
+        })()}
       </div>
 
       {/* 2. Price Section */}
