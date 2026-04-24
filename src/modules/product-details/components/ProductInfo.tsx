@@ -214,24 +214,29 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
     router.push('/payment');
   };
 
-  // Giữ nguyên logic Gift (nếu trang gift-payment chưa update store)
+  // B5.2: trước đây nút Tặng dùng Buffer.from(...).toString('base64') + router.push
+  // với raw string. Base64 sinh ra `+` và `/`; URLSearchParams spec coi `+` là
+  // space nên khi gift-payment page đọc lại, atob() fail -> items rỗng ->
+  // "giỏ hàng trống". Fix: encodeURIComponent để escape an toàn trong URL.
   const handleGiftNow = () => {
     if (!validateSelection()) return;
     setIsGifting(true);
-    
+
     const checkoutData = {
         productId: product.id,
-        variantId: currentVariant?.sku || currentVariant?.id,
+        productVariantId: currentVariant?.id, // dùng id (khớp với handleBuyNow + BE)
+        variantId: currentVariant?.id,        // fallback key để BE cũ cũng hiểu
         quantity: quantity,
         selectedOptions: product.tiers ? selections.map((s, i) => ({
             name: product.tiers![i].name,
             value: product.tiers![i].options[s]
         })) : []
     };
-    
-    // Vẫn dùng cách cũ cho Gift payment để tránh lỗi nếu trang kia chưa sửa
-    const query = Buffer.from(JSON.stringify([checkoutData])).toString('base64');
-    
+
+    const query = encodeURIComponent(
+      Buffer.from(JSON.stringify([checkoutData])).toString('base64')
+    );
+
     setTimeout(() => {
         router.push(`/gift-payment?data=${query}`);
         setIsGifting(false);

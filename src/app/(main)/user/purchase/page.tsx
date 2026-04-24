@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { FileText, Search, Store, Truck, Loader2, Coins, X } from 'lucide-react';
 import { OrderService, IOrder } from '@/services/order.service';
 import toast from 'react-hot-toast';
 import ReviewModal from '@/components/modal/ReviewModal';
 import { useUserStore } from '@/store/useUserStore'; // [IMPORT ZUSTAND]
+import { useCartStore } from '@/store/useCartStore';
 
 // --- COMPONENT POPUP NHẬN XU ---
 const CoinRewardPopup = ({ points, onClose }: { points: number; onClose: () => void }) => {
@@ -81,6 +83,42 @@ export default function PurchasePage() {
   const [pendingPurchasePoints, setPendingPurchasePoints] = useState<number>(0); // [NEW] Lưu xu tạm từ đơn hàng
 
   const { updatePoint } = useUserStore(); // [NEW] Zustand Store
+  const addToCart = useCartStore((s) => s.addToCart);
+  const router = useRouter();
+
+  // B5.3: "Mua lại" — thêm tất cả SP của đơn cũ vào cart rồi chuyển /cart.
+  // Dùng Promise.all để add song song; bỏ qua item lỗi (ví dụ SP đã ngừng bán).
+  const handleBuyAgain = async (order: IOrder) => {
+    if (!order.items?.length) {
+      toast.error('Đơn hàng không còn sản phẩm');
+      return;
+    }
+    const toastId = toast.loading('Đang thêm sản phẩm vào giỏ...');
+    try {
+      await Promise.all(
+        order.items.map((item: any) =>
+          addToCart(
+            {
+              id: item.productId,
+              productId: item.productId,
+              productVariantId: item.productVariantId,
+              name: item.name || item.title,
+              title: item.name || item.title,
+              imageUrl: item.imageUrl,
+              price: item.price,
+            } as any,
+            item.quantity || 1,
+          ).catch((err) => {
+            console.warn('Item buy-again fail:', item.productId, err);
+          }),
+        ),
+      );
+      toast.success('Đã thêm vào giỏ hàng', { id: toastId });
+      router.push('/cart');
+    } catch (err) {
+      toast.error('Không thể mua lại. Vui lòng thử lại.', { id: toastId });
+    }
+  };
 
   // 1. Fetch data đơn hàng
   const fetchOrders = async () => {
@@ -326,7 +364,10 @@ export default function PurchasePage() {
                                             Đã đánh giá
                                         </Button>
                                     )}
-                                    <Button className="!px-8 !py-2 !text-sm !h-10 bg-brand-orange/10 text-brand-orange border border-brand-orange hover:bg-brand-orange hover:text-white">
+                                    <Button
+                                        onClick={() => handleBuyAgain(order)}
+                                        className="!px-8 !py-2 !text-sm !h-10 bg-brand-orange/10 text-brand-orange border border-brand-orange hover:bg-brand-orange hover:text-white"
+                                    >
                                         Mua lại
                                     </Button>
                                 </>
