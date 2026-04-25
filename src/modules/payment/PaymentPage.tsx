@@ -19,8 +19,9 @@ import PaymentSummary from '@/modules/payment/components/PaymentSummary';
 import AddressInfo from './components/AddressInfo';
 import OrderItem from '@/modules/payment/components/OrderItem';
 import VoucherSelectionModal from '@/components/ui/VoucherSelectionModal';
-import AddressSelectionModal from './components/AddressSelectionModal'; 
-import AddressFormModal from './components/AddressFormModal'; 
+import AddressSelectionModal from './components/AddressSelectionModal';
+import AddressFormModal from './components/AddressFormModal';
+import CharityCampaignSelect from '@/modules/payment/components/CharityCampaignSelect'; // Spec [0018]
 
 // --- ICONS ---
 const Icons = {
@@ -181,6 +182,8 @@ const PaymentPage = () => {
 
   // --- LOCAL STATE ---
   const [selectedPayment, setSelectedPayment] = useState<'cod' | 'pay2s' | 'momo'>('cod');
+  // Spec [0018]: user chọn quỹ campaign cho 1% commission. Null = quỹ primary mặc định.
+  const [charityFundId, setCharityFundId] = useState<string | null>(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [currentShopIdForVoucher, setCurrentShopIdForVoucher] = useState<string | null>(null);
   
@@ -365,11 +368,14 @@ const PaymentPage = () => {
       note: shopMessages,
       
       // [UPDATE] Truyền thông tin xu lên BE
-      useCoins: appliedCoins > 0, 
+      useCoins: appliedCoins > 0,
       appliedCoins: appliedCoins,
 
       senderInfo: senderInfo.name ? senderInfo : undefined,
-    };
+      // Spec [0018]: charityCampaignFundId — BE sẽ lưu sau migration. Hiện tại
+      // gửi lên đã sẵn sàng, BE bỏ qua nếu chưa có cột.
+      charityCampaignFundId: charityFundId,
+    } as any;
   };
 
   // --- LOGIC 3: PREVIEW ORDER ---
@@ -604,11 +610,17 @@ const PaymentPage = () => {
            </div>
             
            {/* [NEW] Khối nhập xu - Đặt ngay sau Voucher */}
-           <CoinInputBlock 
+           <CoinInputBlock
                userPoints={user?.point || 0}
                appliedCoins={appliedCoins}
                onCoinChange={(val) => setAppliedCoins(val)}
                orderTotal={frontendCalculations.subtotal}
+           />
+
+           {/* Spec [0018]: chọn quỹ từ thiện cho 1% commission */}
+           <CharityCampaignSelect
+              selectedFundId={charityFundId}
+              onSelect={setCharityFundId}
            />
 
            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
