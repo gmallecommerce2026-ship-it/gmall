@@ -210,6 +210,40 @@ const SellerSidebarContent = () => {
   const toggleOpen = (id: string) => {
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // Spec [0018]: sidebar bổ sung số đơn chờ + doanh thu hôm nay.
+  // Endpoint /admin/dashboard/seller/stats trả `todo.pending` và `chart[6].revenue`
+  // (phần tử cuối là ngày hôm nay).
+  const [stats, setStats] = useState<{ pending: number; revenueToday: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStats = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/admin/dashboard/seller/stats`, {
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const pending = data?.todo?.pending ?? 0;
+        const revenueToday = data?.chart?.[data.chart.length - 1]?.revenue ?? 0;
+        setStats({ pending, revenueToday });
+      } catch {
+        // silent — sidebar widget optional, không block UX
+      }
+    };
+    fetchStats();
+    // Refresh mỗi 60s để số đơn chờ và doanh thu cập nhật mà không phải F5
+    const t = setInterval(fetchStats, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  const formatVND = (n: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n);
   const handleLogout = async () => {
     try {
       // 1. Gọi API để xóa Cookie ở Backend
@@ -268,6 +302,22 @@ const SellerSidebarContent = () => {
                 </p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick stats (spec [0018]): số đơn chờ + doanh thu hôm nay */}
+      {stats && (
+        <div className="px-4 py-3 border-b border-gray-100 grid grid-cols-2 gap-2">
+          <div className="bg-orange-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] uppercase font-semibold text-orange-700 tracking-wide">Đơn chờ</p>
+            <p className="text-base font-bold text-orange-900">{stats.pending}</p>
+          </div>
+          <div className="bg-green-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] uppercase font-semibold text-green-700 tracking-wide">Doanh thu hôm nay</p>
+            <p className="text-sm font-bold text-green-900 truncate" title={formatVND(stats.revenueToday)}>
+              {stats.revenueToday > 0 ? formatVND(stats.revenueToday) : '0đ'}
+            </p>
           </div>
         </div>
       )}
