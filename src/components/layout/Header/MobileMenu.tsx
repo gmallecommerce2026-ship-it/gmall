@@ -129,7 +129,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
              <Icons.User className="w-5 h-5 text-gray-400" />
              Quản lý tài khoản
           </Link>
-          <Link href="/user/orders" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
+          <Link href="/user/purchase" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
              <Icons.Order className="w-5 h-5 text-gray-400" />
              Đơn mua
           </Link>
