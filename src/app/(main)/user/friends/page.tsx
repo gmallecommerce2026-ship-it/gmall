@@ -10,6 +10,7 @@ import socket from '@/services/socket';
 import { useDebounce } from '@/hooks/useDebounce'; // Đảm bảo bạn có hook này, nếu chưa có xem phần ghi chú cuối
 import { useChatStore } from '@/store/useChatStore';
 import TransferModal from '@/components/points/TransferModal';
+import FriendHoverCard from '@/components/common/FriendHoverCard'; // Spec [0018]: hover popup
 
 // Định nghĩa kiểu dữ liệu
 interface Friend {
@@ -306,19 +307,26 @@ export default function FriendsPage() {
               
               {friends?.map((f) => (
                   <div key={f.friendshipId} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow bg-white">
-                     <div className="flex items-center gap-4">
-                        <img 
-                          src={f.avatar || `https://ui-avatars.com/api/?name=${f.name}&background=random`} 
-                          alt={f.name} 
-                          className="w-12 h-12 rounded-full border border-gray-100 object-cover" 
-                        />
-                        <div>
-                            <p className="text-sm font-bold text-gray-800">{f.name}</p>
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
-                               {f.isOnline ? <span className="text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span> Online</span> : "Offline"}
-                            </p>
+                     {/* Spec [0018]: hover avatar/name -> popup info công khai (ẩn SĐT) */}
+                     <FriendHoverCard
+                        friend={f}
+                        onChat={() => handleChat(f)}
+                        onTransfer={() => openTransferModal(f)}
+                     >
+                        <div className="flex items-center gap-4 cursor-pointer">
+                           <img
+                             src={f.avatar || `https://ui-avatars.com/api/?name=${f.name}&background=random`}
+                             alt={f.name}
+                             className="w-12 h-12 rounded-full border border-gray-100 object-cover"
+                           />
+                           <div>
+                               <p className="text-sm font-bold text-gray-800">{f.name}</p>
+                               <p className="text-xs text-gray-500 flex items-center gap-1">
+                                  {f.isOnline ? <span className="text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span> Online</span> : "Offline"}
+                               </p>
+                           </div>
                         </div>
-                     </div>
+                     </FriendHoverCard>
                      <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleChat(f)}
