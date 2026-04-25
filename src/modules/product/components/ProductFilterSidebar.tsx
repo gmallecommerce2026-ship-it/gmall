@@ -2,11 +2,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useProductFilters } from "@/hooks/useProductFilters";
 import { filterLocations, filterBrands } from "@/lib/mock-data"; // Vẫn dùng tạm danh sách mock để render option
 import FilterCheckbox from "@/components/ui/FilterCheckbox";
 import RatingFilter from "@/components/ui/RatingFilter"; // Cần sửa component này để nhận onClick
 import Button from "@/components/ui/Button";
+
+// Spec [0018]: filter per category — admin định nghĩa qua Category.filterKeys.
+interface DynamicFilter {
+  key: string;
+  label: string;
+  type: 'select' | 'multi' | 'range';
+  options?: string[];
+  min?: number;
+  max?: number;
+}
+
+interface ProductFilterSidebarProps {
+  dynamicFilters?: DynamicFilter[];
+}
 
 // Component con để render section
 const FilterSection: React.FC<{ title: string; children: React.ReactNode; isOpen?: boolean }> = ({
@@ -19,9 +34,44 @@ const FilterSection: React.FC<{ title: string; children: React.ReactNode; isOpen
   </div>
 );
 
-const ProductFilterSidebar = () => {
+const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({ dynamicFilters = [] }) => {
   const { filters, toggleLocation, setPriceRange, setRating, clearAll } = useProductFilters();
-  
+
+  // Spec [0018]: dynamic filter state — đẩy vào URL params với prefix `attr_<key>`
+  // để BE parse được khi muốn lọc thêm. Hiện tại ta giữ ở client-side cho đơn giản:
+  // hiển thị UI + lưu chọn lựa, BE filtering sẽ làm pass riêng (chỉ đụng URL).
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const setDynamicFilter = (key: string, value: string | string[] | { min?: number; max?: number }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const paramKey = `attr_${key}`;
+    if (Array.isArray(value)) {
+      if (value.length === 0) params.delete(paramKey);
+      else params.set(paramKey, value.join(','));
+    } else if (typeof value === 'object') {
+      const enc = JSON.stringify(value);
+      if (!value.min && !value.max) params.delete(paramKey);
+      else params.set(paramKey, enc);
+    } else {
+      if (!value) params.delete(paramKey);
+      else params.set(paramKey, value);
+    }
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const getDynamicFilterValue = (key: string, type: DynamicFilter['type']) => {
+    const raw = searchParams.get(`attr_${key}`);
+    if (!raw) return type === 'multi' ? [] : type === 'range' ? { min: undefined, max: undefined } : '';
+    if (type === 'multi') return raw.split(',').filter(Boolean);
+    if (type === 'range') {
+      try { return JSON.parse(raw); } catch { return { min: undefined, max: undefined }; }
+    }
+    return raw;
+  };
+
   // State local cho input giá để tránh trigger URL liên tục khi gõ
   const [localPrice, setLocalPrice] = useState({ min: filters.minPrice, max: filters.maxPrice });
 
@@ -104,9 +154,70 @@ const ProductFilterSidebar = () => {
         ))}
       </div>
 
+      {/* Spec [0018]: dynamic filters per category */}
+      {dynamicFilters.length > 0 && (
+        <>
+          {dynamicFilters.map((df) => {
+            const value = getDynamicFilterValue(df.key, df.type);
+            return (
+              <FilterSection key={df.key} title={df.label}>
+                {df.type === 'select' && (
+                  <select
+                    value={value as string}
+                    onChange={(e) => setDynamicFilter(df.key, e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange bg-white"
+                  >
+                    <option value="">Tất cả</option>
+                    {(df.options || []).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                )}
+
+                {df.type === 'multi' && (df.options || []).map(opt => {
+                  const arr = value as string[];
+                  const checked = arr.includes(opt);
+                  return (
+                    <FilterCheckbox
+                      key={opt}
+                      label={opt}
+                      checked={checked}
+                      onChange={() => {
+                        const next = checked ? arr.filter(v => v !== opt) : [...arr, opt];
+                        setDynamicFilter(df.key, next);
+                      }}
+                    />
+                  );
+                })}
+
+                {df.type === 'range' && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      placeholder={df.min !== undefined ? `Từ ${df.min}` : 'Từ'}
+                      value={(value as any).min ?? ''}
+                      onChange={(e) => setDynamicFilter(df.key, { ...(value as any), min: e.target.value === '' ? undefined : Number(e.target.value) })}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
+                    />
+                    <span className="text-gray-400">-</span>
+                    <input
+                      type="number"
+                      placeholder={df.max !== undefined ? `Đến ${df.max}` : 'Đến'}
+                      value={(value as any).max ?? ''}
+                      onChange={(e) => setDynamicFilter(df.key, { ...(value as any), max: e.target.value === '' ? undefined : Number(e.target.value) })}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
+                    />
+                  </div>
+                )}
+              </FilterSection>
+            );
+          })}
+        </>
+      )}
+
       {/* Nút Xoá Tất Cả */}
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full mt-6 py-2 border-brand-orange text-brand-orange hover:bg-orange-50"
         onClick={clearAll}
       >

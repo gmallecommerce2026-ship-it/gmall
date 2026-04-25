@@ -45,11 +45,16 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [categoryDisplayName, setCategoryDisplayName] = useState("");
+  // Spec [0018]: filterKeys per category — đọc từ Category.filterKeys, truyền xuống sidebar
+  const [categoryFilterKeys, setCategoryFilterKeys] = useState<any[]>([]);
 
-  // Logic lấy tên danh mục hiển thị
+  // Logic lấy tên danh mục hiển thị + filterKeys
   useEffect(() => {
     const fetchCategoryName = async () => {
-        if (!categorySlug) return;
+        if (!categorySlug) {
+            setCategoryFilterKeys([]);
+            return;
+        }
         try {
             const tree = await CategoryService.getTree();
             const findCategoryBySlug = (items: any[], slug: string): any => {
@@ -65,11 +70,18 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
             const cat = findCategoryBySlug(tree, categorySlug);
             if (cat) {
                 setCategoryDisplayName(cat.name);
+                // Parse filterKeys (Json column có thể là string hoặc array)
+                let fk: any[] = [];
+                try {
+                    fk = typeof cat.filterKeys === 'string' ? JSON.parse(cat.filterKeys) : (Array.isArray(cat.filterKeys) ? cat.filterKeys : []);
+                } catch { fk = []; }
+                setCategoryFilterKeys(fk);
             } else {
                 const fallbackName = categorySlug.split('-')
                     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                     .join(' ');
                 setCategoryDisplayName(fallbackName);
+                setCategoryFilterKeys([]);
             }
         } catch (e) {
             console.error(e);
@@ -170,7 +182,7 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
 
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           <div className="w-full lg:w-[250px] flex-shrink-0 hidden lg:block">
-            <ProductFilterSidebar />
+            <ProductFilterSidebar dynamicFilters={categoryFilterKeys} />
           </div>
 
           <div className="flex-1 min-w-0">

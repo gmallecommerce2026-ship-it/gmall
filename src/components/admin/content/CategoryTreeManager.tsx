@@ -34,12 +34,24 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // --- TYPES ---
+// Spec [0018]: filterKeys per category — admin định nghĩa filter nào hiện trên
+// trang category/search. Shape: array of {key, label, type, options/min/max}.
+export interface CategoryFilterKey {
+  key: string;
+  label: string;
+  type: 'select' | 'multi' | 'range';
+  options?: string[];
+  min?: number;
+  max?: number;
+}
+
 interface CategoryNode {
   id: string;
   name: string;
   slug: string;
   children?: CategoryNode[];
   parentId?: string | null;
+  filterKeys?: CategoryFilterKey[];
 }
 
 // --- HOOK: PERSIST EXPANDED STATE ---
@@ -282,6 +294,8 @@ const CategoryTreeManager = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<CategoryNode | null>(null);
   const [formData, setFormData] = useState({ name: '', slug: '', parentId: '' });
+  // Spec [0018]: filterKeys per category — array CategoryFilterKey, BE lưu Json.
+  const [filterKeys, setFilterKeys] = useState<CategoryFilterKey[]>([]);
 
   // --- SENSORS (TINH CHỈNH ĐỂ DRAG NHẠY HƠN) ---
   const sensors = useSensors(
@@ -386,10 +400,12 @@ const CategoryTreeManager = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = {
+      const payload: any = {
           name: formData.name,
           slug: formData.slug,
-          parentId: formData.parentId || null
+          parentId: formData.parentId || null,
+          // Spec [0018]: filterKeys gửi lên Json — clean rỗng thành []
+          filterKeys: filterKeys.filter(f => f.key && f.label),
       };
 
       if (editingNode) {
@@ -456,8 +472,19 @@ const CategoryTreeManager = () => {
                     searchQuery={searchQuery}
                     expandedIds={expandedIds}
                     onToggleExpand={toggle}
-                    onEdit={(n) => { setEditingNode(n); setFormData({ name: n.name, slug: n.slug, parentId: n.parentId || '' }); setIsModalOpen(true); }}
-                    onAdd={(pid) => { setEditingNode(null); setFormData({ name: '', slug: '', parentId: pid }); setIsModalOpen(true); }}
+                    onEdit={(n) => {
+                        setEditingNode(n);
+                        setFormData({ name: n.name, slug: n.slug, parentId: n.parentId || '' });
+                        // Spec [0018]: prefill filterKeys; BE trả Json hoặc string tuỳ Prisma version
+                        const fk = (n as any).filterKeys;
+                        let parsed: CategoryFilterKey[] = [];
+                        try {
+                            parsed = typeof fk === 'string' ? JSON.parse(fk) : (Array.isArray(fk) ? fk : []);
+                        } catch { parsed = []; }
+                        setFilterKeys(parsed);
+                        setIsModalOpen(true);
+                    }}
+                    onAdd={(pid) => { setEditingNode(null); setFormData({ name: '', slug: '', parentId: pid }); setFilterKeys([]); setIsModalOpen(true); }}
                     onDelete={handleDelete}
                     renderChildren={(nodes, lvl, pid) => <RenderList items={nodes} level={lvl} parentId={pid} />}
                 />
@@ -494,8 +521,8 @@ const CategoryTreeManager = () => {
                     <button onClick={fetchTree} className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg border border-gray-200 hover:border-orange-200 transition-all" title="Làm mới">
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
-                    <button 
-                        onClick={() => { setEditingNode(null); setFormData({ name: '', slug: '', parentId: '' }); setIsModalOpen(true); }} 
+                    <button
+                        onClick={() => { setEditingNode(null); setFormData({ name: '', slug: '', parentId: '' }); setFilterKeys([]); setIsModalOpen(true); }}
                         className="flex-1 md:flex-none bg-gray-900 hover:bg-orange-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-gray-200 hover:shadow-orange-200 transition-all flex items-center justify-center gap-2"
                     >
                         <Plus size={18} /> Thêm Mới
@@ -576,14 +603,106 @@ const CategoryTreeManager = () => {
                                     <label className="text-sm font-semibold text-gray-700">Danh mục cha</label>
                                     <div className="relative">
                                         <CornerDownRight className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16}/>
-                                        <select 
-                                            value={formData.parentId || ''} 
+                                        <select
+                                            value={formData.parentId || ''}
                                             onChange={e => setFormData({ ...formData, parentId: e.target.value })}
                                             className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all appearance-none bg-white text-gray-700"
                                         >
                                             <option value="">-- Là danh mục gốc (Root) --</option>
                                             {renderOptions(tree, 0, editingNode?.id)}
                                         </select>
+                                    </div>
+                                </div>
+
+                                {/* Spec [0018]: filterKeys editor — bộ lọc hiển thị trên trang category này */}
+                                <div className="space-y-2 border-t border-gray-100 pt-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-semibold text-gray-700">Bộ lọc (Filters)</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFilterKeys(prev => [...prev, { key: '', label: '', type: 'select', options: [] }])}
+                                            className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                                        >
+                                            <Plus size={14} /> Thêm filter
+                                        </button>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 leading-snug">
+                                        Định nghĩa các bộ lọc hiển thị trên trang danh mục (sidebar trái). Để trống nếu không cần.
+                                    </p>
+
+                                    {filterKeys.length === 0 && (
+                                        <div className="text-center py-4 border border-dashed border-gray-200 rounded-lg text-xs text-gray-400">
+                                            Chưa có filter nào. Bấm "Thêm filter" để tạo.
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                                        {filterKeys.map((fk, idx) => (
+                                            <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-2">
+                                                <div className="grid grid-cols-12 gap-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Key (VD: size)"
+                                                        value={fk.key}
+                                                        onChange={e => setFilterKeys(prev => prev.map((f, i) => i === idx ? { ...f, key: e.target.value } : f))}
+                                                        className="col-span-3 px-2 py-1.5 border border-gray-300 rounded text-xs font-mono outline-none focus:border-orange-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Nhãn (VD: Kích cỡ)"
+                                                        value={fk.label}
+                                                        onChange={e => setFilterKeys(prev => prev.map((f, i) => i === idx ? { ...f, label: e.target.value } : f))}
+                                                        className="col-span-5 px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-orange-500"
+                                                    />
+                                                    <select
+                                                        value={fk.type}
+                                                        onChange={e => setFilterKeys(prev => prev.map((f, i) => i === idx ? { ...f, type: e.target.value as any } : f))}
+                                                        className="col-span-3 px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-orange-500 bg-white"
+                                                    >
+                                                        <option value="select">1 chọn</option>
+                                                        <option value="multi">Nhiều chọn</option>
+                                                        <option value="range">Khoảng số</option>
+                                                    </select>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFilterKeys(prev => prev.filter((_, i) => i !== idx))}
+                                                        className="col-span-1 text-red-500 hover:bg-red-50 rounded flex items-center justify-center"
+                                                        title="Xoá filter"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+
+                                                {(fk.type === 'select' || fk.type === 'multi') && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Các lựa chọn, cách nhau bằng dấu phẩy. VD: S, M, L, XL"
+                                                        value={(fk.options || []).join(', ')}
+                                                        onChange={e => setFilterKeys(prev => prev.map((f, i) => i === idx ? { ...f, options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } : f))}
+                                                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-orange-500"
+                                                    />
+                                                )}
+
+                                                {fk.type === 'range' && (
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Min (VD: 0)"
+                                                            value={fk.min ?? ''}
+                                                            onChange={e => setFilterKeys(prev => prev.map((f, i) => i === idx ? { ...f, min: e.target.value === '' ? undefined : Number(e.target.value) } : f))}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-orange-500"
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Max (VD: 5000000)"
+                                                            value={fk.max ?? ''}
+                                                            onChange={e => setFilterKeys(prev => prev.map((f, i) => i === idx ? { ...f, max: e.target.value === '' ? undefined : Number(e.target.value) } : f))}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-orange-500"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
