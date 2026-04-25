@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/ApiClient'; 
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'; 
-import { Trash2, Edit, GripVertical, Plus, Save, X, LayoutTemplate, List } from 'lucide-react';
+import { apiClient } from '@/lib/api/ApiClient';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Trash2, Edit, GripVertical, Plus, Save, X, LayoutTemplate, List, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'react-hot-toast'; // Spec [0018]: toast feedback khi reorder/toggle
 import { CategoryCascader } from '@/modules/seller/products/components/CategoryCascader';
 import ProductSelector from '@/components/admin/marketing/ProductSelector';
 import PointConfigCard from '../PointConfigCard';
@@ -146,13 +147,40 @@ export default function HomeSettingsPage() {
     loadSections();
   }
 
+  // Spec [0018]: optimistic reorder + rollback nếu API fail.
+  // Trước đây fail im lặng, admin tưởng đã lưu nhưng F5 thì thứ tự cũ.
   const handleDragEnd = async (result: any) => {
     if (!result.destination) return;
+    if (result.source.index === result.destination.index) return;
+
+    const previous = sections;
     const items = Array.from(sections);
     const [reordered] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reordered);
     setSections(items);
-    await apiClient.post('/home-settings/reorder', { ids: items.map(i => i.id) });
+
+    try {
+      await apiClient.post('/home-settings/reorder', { ids: items.map(i => i.id) });
+      toast.success('Đã lưu thứ tự mới', { duration: 1500 });
+    } catch (e: any) {
+      console.error('[home-settings] reorder fail:', e);
+      toast.error('Không lưu được thứ tự, đã hoàn tác');
+      setSections(previous); // rollback
+    }
+  };
+
+  // Spec [0018]: toggle isActive (ẩn/hiện khối) — schema đã có flag, UI chưa cho dùng.
+  const handleToggleActive = async (section: any) => {
+    const newValue = !section.isActive;
+    const previous = sections;
+    setSections(prev => prev.map(s => s.id === section.id ? { ...s, isActive: newValue } : s));
+    try {
+      await apiClient.patch(`/home-settings/${section.id}`, { isActive: newValue });
+      toast.success(newValue ? 'Đã hiển thị khối' : 'Đã ẩn khối khỏi homepage');
+    } catch (e) {
+      toast.error('Không cập nhật được trạng thái');
+      setSections(previous);
+    }
   };
 
   return (
@@ -184,7 +212,7 @@ export default function HomeSettingsPage() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`p-4 rounded-xl border flex items-center gap-4 group transition-all ${snapshot.isDragging ? 'bg-blue-50 border-blue-300 shadow-lg' : 'bg-white shadow-sm border-gray-100 hover:border-brand-orange/50'}`}
+                            className={`p-4 rounded-xl border flex items-center gap-4 group transition-all ${snapshot.isDragging ? 'bg-blue-50 border-blue-300 shadow-lg' : 'bg-white shadow-sm border-gray-100 hover:border-brand-orange/50'} ${!section.isActive ? 'opacity-50' : ''}`}
                           >
                             <div {...provided.dragHandleProps} className="cursor-grab text-gray-300 hover:text-gray-600 p-1">
                               <GripVertical size={20} />
@@ -206,9 +234,17 @@ export default function HomeSettingsPage() {
                               </div>
                             </div>
 
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditingItem(section); setIsModalOpen(true); }} className="p-2 hover:bg-gray-100 rounded text-blue-600"><Edit size={18} /></button>
-                              <button onClick={() => handleDelete(section.id)} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={18} /></button>
+                            <div className="flex gap-1 items-center">
+                              {/* Spec [0018]: toggle ẩn/hiện luôn visible (không hover) để admin dễ thấy trạng thái */}
+                              <button
+                                onClick={() => handleToggleActive(section)}
+                                className={`p-2 rounded transition-colors ${section.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-300 hover:bg-gray-100'}`}
+                                title={section.isActive ? 'Đang hiển thị — bấm để ẩn' : 'Đang ẩn — bấm để hiển thị'}
+                              >
+                                {section.isActive ? <Eye size={18} /> : <EyeOff size={18} />}
+                              </button>
+                              <button onClick={() => { setEditingItem(section); setIsModalOpen(true); }} className="p-2 hover:bg-gray-100 rounded text-blue-600 opacity-60 group-hover:opacity-100 transition-opacity" title="Chỉnh sửa"><Edit size={18} /></button>
+                              <button onClick={() => handleDelete(section.id)} className="p-2 hover:bg-gray-100 rounded text-red-600 opacity-60 group-hover:opacity-100 transition-opacity" title="Xoá"><Trash2 size={18} /></button>
                             </div>
                           </div>
                         )}
