@@ -152,7 +152,7 @@ export default function VoucherPageContent() {
            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
            </button>
-           <h1 className="text-xl font-bold text-gray-900">Chọn LoveGifts Voucher</h1>
+           <h1 className="text-xl font-bold text-gray-900">Chọn GMall Voucher</h1>
         </div>
 
         {/* Input nhập mã */}
@@ -160,7 +160,7 @@ export default function VoucherPageContent() {
            <div className="flex gap-2">
               <input 
                 type="text" 
-                placeholder="Nhập mã voucher LoveGifts" 
+                placeholder="Nhập mã voucher GMall" 
                 className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-brand-orange uppercase"
               />
               <button className="bg-gray-200 text-gray-500 font-medium px-6 py-2.5 rounded-lg text-sm cursor-not-allowed">

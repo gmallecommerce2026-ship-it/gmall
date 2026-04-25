@@ -1144,7 +1144,7 @@ export const data16 = [
     dataField198: true,
   },
   {
-    dataField195: "Giới thiệu về LoveGifts Việt Nam",
+    dataField195: "Giới thiệu về GMall Việt Nam",
     dataField196: "306px",
     dataField197: false,
     dataField198: false,
@@ -1165,7 +1165,7 @@ export const data16 = [
     dataField199: "12px",
   },
   {
-    dataField195: "Hợp tác cùng LoveGifts",
+    dataField195: "Hợp tác cùng GMall",
     dataField196: "222px",
     dataField197: false,
     dataField198: false,

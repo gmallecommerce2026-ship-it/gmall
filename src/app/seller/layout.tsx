@@ -10,7 +10,7 @@ export default function SellerAuthLayout({ children }: { children: React.ReactNo
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Link href="/" className="text-2xl font-bold text-orange-600 tracking-tight">
-              LoveGifts
+              GMall
             </Link>
             <span className="text-xl text-gray-300">|</span>
             <span className="text-lg font-medium text-gray-700">Kênh Người Bán</span>
@@ -35,7 +35,7 @@ export default function SellerAuthLayout({ children }: { children: React.ReactNo
             <Link href="#" className="hover:text-gray-600">Điều khoản</Link>
             <Link href="#" className="hover:text-gray-600">Chính sách bảo mật</Link>
         </div>
-        <p>© 2025 LoveGifts Seller Centre. All rights reserved.</p>
+        <p>© 2025 GMall Seller Centre. All rights reserved.</p>
       </footer>
     </div>
   );

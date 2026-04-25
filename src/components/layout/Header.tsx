@@ -121,7 +121,7 @@ const Header = () => {
 
                 {/* Logo Center */}
                 <Link href="/" className="flex-shrink-0">
-                    <img src="/images/gmall-logo.png" alt="LoveGifts" className="h-[32px] w-auto object-contain" />
+                    <img src="/images/gmall-logo.png" alt="GMall" className="h-[32px] w-auto object-contain" />
                 </Link>
 
                 {/* Dummy div để căn giữa Logo hoặc Icon Chat/Cart nếu muốn (Hiện tại để trống theo yêu cầu ẩn Cart) */}
@@ -139,7 +139,7 @@ const Header = () => {
         <div className="hidden lg:block w-full max-w-[1340px] mx-auto px-4 lg:px-6 mb-4">
           <div className="flex items-center justify-between gap-4 lg:gap-8">
             <Link href="/" className="flex-shrink-0 group">
-              <img src="/images/gmall-logo.png" alt="LoveGifts" className="w-[160px] h-auto object-contain transition-transform group-hover:scale-105" />
+              <img src="/images/gmall-logo.png" alt="GMall" className="w-[160px] h-auto object-contain transition-transform group-hover:scale-105" />
             </Link>
 
             <div className="flex-1 max-w-[700px] flex-col relative z-100">

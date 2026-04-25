@@ -12,7 +12,7 @@ const ProductAboutSection = () => {
         {/* Cột Ảnh */}
         <img
           src="/assets-product/ImageAsset1.png"
-          alt="LoveGifts Promotion"
+          alt="GMall Promotion"
           className="w-full h-auto max-h-[430px] object-cover rounded-2xl"
         />
 
