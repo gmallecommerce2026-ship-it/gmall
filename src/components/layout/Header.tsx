@@ -33,23 +33,37 @@ const Header = () => {
 
   const isHomePage = pathname === "/";
 
-  // Sticky Logic
+  // Sticky Logic — spec [0018]:
+  // - Ẩn header khi cuộn XUỐNG (qua threshold 150px) để giảm chiếm diện tích.
+  // - Hiện lại ngay khi cuộn LÊN, dạng sticky overlay.
+  // - Trên trang chủ và cả các trang khác (B4.1).
   const [isSticky, setIsSticky] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     setMounted(true);
-    if (!isHomePage) {
-      setIsSticky(false);
-      return;
-    }
     const handleScroll = () => {
-      if (isHomePage) setIsSticky(window.scrollY > 100);
+      const y = window.scrollY;
+      const delta = y - lastScrollY.current;
+      // Threshold 8px tránh jitter khi scroll rất chậm
+      if (Math.abs(delta) > 8) {
+        if (delta > 0 && y > 150) {
+          // Cuộn xuống và đã qua 150px -> ẩn
+          setIsHidden(true);
+        } else if (delta < 0) {
+          // Cuộn lên -> hiện lại
+          setIsHidden(false);
+        }
+        lastScrollY.current = y;
+      }
+      setIsSticky(y > 100);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isHomePage]);
+  }, []);
 
   useEffect(() => {
     if (headerRef.current) {
@@ -80,12 +94,16 @@ const Header = () => {
       {isSticky && <div className="lg:hidden h-[110px] w-full" />} 
 
       {/* 3. Main Header */}
-      <header 
+      <header
         ref={headerRef}
-        style={{ paddingRight: isSticky ? `${paddingRightFix}px` : 0 }}
+        style={{
+          paddingRight: isSticky ? `${paddingRightFix}px` : 0,
+          // Ẩn bằng translate (mượt hơn `display:none`, vẫn hold layout space).
+          transform: isSticky && isHidden ? 'translateY(-100%)' : 'translateY(0)',
+        }}
         className={`w-full bg-white ease-out border-b border-gray-100
-          ${isSticky 
-            ? "fixed top-0 left-0 right-0 shadow-lg shadow-gray-200/50 z-[999] animate-slideDown lg:py-2 transition-[transform,opacity] duration-300" 
+          ${isSticky
+            ? "fixed top-0 left-0 right-0 shadow-lg shadow-gray-200/50 z-[999] lg:py-2 transition-[transform,opacity] duration-300"
             : "relative z-50 lg:py-4 transition-[transform,opacity] duration-300"
           }`}
       >

@@ -2,6 +2,7 @@ export interface IGiftWrapCard {
   imageUrl: string;
   iconUrl: string;
   iconAlt: string;
+  price: number; // Spec [0018]: chỉ 30.000 hoặc 50.000
 }
 
 export interface IShippingOption {
