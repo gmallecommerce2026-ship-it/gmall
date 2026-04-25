@@ -347,8 +347,8 @@ const HomeClient = ({ initialSections = [], suggestedProducts = [], flashSaleDat
       </div>
   
       {/* FLASH SALE */}
-      <FlashDealSection key={flashSaleData?.products?.id} data={flashSaleData?.products || []} />;
-      
+      <FlashDealSection key={flashSaleData?.products?.id} data={flashSaleData?.products || []} />
+
       {/* 2. DYNAMIC SECTIONS */}
       {dynamicSections.length > 0 && dynamicSections.map(renderSection)}
 

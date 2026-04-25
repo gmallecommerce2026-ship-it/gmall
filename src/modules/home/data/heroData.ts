@@ -65,7 +65,9 @@ export const SUB_HERO_SLIDES = [
     label: "Trang Sức",
   },
   {
-    src: "https://images.unsplash.com/photo-1617220828111-eb241202a929?auto=format&fit=crop&q=80&w=600",
+    // Đổi sang ảnh khác — photo-1617220828111-eb241202a929 bị Chrome ORB block
+    // (Unsplash CDN không trả CORP header cho ảnh đó), gây broken image trên FE.
+    src: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=600",
     alt: "Mỹ phẩm chính hãng",
     label: "Mỹ Phẩm",
   },
