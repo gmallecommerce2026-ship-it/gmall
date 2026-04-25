@@ -218,6 +218,85 @@ const SelectField = ({ placeholder, value, onChange, options = [] }: any) => (
 
 // --- Main Page Component ---
 
+// Spec [0018]: block paste link Shopee/Tiki -> BE crawl -> trả brand/name/image
+// để seller click "Áp dụng" auto-fill form. Inline component để tránh thêm file.
+const CrawlFromUrlBlock = ({ onApply }: { onApply: (data: any) => void }) => {
+    const [url, setUrl] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [preview, setPreview] = useState<any>(null);
+
+    const handleCrawl = async () => {
+        if (!url) return toast.error('Nhập link sản phẩm Shopee hoặc Tiki');
+        setLoading(true);
+        try {
+            const res: any = await api.post('/brands/crawl', { url });
+            const data = res?.data || res;
+            setPreview(data);
+            toast.success('Đã crawl xong, kiểm tra rồi bấm Áp dụng');
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || e?.message || 'Lỗi crawl link');
+            setPreview(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="mb-6 bg-purple-50 border border-purple-100 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <LinkIcon size={16} className="text-purple-500" />
+                <span className="text-sm font-semibold text-purple-700">
+                    Auto-fill từ link Shopee / Tiki
+                </span>
+            </div>
+            <div className="flex gap-2">
+                <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="Dán link sản phẩm Shopee/Tiki..."
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:border-purple-500 bg-white"
+                />
+                <button
+                    type="button"
+                    onClick={handleCrawl}
+                    disabled={loading || !url}
+                    className="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-all"
+                >
+                    {loading ? 'Đang lấy...' : 'Lấy thông tin'}
+                </button>
+            </div>
+
+            {preview && (
+                <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-start gap-3">
+                    {preview.image && (
+                        <img src={preview.image} alt={preview.name} className="w-16 h-16 object-cover rounded" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <div className="text-xs uppercase font-bold text-gray-400">{preview.source}</div>
+                        <div className="text-sm font-semibold text-gray-800 truncate">{preview.name || '(không có tên)'}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                            Brand: <strong>{preview.brand || '(không có)'}</strong>
+                            {preview.category && <> · DM: {preview.category}</>}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => onApply(preview)}
+                        className="px-3 py-1.5 text-xs bg-orange-600 text-white font-semibold rounded hover:bg-orange-700 shrink-0"
+                    >
+                        Áp dụng
+                    </button>
+                </div>
+            )}
+
+            <div className="text-[11px] text-gray-500 leading-snug">
+                * Lazada chưa hỗ trợ. * Shopee có thể bị anti-bot tuỳ thời điểm.
+            </div>
+        </div>
+    );
+};
+
 const AddProductPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -887,6 +966,17 @@ const AddProductPage = () => {
                     <p className="text-xs text-blue-600 mt-1">Điền thêm các thuộc tính giúp sản phẩm dễ dàng được tìm thấy hơn.</p>
                   </div>
               </div>
+
+              {/* Spec [0018]: crawl brand từ URL Shopee/Tiki để auto-fill */}
+              <CrawlFromUrlBlock
+                  onApply={(data) => {
+                      if (data.brand) setBrand(data.brand);
+                      if (data.name && !name) setName(data.name);
+                      if (data.image && images.length === 0) setImages([data.image]);
+                      if (data.description && !desc) setDesc(data.description);
+                      toast.success(`Đã lấy dữ liệu từ ${data.source}`);
+                  }}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                   <div><FormLabel required>Thương hiệu</FormLabel><SelectField value={brand} onChange={setBrand} options={['No Brand', 'Nike', 'Adidas']} placeholder="Chọn thương hiệu" /></div>
