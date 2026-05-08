@@ -13,6 +13,8 @@ import { HelpCircle, Settings } from 'lucide-react';
 import classNames from 'classnames';
 import { SellerAuthService } from '@/services/SellerAuthService';
 import { useUserStore } from '@/store/useUserStore';
+// Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
+import { API_BASE_URL } from '@/lib/api/config';
 
 interface MenuItem {
   id: string;
@@ -219,8 +221,7 @@ const SellerSidebarContent = () => {
     let cancelled = false;
     const fetchStats = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-        const res = await fetch(`${apiUrl}/admin/dashboard/seller/stats`, {
+        const res = await fetch(`${API_BASE_URL}/admin/dashboard/seller/stats`, {
           credentials: 'include',
         });
         if (!res.ok) return;

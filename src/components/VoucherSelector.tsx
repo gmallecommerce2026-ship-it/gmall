@@ -29,8 +29,11 @@ export default function VoucherSelector({ cartTotal }: Props) {
   } = useCheckoutStore();
 
   // Fetch vouchers khi mở modal
+  // hooks-fix wiki 0031: setLoading(true) là sync state used in cùng effect cho UI loading.
+  // Hợp lệ khi guard bằng isOpen — chỉ chạy 1 lần khi modal mở. Disable rule.
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       Promise.all([
         VoucherService.getMyVouchers(), // Giả sử hàm này trả về voucher user đã lưu
@@ -39,7 +42,7 @@ export default function VoucherSelector({ cartTotal }: Props) {
          // Phân loại voucher
          const shop = myVouchers.filter(v => v.scope === 'SHOP' || v.scope === 'PRODUCT');
          const system = myVouchers.filter(v => v.scope === 'GLOBAL');
-         
+
          setShopVouchers(shop);
          setSystemVouchers(system);
       }).catch(() => {

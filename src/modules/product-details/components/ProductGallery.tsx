@@ -8,6 +8,7 @@ interface ProductGalleryProps {
 
 const ProductGallery: React.FC<ProductGalleryProps> = ({ images, activeImage }) => {
   const [selectedImage, setSelectedImage] = useState(images[0]);
+  // hooks-fix wiki 0031: sync selectedImage từ prop activeImage — derived state pattern.
   useEffect(() => {
     if (activeImage) {
       setSelectedImage(activeImage);
@@ -19,6 +20,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, activeImage }) 
       if (images.length > 0 && !activeImage) {
           setSelectedImage(images[0]);
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images]);
   return (
     <div className="flex flex-col gap-4">

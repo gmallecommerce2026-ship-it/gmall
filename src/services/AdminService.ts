@@ -189,6 +189,10 @@ export const AdminService = {
     return apiClient.get('/admin/users/sellers', { params });
   },
 
+  getSellerDetail: async (id: string) => {
+    return apiClient.get(`/admin/users/sellers/${id}`);
+  },
+
   getPendingShops: async (page = 1, limit = 10) => {
     return apiClient.get(`/admin/users/pending-shops`, {
       params: { page, limit }

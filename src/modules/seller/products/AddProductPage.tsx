@@ -612,6 +612,8 @@ const AddProductPage = () => {
       return rows;
   }, [tiers]);
 
+  // hooks-fix wiki 0031: cố ý bỏ skuRows khỏi deps — effect sync skuRows từ tiers,
+  // thêm skuRows sẽ infinite loop vì setSkuRows lại trigger chính nó.
   useEffect(() => {
       const newRows = generateSkuMatrix();
       const merged = newRows.map(r => {
@@ -619,6 +621,7 @@ const AddProductPage = () => {
           return exist ? exist : r;
       });
       setSkuRows(merged);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiers, generateSkuMatrix]);
 
   const updateSkuRow = (idx: number, field: keyof SkuRow, val: any) => {

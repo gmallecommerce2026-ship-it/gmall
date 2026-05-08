@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { AdminService } from '@/services/AdminService';
 import { formatCurrency } from '@/lib/utils'; // Đảm bảo bạn có hàm này
 import { 
@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fi';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'react-hot-toast';
+import Pagination from '@/components/ui/Pagination';
+import Link from 'next/link';
 
 export default function SellersPage() {
   // --- State quản lý dữ liệu ---
@@ -16,25 +18,29 @@ export default function SellersPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState('');
+  const pageSize = 10;
   
   // Debounce để không gọi API liên tục khi gõ phím
   const debouncedSearch = useDebounce(search, 500);
 
   // --- Hàm gọi API lấy dữ liệu thực ---
-  const fetchSellers = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchSellers = useCallback(async () => {
     setLoading(true);
     try {
       // Gọi Service getSellersList vừa thêm
-      const res: any = await AdminService.getSellersList({ 
-        page, 
-        limit: 10, 
-        search: debouncedSearch 
+      const res: any = await AdminService.getSellersList({
+        page,
+        limit: pageSize,
+        search: debouncedSearch
       });
-      
+
       if (res?.data) {
         setSellers(res.data);
         setTotalPages(res.meta?.totalPages || 1);
+        setTotalCount(res.meta?.total ?? res.meta?.totalCount ?? res.data.length);
       }
     } catch (error) {
       console.error(error);
@@ -42,7 +48,7 @@ export default function SellersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, debouncedSearch]);
 
   // --- Hàm xử lý Khóa/Mở khóa Shop ---
   const handleToggleBan = async (seller: any) => {
@@ -70,7 +76,7 @@ export default function SellersPage() {
   // Gọi API khi page hoặc search thay đổi
   useEffect(() => {
     fetchSellers();
-  }, [page, debouncedSearch]);
+  }, [fetchSellers]);
 
   // --- Helper render badge trạng thái ---
   const renderStatusBadge = (seller: any) => {
@@ -196,13 +202,13 @@ export default function SellersPage() {
                     {/* 6. Actions */}
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        <Link
+                          href={`/admin/users/sellers/${seller.id}`}
+                          className="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Xem chi tiết"
-                          onClick={() => toast('Tính năng xem chi tiết Shop đang phát triển')}
                         >
                           <FiEye size={18} />
-                        </button>
+                        </Link>
                         
                         <button 
                           onClick={() => handleToggleBan(seller)}
@@ -226,24 +232,16 @@ export default function SellersPage() {
 
         {/* Pagination Footer */}
         {!loading && sellers.length > 0 && (
-            <div className="p-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
-            <span className="text-sm text-gray-500">Trang {page} / {totalPages}</span>
-            <div className="flex gap-2">
-                <button 
-                    disabled={page === 1}
-                    onClick={() => setPage(p => Math.max(1, p-1))}
-                    className="px-3 py-1.5 border border-gray-300 rounded bg-white text-sm hover:bg-gray-100 disabled:opacity-50"
-                >
-                    Trước
-                </button>
-                <button 
-                    disabled={page >= totalPages}
-                    onClick={() => setPage(p => p+1)}
-                    className="px-3 py-1.5 border border-gray-300 rounded bg-white text-sm hover:bg-gray-100 disabled:opacity-50"
-                >
-                    Sau
-                </button>
-            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-between items-center bg-gray-50 flex-wrap gap-3">
+              <span className="text-sm text-gray-500">
+                Tổng: <b>{totalCount}</b> người bán · Trang {page}/{totalPages}
+              </span>
+              <Pagination
+                currentPage={page}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setPage}
+              />
             </div>
         )}
       </div>

@@ -154,9 +154,11 @@ const ShopProfilePage = ({ shopData, shopId }: { shopData: any; shopId: string }
   };
 
   // Effect xử lý Redirect từ URL (dành cho trường hợp link từ trang khác tới có kèm ?tab=...)
+  // hooks-fix wiki 0031: setActiveTab từ URL param — derived sync, legitimate
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tabParam);
       // Nếu có param tab, cũng tự động scroll xuống
       setTimeout(() => {

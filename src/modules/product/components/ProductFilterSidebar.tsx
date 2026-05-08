@@ -75,7 +75,9 @@ const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({ dynamicFilt
   // State local cho input giá để tránh trigger URL liên tục khi gõ
   const [localPrice, setLocalPrice] = useState({ min: filters.minPrice, max: filters.maxPrice });
 
+  // hooks-fix wiki 0031: sync local form state from prop — derived state, legitimate
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalPrice({ min: filters.minPrice, max: filters.maxPrice });
   }, [filters.minPrice, filters.maxPrice]);
 

@@ -54,10 +54,13 @@ export default function AutoCrawlerPage() {
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   // Tự động điền từ khóa gợi ý khi chọn danh mục (chỉ ở chế độ keyword)
+  // hooks-fix wiki 0031: chỉ trigger khi đổi category/mode; thêm inputValue gây mất sync
+  // khi user gõ. Disable rule.
   useEffect(() => {
     if (targetCategory?.leafName && crawlMode === 'keyword' && !inputValue) {
       setInputValue(targetCategory.leafName);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetCategory, crawlMode]);
 
   useEffect(() => {

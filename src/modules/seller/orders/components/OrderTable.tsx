@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { OrderService } from '@/services/order.service';
 import Button from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
@@ -14,24 +14,25 @@ const OrderTable = ({ status, searchQuery }: { status: string, searchQuery?: str
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const loadOrders = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
       // Logic mapping status: 'all' gửi lên là undefined để BE hiểu là lấy tất cả
       const statusParam = status === 'all' ? undefined : status;
       // Giả sử API getSellerOrders hỗ trợ param search, nếu chưa thì cần lọc client hoặc update API
-      const res: any = await OrderService.getSellerOrders(statusParam); 
+      const res: any = await OrderService.getSellerOrders(statusParam);
       let rawData = Array.isArray(res) ? res : (res?.data || []);
 
       if (searchQuery && Array.isArray(rawData)) {
         const lowerQ = searchQuery.toLowerCase();
-        rawData = rawData.filter((o: any) => 
-          o.id?.toLowerCase().includes(lowerQ) || 
+        rawData = rawData.filter((o: any) =>
+          o.id?.toLowerCase().includes(lowerQ) ||
           o.user?.name?.toLowerCase().includes(lowerQ) ||
           o.user?.phone?.includes(searchQuery)
         );
       }
-      
+
       setOrders(rawData);
     } catch (error) {
       console.error("Load orders error:", error);
@@ -40,9 +41,9 @@ const OrderTable = ({ status, searchQuery }: { status: string, searchQuery?: str
     } finally {
       setLoading(false);
     }
-  };
+  }, [status, searchQuery]);
 
-  useEffect(() => { loadOrders(); }, [status, searchQuery]);
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const handleUpdate = async (orderId: string, nextStatus: string) => {
     setUpdatingId(orderId);

@@ -14,9 +14,11 @@ export const CoinInputSection = () => {
   const [inputValue, setInputValue] = useState(appliedCoins.toString());
 
   // Đồng bộ với input khi tắt toggle
+  // hooks-fix wiki 0031: setInputValue là local form sync; legitimate
   useEffect(() => {
     if (!isUsingCoins) {
       setAppliedCoins(0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue('0');
     }
   }, [isUsingCoins, setAppliedCoins]);

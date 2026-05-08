@@ -4,7 +4,6 @@ import { useUserStore } from '@/store/useUserStore';
 import { pointService } from '@/services/point.service';
 import CheckInModal from './CheckInModal';
 import LuckyWheelModal from './LuckyWheelModal';
-import DevResetButton from './DevResetButton';
 type Step = 'NONE' | 'CHECK_IN' | 'LUCKY_WHEEL';
 
 const DailyActionsHandler = () => {
@@ -59,13 +58,11 @@ const DailyActionsHandler = () => {
         onSuccess={handleCheckInSuccess} 
       />
 
-      <LuckyWheelModal 
-        isOpen={step === 'LUCKY_WHEEL'} 
+      <LuckyWheelModal
+        isOpen={step === 'LUCKY_WHEEL'}
         onClose={handleClose}
-        onSpinSuccess={handleClose} 
+        onSpinSuccess={handleClose}
       />
-
-      <DevResetButton />
     </>
   );
 };

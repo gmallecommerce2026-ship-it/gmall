@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   UserMinus, MessageCircle, UserCheck, UserX, Clock, Loader2, Search, UserPlus, Banknote
@@ -81,12 +81,45 @@ export default function FriendsPage() {
     // router.push(`/user/wallet/transfer?to=${friend.id}`);
     alert(`Tính năng chuyển tiền cho ${friend.name} đang phát triển!`);
   };
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep — moved up
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'my-friends') {
+        const res = await api.get('/friends/my-friends');
+        // SỬA: Bỏ .data đi, dùng res trực tiếp (vì api.ts đã xử lý rồi)
+        setFriends(res as any);
+      } else if (activeTab === 'requests') {
+        const res = await api.get('/friends/pending');
+        // SỬA: Bỏ .data đi
+        setRequests(res as any);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  const handleSearchUsers = async (query: string) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/friends/search?q=${query}`);
+      // SỬA: Bỏ .data đi
+      setSearchResults(res as any);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 1. Fetch data khi chuyển tab
   useEffect(() => {
     if (activeTab === 'my-friends' || activeTab === 'requests') {
       fetchData();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchData]);
 
   // 2. Fetch search khi query thay đổi (ở tab search)
   useEffect(() => {
@@ -108,9 +141,9 @@ export default function FriendsPage() {
     socket.on('friend_request_accepted', (data: any) => {
        // Refresh lại list nếu cần thiết, hoặc bắn toast
        if (activeTab === 'my-friends') fetchData();
-       
+
        // Cập nhật lại trạng thái trong list tìm kiếm nếu đang search đúng người đó
-       setSearchResults(prev => prev.map(u => 
+       setSearchResults(prev => prev.map(u =>
          u.id === data.receiver.id ? { ...u, status: 'FRIEND' } : u
        ));
     });
@@ -119,39 +152,7 @@ export default function FriendsPage() {
       socket.off('new_friend_request');
       socket.off('friend_request_accepted');
     };
-  }, [activeTab]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'my-friends') {
-        const res = await api.get('/friends/my-friends');
-        // SỬA: Bỏ .data đi, dùng res trực tiếp (vì api.ts đã xử lý rồi)
-        setFriends(res as any); 
-      } else if (activeTab === 'requests') {
-        const res = await api.get('/friends/pending');
-        // SỬA: Bỏ .data đi
-        setRequests(res as any);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearchUsers = async (query: string) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/friends/search?q=${query}`);
-      // SỬA: Bỏ .data đi
-      setSearchResults(res as any);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [activeTab, fetchData]);
 
   // --- ACTIONS ---
 

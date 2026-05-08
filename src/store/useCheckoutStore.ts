@@ -20,6 +20,9 @@ export interface UserInfo {
   message?: string;  
 }
 
+// TS-fix wiki 0031: thêm `selectedShopVoucher` (single-cart legacy) + `setSelectedVoucher`
+// để các UI cũ (VoucherSelector, useCartCalculation, GiftPaymentPage) compile.
+// Multi-shop voucher map (shopVouchers) vẫn là source-of-truth chính.
 interface CheckoutState {
   // --- Data ---
   buyerInfo: UserInfo;
@@ -27,9 +30,12 @@ interface CheckoutState {
   receiverInfo: UserInfo;
 
   // [UPDATED] Quản lý theo Shop ID (Multi-shop support)
-  shopVouchers: Record<string, Voucher | null>; 
+  shopVouchers: Record<string, Voucher | null>;
   shopShipping: Record<string, ShippingSelection | null>;
-  shopMessages: Record<string, string>; 
+  shopMessages: Record<string, string>;
+
+  // [LEGACY-COMPAT] Single voucher dùng cho UI gộp giỏ
+  selectedShopVoucher: Voucher | null;
 
   // Global
   selectedSystemVoucher: Voucher | null;
@@ -44,12 +50,14 @@ interface CheckoutState {
   setBuyerInfo: (info: UserInfo) => void;
   setSenderInfo: (info: UserInfo) => void;
   setReceiverInfo: (info: UserInfo) => void;
-  
-  setShopVoucher: (shopId: string, voucher: Voucher | null) => void;
+
+  // Overload: nếu chỉ truyền 1 arg => set vào legacy single slot.
+  setShopVoucher: (shopIdOrVoucher: string | Voucher | null, voucher?: Voucher | null) => void;
   setShopShipping: (shopId: string, shipping: ShippingSelection | null) => void;
   setShopMessage: (shopId: string, message: string) => void;
-  
+
   setSystemVoucher: (voucher: Voucher | null) => void;
+  setSelectedVoucher: (voucherId: string | null) => void;
   setAppliedCoins: (coins: number) => void;
   resetCheckout: () => void;
 
@@ -85,7 +93,8 @@ export const useCheckoutStore = create<CheckoutState>()(
       shopVouchers: {},
       shopShipping: {},
       shopMessages: {},
-      
+
+      selectedShopVoucher: null,
       selectedSystemVoucher: null,
       selectedVoucherId: null,
       appliedCoins: 0,
@@ -98,13 +107,22 @@ export const useCheckoutStore = create<CheckoutState>()(
       setSenderInfo: (info) => set({ senderInfo: info }),
       setReceiverInfo: (info) => set({ receiverInfo: info }),
 
-      setShopVoucher: (shopId, voucher) => 
-        set((state) => ({ 
-          shopVouchers: { 
-            ...state.shopVouchers, 
-            [shopId]: voucher 
-          } 
-        })),
+      // TS-fix wiki 0031: Hỗ trợ 1-arg (single voucher) hoặc 2-arg (multi-shop)
+      setShopVoucher: (shopIdOrVoucher, voucher) => {
+        if (typeof shopIdOrVoucher === 'string') {
+          const sid = shopIdOrVoucher;
+          const v = voucher ?? null;
+          set((state) => ({
+            shopVouchers: { ...state.shopVouchers, [sid]: v },
+            // sync legacy slot (giữ giá trị mới nhất để UI cũ hiển thị)
+            selectedShopVoucher: v,
+          }));
+        } else {
+          // 1-arg form: voucher | null cho UI cũ chỉ có 1 voucher
+          const v = (shopIdOrVoucher as Voucher | null) ?? null;
+          set({ selectedShopVoucher: v });
+        }
+      },
       
       setShopShipping: (shopId, shipping) => 
         set((state) => ({ 
@@ -123,6 +141,7 @@ export const useCheckoutStore = create<CheckoutState>()(
         })),
 
       setSystemVoucher: (voucher) => set({ selectedSystemVoucher: voucher }),
+      setSelectedVoucher: (voucherId) => set({ selectedVoucherId: voucherId }),
       setAppliedCoins: (coins) => set({ appliedCoins: coins }),
       // [NEW] Action set item mua ngay
       setBuyNowItem: (item) => set({
@@ -138,10 +157,11 @@ export const useCheckoutStore = create<CheckoutState>()(
       }),
       
       // Reset toàn bộ
-      resetCheckout: () => set({ 
-        shopVouchers: {}, 
-        shopShipping: {}, 
+      resetCheckout: () => set({
+        shopVouchers: {},
+        shopShipping: {},
         shopMessages: {},
+        selectedShopVoucher: null,
         selectedSystemVoucher: null,
         selectedVoucherId: null,
         // Reset luôn cả state mua ngay
@@ -151,7 +171,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       }),
     }),
     {
-      name: 'lovegifts-checkout-storage', 
+      name: 'gmall-checkout-storage',
       storage: createJSONStorage(() => localStorage),
       skipHydration: true, 
     }

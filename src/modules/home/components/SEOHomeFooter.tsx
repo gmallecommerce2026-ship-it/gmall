@@ -149,7 +149,8 @@ const SEOHomeFooter = () => {
         <div className="flex flex-wrap gap-x-1 gap-y-2 items-center text-[13px] text-gray-500 leading-relaxed">
           {BRANDS.map((brand, idx) => (
             <React.Fragment key={idx}>
-              <Link href={`/search?keyword=${brand}`} className="hover:text-brand-orange hover:underline capitalize transition-colors">
+              {/* #36: query string là `q=`, KHÔNG phải `keyword=` (xem SearchProductPage). */}
+              <Link href={`/search?q=${encodeURIComponent(brand)}`} className="hover:text-brand-orange hover:underline capitalize transition-colors">
                 {brand}
               </Link>
               {idx < BRANDS.length - 1 && <span className="text-gray-300">/</span>}
@@ -179,8 +180,8 @@ const SEOHomeFooter = () => {
                     <div className="text-[12px] text-gray-500 leading-relaxed">
                       {subItems.map((item, subIdx) => (
                         <React.Fragment key={subIdx}>
-                          <Link 
-                            href={`/search?keyword=${item}`} 
+                          <Link
+                            href={`/search?q=${encodeURIComponent(item)}`}
                             className="hover:text-gray-900 hover:underline text-gray-500 transition-colors inline-block"
                           >
                             {item}

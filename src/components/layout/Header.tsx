@@ -43,7 +43,10 @@ const Header = () => {
   const headerRef = useRef<HTMLElement>(null);
   const lastScrollY = useRef(0);
 
+  // hooks-fix wiki 0031: setMounted(true) trong effect là pattern hydration; rule
+  // disable vì đây là legitimate mount-flag.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const handleScroll = () => {
       const y = window.scrollY;

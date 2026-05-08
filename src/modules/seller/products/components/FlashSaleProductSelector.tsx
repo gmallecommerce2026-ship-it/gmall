@@ -1,7 +1,7 @@
 // src/modules/seller/products/components/FlashSaleProductSelector.tsx
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import { ShopService } from '@/services/shop.service';
 import { Search, X, Check, ChevronDown, ChevronRight, Box, Circle } from 'lucide-react'; // Bổ sung icon
@@ -26,24 +26,17 @@ const FlashSaleProductSelector = ({ isOpen, onClose, onConfirm, excludeIds = [] 
   const [loading, setLoading] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
 
-  useEffect(() => {
-    if (isOpen) {
-        fetchProducts();
-        setSelectedVariantIds(new Set()); // Reset khi mở lại
-        setExpandedProductIds(new Set());
-    }
-  }, [isOpen, debouncedSearch]);
-
-  const fetchProducts = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       // API cần đảm bảo trả về cả relation 'variants'
-      const res: any = await ShopService.getSellerProducts({ 
-        page: 1, 
-        limit: 20, 
-        keyword: debouncedSearch 
+      const res: any = await ShopService.getSellerProducts({
+        page: 1,
+        limit: 20,
+        keyword: debouncedSearch
       });
-      
+
       const data = res.data || (Array.isArray(res) ? res : []);
       setProducts(data);
     } catch (error) {
@@ -51,7 +44,15 @@ const FlashSaleProductSelector = ({ isOpen, onClose, onConfirm, excludeIds = [] 
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (isOpen) {
+        fetchProducts();
+        setSelectedVariantIds(new Set()); // Reset khi mở lại
+        setExpandedProductIds(new Set());
+    }
+  }, [isOpen, fetchProducts]);
 
   // Toggle xem danh sách phân loại
   const toggleExpand = (e: React.MouseEvent, productId: string) => {

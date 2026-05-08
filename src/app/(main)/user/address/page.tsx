@@ -15,8 +15,10 @@ export default function AddressPage() {
 
   const fetchAddresses = async () => {
     try {
+      // TS-fix wiki 0031: AddressService.getAll trả thẳng IAddress[]; xử lý null fallback
       const res = await AddressService.getAll();
-      setAddresses(res?.data || (res as any)); // Xử lý tùy theo response wrapper
+      const list = Array.isArray(res) ? res : ((res as any)?.data ?? []);
+      setAddresses(list);
     } catch (error) {
       console.error(error);
     } finally {

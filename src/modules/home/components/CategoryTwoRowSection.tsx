@@ -1,7 +1,7 @@
 // src/modules/home/components/CategoryTwoRowSection.tsx
 'use client'; 
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic'; 
 import ProductCard from '@/modules/product/components/ProductCard';
@@ -52,8 +52,9 @@ const CategoryTwoRowSection: React.FC<CategoryTwoRowSectionProps> = ({
 const SectionColumn = ({ config }: { config: SectionColumnData }) => {
   const safeConfig = config || {};
   const { title, products, viewAllLink, emoji, headerColor, filters, activeFilter, onFilterSelect } = safeConfig;
-  const safeFilters = Array.isArray(filters) ? filters : [];
-  const safeProducts = Array.isArray(products) ? products : [];
+  // hooks-fix wiki 0031: useMemo cho derived arrays để dep effect ổn định identity
+  const safeFilters = useMemo(() => (Array.isArray(filters) ? filters : []), [filters]);
+  const safeProducts = useMemo(() => (Array.isArray(products) ? products : []), [products]);
   const hasFilters = safeFilters.length > 0;
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,9 @@ const SectionColumn = ({ config }: { config: SectionColumnData }) => {
   const [displayProducts, setDisplayProducts] = useState<any[]>([]);
   const [isClient, setIsClient] = useState(false);
 
+  // hooks-fix wiki 0031: setIsClient là hydration flag — disable rule
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
     if (safeProducts.length > 4) {
       const shuffled = shuffleArray(safeProducts);

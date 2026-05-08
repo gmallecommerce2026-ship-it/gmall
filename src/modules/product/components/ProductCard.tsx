@@ -9,14 +9,14 @@ interface ProductCardProps {
   title?: string;
   price?: string | number;
   originalPrice?: string | number;
-  
+
   // --- Updated Props ---
   isDiscountActive?: boolean; // Added
   discountType?: string;      // Added
   discountValue?: number;     // Added
-  
+
   discount?: string;
-  tag?: string; 
+  tag?: string;
   sold?: string | number;
   location?: string;
   flashSaleConfig?: {
@@ -25,7 +25,9 @@ interface ProductCardProps {
     endsIn?: string;
   };
   shippingEstimate?: number;
-  data?: any; 
+  data?: any;
+  // TS-fix wiki 0031: hỗ trợ truyền nguyên `product` từ Sidebar/DynamicSectionRenderer
+  product?: any;
 }
 
 // --- [UTILS] ---
@@ -60,10 +62,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
   sold,
   shippingEstimate,
   data,
+  product, // TS-fix wiki 0031: alias mới — fallback sang `data` để giữ business logic cũ
   // Destructure new props
   isDiscountActive: propIsDiscountActive,
   discountType: propDiscountType,
 }) => {
+  // TS-fix wiki 0031: nếu caller dùng `product` (Sidebar, DynamicSectionRenderer), gán làm `data`
+  data = data ?? product;
   const { track } = useTracking();
   const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -158,7 +163,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         badgeText: badge,
         isAmountDiscount: isAmountType
     };
-  }, [data, price, originalPrice, discount, rawTitle, propIsDiscountActive, propDiscountType]); // Updated Deps
+    // hooks-fix wiki 0031: bỏ rawTitle (unnecessary dep — không dùng trong useMemo body)
+  }, [data, price, originalPrice, discount, propIsDiscountActive, propDiscountType]);
 
   const { finalPriceStr, originalPriceStr, badgeText, isAmountDiscount } = priceInfo;
 

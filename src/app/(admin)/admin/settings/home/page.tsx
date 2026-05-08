@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api/ApiClient';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Trash2, Edit, GripVertical, Plus, Save, X, LayoutTemplate, List, Eye, EyeOff } from 'lucide-react';
@@ -116,18 +116,20 @@ export default function HomeSettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
-  useEffect(() => { loadSections(); }, []);
-
-  const loadSections = async () => {
+  // hooks-fix wiki 0031: declare loadSections before useEffect (was immutability/use-before-declared) + useCallback
+  const loadSections = useCallback(async () => {
     try {
       const res = await apiClient.get('/home-settings');
       const sectionsData = Array.isArray(res) ? res : (res?.data || []);
       setSections(sectionsData);
-    } catch (e) { 
-      console.error(e); 
-      setSections([]); 
+    } catch (e) {
+      console.error(e);
+      setSections([]);
     }
-  };
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadSections(); }, [loadSections]);
 
   const handleSave = async (data: any) => {
     try {

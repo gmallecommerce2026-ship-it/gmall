@@ -1,7 +1,7 @@
 // src/modules/seller/products/ProductManagementPage.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react'; // [UPDATE] Thêm useRef
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // [UPDATE] Thêm useRef
 import { 
   Plus, Search, ChevronDown, ChevronUp, 
   LayoutList, LayoutGrid, RotateCcw,
@@ -181,19 +181,20 @@ const ProductManagementPage = () => {
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const startIdsSnapshot = useRef<Set<string>>(new Set()); // Lưu trạng thái trước khi Shift click
 
-  const fetchProducts = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
       const statusParam = TAB_MAPPING[activeTab] || 'ALL';
-      
+
       const res: any = await api.get('/seller/products', {
-        params: { 
+        params: {
             status: statusParam,
-            page: page, 
-            limit: limit 
+            page: page,
+            limit: limit
         }
       });
-      
+
       let dataList = [];
       let totalCount = 0;
 
@@ -204,7 +205,7 @@ const ProductManagementPage = () => {
           dataList = res.slice(startIndex, endIndex);
       } else if (res?.data) {
           dataList = res.data;
-          totalCount = res.meta?.total || res.total || res.data.length; 
+          totalCount = res.meta?.total || res.total || res.data.length;
       }
 
       setProducts(dataList);
@@ -217,7 +218,7 @@ const ProductManagementPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab, page, limit]);
 
   useEffect(() => {
     setPage(1);
@@ -230,7 +231,7 @@ const ProductManagementPage = () => {
     setSelectedIds(new Set());
     setLastSelectedId(null);
     startIdsSnapshot.current.clear();
-  }, [activeTab, page, limit]);
+  }, [fetchProducts]);
 
   // [NEW] 2. Logic Handle Select All
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {

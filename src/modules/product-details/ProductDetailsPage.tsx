@@ -24,8 +24,9 @@ import { Product, ProductTier, ProductVariant } from "@/types/product";
 
 import { useTracking, EventType } from "@/hooks/useTracking"; 
 
+// TS-fix wiki 0031: `product` optional vì page route có thể fetch tự thân (xem app/(main)/product-details/page.tsx)
 interface ProductDetailsPageProps {
-  product: any; 
+  product?: any;
 }
 
 // [UPDATED] Dùng luôn interface từ Service hoặc map tương đương
@@ -126,12 +127,13 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
   const { track } = useTracking();
   useEffect(() => {
     if (product?.id) {
-      track(EventType.VIEW_PRODUCT, product.id, { 
+      track(EventType.VIEW_PRODUCT, product.id, {
         price: product?.price,
-        category: product.categoryId ? String(product.categoryId) : 'unknown' 
+        category: product.categoryId ? String(product.categoryId) : 'unknown'
       });
     }
-  }, [product?.id, track]);
+    // hooks-fix wiki 0031: thêm price/categoryId — chỉ trigger lại khi tracking metadata đổi
+  }, [product?.id, product?.price, product?.categoryId, track]);
 
   const [categoryBreadcrumbs, setCategoryBreadcrumbs] = useState<CategoryBreadcrumbData[]>([]);
   const [shopProfile, setShopProfile] = useState<ShopProfileData | null>(null);
@@ -202,8 +204,11 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
       
       // [XÓA] Đoạn code gọi api.get('/categories/hierarchy/...') cũ ở cuối hàm nếu có
     };
-      
+
     fetchRealData();
+    // hooks-fix wiki 0031: chỉ phụ thuộc các field định danh; toàn bộ object 'product' đổi
+    // identity mỗi render sẽ gây fetch lặp. Disable rule.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.sellerId, product.id, product.categoryId]);
 
   const allVouchersForMainInfo = [...systemVouchers, ...shopVouchers];

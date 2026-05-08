@@ -2,38 +2,41 @@
 import React from "react";
 import Link from "next/link"; // Dùng Link của Next.js để tối ưu
 import { FaFacebookF, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa"; // [Gợi ý] Nên dùng icon vector (react-icons) thay vì ảnh png để nét hơn.
+import NewsletterForm from "./NewsletterForm";
 // Nếu bạn chưa cài react-icons, có thể giữ lại logic ảnh cũ, nhưng ở đây mình sẽ code theo hướng ảnh cũ của bạn cho an toàn, nhưng style lại.
 
 // --- DATA DEFINITION ---
 
+// #46: chỉ giữ link tới page đang tồn tại trong app (avoid 404). Các page
+// "coming soon" như /about /careers /shipping... được wrap chung bằng route
+// /terms (Điều khoản dịch vụ) và /privacy (Chính sách bảo mật) — sau khi
+// admin CMS triển khai page riêng, đổi href ở đây.
 const FOOTER_LINKS = {
   about: {
     title: "Về chúng tôi",
     links: [
-      { label: "Giới thiệu GMall", href: "/about" },
-      { label: "Tuyển dụng", href: "/careers" },
-      { label: "Điều khoản & Chính sách", href: "/terms" },
-      { label: "Hợp tác doanh nghiệp", href: "/b2b" },
-      { label: "Câu chuyện thương hiệu", href: "/story" },
+      { label: "Giới thiệu GMall", href: "/terms" },
+      { label: "Điều khoản dịch vụ", href: "/terms" },
+      { label: "Chính sách bảo mật", href: "/privacy" },
+      { label: "Trung tâm trợ giúp", href: "/seller-dashboard/help/policies" },
     ],
   },
   support: {
     title: "Hỗ trợ khách hàng",
     links: [
-      { label: "Hướng dẫn mua hàng", href: "/guide" },
-      { label: "Phương thức thanh toán", href: "/payment-policy" },
-      { label: "Chính sách vận chuyển", href: "/shipping" },
-      { label: "Chính sách đổi trả", href: "/returns" },
+      { label: "Tài khoản của tôi", href: "/user/profile" },
+      { label: "Đơn hàng của tôi", href: "/user/purchase" },
+      { label: "Liên hệ qua chat", href: "/messages" },
       { label: "Bảo mật thông tin", href: "/privacy" },
     ],
   },
   policy: {
     title: "Chính sách & Quy định",
     links: [
-      { label: "Quy chế hoạt động", href: "/regulations" },
-      { label: "Chính sách kiểm hàng", href: "/inspection" },
-      { label: "Quyền lợi thành viên", href: "/membership" },
-      { label: "Giải quyết khiếu nại", href: "/complaints" },
+      { label: "Điều khoản dịch vụ", href: "/terms" },
+      { label: "Chính sách bảo mật", href: "/privacy" },
+      { label: "Trung tâm Affiliate", href: "/affiliate/dashboard" },
+      { label: "Tham gia bán hàng", href: "/seller/register" },
     ],
   },
 };
@@ -82,16 +85,7 @@ const Footer = () => {
             <h3 className="text-xl font-bold text-gray-900 mb-2">Đăng ký nhận bản tin</h3>
             <p className="text-gray-500 text-sm">Nhận ngay mã giảm giá 10% cho đơn hàng đầu tiên và cập nhật các ưu đãi mới nhất.</p>
           </div>
-          <div className="w-full md:w-1/2 flex gap-3">
-            <input 
-              type="email" 
-              placeholder="Nhập email của bạn..." 
-              className="flex-1 px-4 py-3 rounded border border-gray-200 text-sm focus:outline-none focus:border-brand-orange transition-colors"
-            />
-            <button className="bg-gray-900 text-white px-6 py-3 rounded text-sm font-bold hover:bg-brand-orange transition-colors whitespace-nowrap">
-              Đăng ký
-            </button>
-          </div>
+          <NewsletterForm sourceTag="footer" />
         </div>
       </div>
 

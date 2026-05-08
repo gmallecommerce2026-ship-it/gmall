@@ -20,7 +20,8 @@ export interface PaginatedResponse<T> {
 }
 
 // --- USERS & SELLERS ---
-export type UserRole = 'USER' | 'SELLER' | 'ADMIN';
+// TS-fix wiki 0031: BE rename USER → BUYER, giữ USER alias để legacy form/code chưa đổi vẫn compile
+export type UserRole = 'USER' | 'BUYER' | 'SELLER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'BANNED' | 'PENDING_SELLER';
 
 export interface AdminUser {

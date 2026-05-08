@@ -41,10 +41,11 @@ export default function ProfilePage() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      // TS-fix wiki 0031: gender từ form là string -> narrow về union literal hợp lệ
       await AuthService.updateProfile({
         name: formData.name,
         phone: formData.phone,
-        gender: formData.gender,
+        gender: formData.gender as 'male' | 'female' | 'other',
         dob: formData.dob
       });
       toast.success('Cập nhật hồ sơ thành công!');

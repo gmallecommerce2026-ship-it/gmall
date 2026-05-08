@@ -33,8 +33,10 @@ const ShopInfo: React.FC<ShopInfoProps> = ({ shop }) => {
   // [FIX] State để quản lý nguồn ảnh, tránh lỗi 404 liên tục
   const [imgSrc, setImgSrc] = useState<string>("");
 
+  // hooks-fix wiki 0031: derived state sync from prop — legitimate
   useEffect(() => {
     if (shop) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setImgSrc(shop.avatarUrl);
     }
   }, [shop]);

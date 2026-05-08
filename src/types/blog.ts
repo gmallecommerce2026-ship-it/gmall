@@ -7,21 +7,28 @@ export enum BlogStatus {
   HIDDEN = 'HIDDEN',
 }
 
+// TS-fix wiki 0031: BlogPost - allow `category` as either string-key or full Category object,
+// thêm excerpt cho list/card UI, để BlogCard render an toàn khi BE trả raw object.
 export interface BlogPost {
   id: string;
   title: string;
   slug: string;
   content: string; // HTML string
   thumbnail?: string;
-  category?: string;
+  // Có thể là slug/id (string) hoặc object đầy đủ tùy endpoint
+  category?: string | { id?: string; name: string; slug?: string };
   status: BlogStatus;
-  
+
   // SEO fields
   metaTitle?: string;
   metaDescription?: string;
   keywords?: string[]; // Array string
   viewCount?: number;
-  
+
+  // Bản trích / mô tả ngắn (BE optional)
+  excerpt?: string;
+  description?: string;
+
   // Relations
   author?: {
     id: string;
@@ -29,7 +36,7 @@ export interface BlogPost {
     avatar?: string;
   };
   relatedProducts?: Product[]; // Full product objects
-  
+
   createdAt: string;
   updatedAt: string;
 }

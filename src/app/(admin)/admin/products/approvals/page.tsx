@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { 
   CheckCircle2, XCircle, Eye, Search, 
@@ -58,14 +58,16 @@ export default function ProductApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
 
   // --- Fetch Data ---
-  const fetchProducts = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     // Reset toàn bộ trạng thái select
     setSelectedIds([]);
     setLastSelectedId(null);
     startIdsSnapshot.current.clear();
     try {
-      const res: any = await AdminService.getProducts({ status: activeTab, limit: 100 });
+      // TS-fix wiki 0031: getProducts yêu cầu `page` bắt buộc
+      const res: any = await AdminService.getProducts({ page: 1, status: activeTab, limit: 100 });
       let dataList: ProductListItem[] = [];
       if (res?.data && Array.isArray(res.data)) {
          dataList = res.data;
@@ -79,11 +81,11 @@ export default function ProductApprovalPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchProducts();
-  }, [activeTab]);
+  }, [fetchProducts]);
 
   // --- Handlers ---
   const handleApprove = async (id: string) => {

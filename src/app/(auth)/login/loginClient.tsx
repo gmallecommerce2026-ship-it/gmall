@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+// Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
+import { API_BASE_URL } from "@/lib/api/config";
 import * as z from "zod";
 import { toast } from "react-hot-toast";
 import { Eye, EyeOff, ShoppingBag, ArrowRight } from "lucide-react";
@@ -26,6 +28,10 @@ export default function LoginClient() {
   const { setUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // #48: default ON → user logged-in cookie tồn tại 7 ngày (BE config). Khi
+  // OFF, FE đặt sessionStorage flag và logout khi tab đóng (beforeunload).
+  // Mặc định ON match expectation đa số e-commerce site.
+  const [rememberMe, setRememberMe] = useState(true);
 
   const {
     register,
@@ -39,9 +45,20 @@ export default function LoginClient() {
   const onSubmit = async (data: LoginFormType) => {
     setIsLoading(true);
     try {
-      const res = await AuthService.login(data);
+      // BE ignore rememberMe nếu chưa implement, không gây lỗi (dynamic key).
+      const res = await AuthService.login({ ...data, rememberMe });
       if (res && (res.user || res.id)) {
          setUser(res.user || res);
+         // Lưu flag để Logout-on-close hook biết khi nào cần auto-logout.
+         try {
+           if (rememberMe) {
+             localStorage.setItem('gmall:remember', '1');
+             sessionStorage.removeItem('gmall:logout-on-close');
+           } else {
+             localStorage.removeItem('gmall:remember');
+             sessionStorage.setItem('gmall:logout-on-close', '1');
+           }
+         } catch { /* storage có thể fail trong incognito */ }
          toast.success("Chào mừng bạn quay trở lại!");
          router.push("/");
       }
@@ -113,7 +130,13 @@ export default function LoginClient() {
 
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <input type="checkbox" id="remember" className="rounded border-gray-300 text-brand-orange focus:ring-brand-orange" />
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded border-gray-300 text-brand-orange focus:ring-brand-orange"
+                    />
                     <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">Ghi nhớ</label>
                 </div>
                 <Link
@@ -151,18 +174,23 @@ export default function LoginClient() {
               <button
                 type="button"
                 onClick={() => {
-                  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+                  const apiUrl = API_BASE_URL;
                   window.location.href = `${apiUrl}/auth/google`;
                 }}
                 className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
-                <img src="/assets/google-icon.png" alt="Google" className="w-5 h-5" onError={(e) => e.currentTarget.style.display = 'none'} />
+                <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                  <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                  <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                  <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+                </svg>
                 <span className="text-sm font-semibold text-gray-700">Google</span>
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+                  const apiUrl = API_BASE_URL;
                   window.location.href = `${apiUrl}/auth/facebook`;
                 }}
                 className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"

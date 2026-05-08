@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
@@ -121,7 +121,8 @@ export default function PurchasePage() {
   };
 
   // 1. Fetch data đơn hàng
-  const fetchOrders = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const currentTab = TABS.find(t => t.id === activeTab);
@@ -133,11 +134,11 @@ export default function PurchasePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchOrders();
-  }, [activeTab]);
+  }, [fetchOrders]);
 
   // 2. Xử lý hủy đơn
   const handleCancelOrder = async (orderId: string) => {

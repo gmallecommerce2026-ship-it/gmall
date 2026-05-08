@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { apiClient } from '@/lib/api/ApiClient';
 import { useUserStore } from './useUserStore';
+// Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
+import { API_BASE_URL } from '@/lib/api/config';
 
 export interface Message {
   id: string;
@@ -65,7 +67,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const currentSocket = get().socket;
     if (currentSocket && currentSocket.connected) return;
 
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const socketUrl = API_BASE_URL;
     
     // B3.3 fix: thêm 'polling' làm fallback. Chỉ dùng 'websocket' thuần sẽ
     // chết nếu proxy (Nginx/Render) không route WS correctly, khiến user
@@ -218,6 +220,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   disconnectSocket: () => {
     const socket = get().socket;
     if (socket) {
+      // Fix BUG-FE-7 (wiki 0030): removeAllListeners() TRƯỚC disconnect().
+      // Trước đây chỉ disconnect() — internal listeners (receive_message,
+      // message_error...) vẫn registered trên socket instance. Khi
+      // connectSocket() chạy lại (logout/login, HMR dev), .on() đăng ký thêm
+      // → mỗi event nhận N lần → tin nhắn duplicate trong UI. Liên quan B3.3
+      // (wiki 0014) — fix BE đã làm, fix FE bù phần listener leak.
+      socket.removeAllListeners();
       socket.disconnect();
     }
     set({ socket: null });

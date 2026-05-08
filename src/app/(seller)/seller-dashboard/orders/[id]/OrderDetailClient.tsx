@@ -13,7 +13,7 @@
  * `getSellerOrderDetail` — chỉ thiếu page này.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, MapPin, Phone, User, Package } from 'lucide-react';
 import { OrderService } from '@/services/order.service';
@@ -38,7 +38,8 @@ export default function OrderDetailClient({ id }: Props) {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
 
-  const loadOrder = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const loadOrder = useCallback(async () => {
     setLoading(true);
     try {
       const data = await OrderService.getSellerOrderDetail(id);
@@ -48,11 +49,11 @@ export default function OrderDetailClient({ id }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     loadOrder();
-  }, [id]);
+  }, [loadOrder]);
 
   const handleAdvance = async (next: 'CONFIRMED' | 'SHIPPING') => {
     setActing(true);

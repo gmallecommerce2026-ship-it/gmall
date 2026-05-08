@@ -8,8 +8,8 @@ export const metadata: Metadata = {
     'Chung tay góp sức cùng GMall xây dựng các quỹ từ thiện ý nghĩa. Mỗi đóng góp là một hành động yêu thương.',
 };
 
-// Server component fetch trực tiếp từ BE. Không cache (data thay đổi khi có donation mới).
-// Nếu tương lai muốn ISR, dùng `revalidate = 60` để refresh mỗi phút.
+// Wiki 0032: ISR conflict với axios pattern — dựa BE cache 30s + PM2 cluster.
+// Server component fetch trực tiếp từ BE.
 async function getFunds(): Promise<CharityFund[]> {
   try {
     return await CharityService.listFunds();

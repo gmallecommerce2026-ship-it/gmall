@@ -63,5 +63,25 @@ export default function AuthProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setUser]);
 
+  // #48: nếu user uncheck "Ghi nhớ" lúc login, logout khi tab đóng.
+  // pageHide thay cho beforeUnload (Safari/iOS firing-rate cao hơn).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPageHide = () => {
+      try {
+        if (sessionStorage.getItem('gmall:logout-on-close') === '1') {
+          // Best-effort: clear cookie + storage. Synchronous → chạy kịp trong
+          // pageHide handler (BE logout fetch không kịp commit, OK vì cookie
+          // sẽ expire sau 7 ngày dù sao đi nữa).
+          localStorage.removeItem('user-storage');
+          localStorage.removeItem('accessToken');
+          document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
+        }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => window.removeEventListener('pagehide', onPageHide);
+  }, []);
+
   return <>{children}</>;
 }

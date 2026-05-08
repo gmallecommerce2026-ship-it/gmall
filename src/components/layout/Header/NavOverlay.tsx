@@ -8,7 +8,9 @@ export default function NavOverlay() {
   const { activeDropdown } = useContentStore();
   const [mounted, setMounted] = useState(false);
 
+  // hooks-fix wiki 0031: hydration mount flag — legitimate setState in effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

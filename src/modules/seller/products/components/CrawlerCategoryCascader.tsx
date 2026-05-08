@@ -24,8 +24,11 @@ export const CrawlerCategoryCascader: React.FC<CrawlerCategoryCascaderProps> = (
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 1. Initial Load (Root)
+  // hooks-fix wiki 0031: chỉ gọi 1 lần khi mount; fetchCategories không stable nhưng
+  // ý đồ là chỉ chạy 1 lần. Disable rule.
   useEffect(() => {
     fetchCategories(null, 0, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto scroll

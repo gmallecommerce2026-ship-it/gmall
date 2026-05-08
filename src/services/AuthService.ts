@@ -41,6 +41,8 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string;
   password: string;
+  // #48: optional flag — BE có thể đọc để adjust cookie maxAge.
+  rememberMe?: boolean;
 }
 
 export const AuthService = {

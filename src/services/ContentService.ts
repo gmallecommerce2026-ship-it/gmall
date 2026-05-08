@@ -62,11 +62,22 @@ export interface ContentServiceType {
   getSystemTagsConfig: () => Promise<NavColumn[]>;
 }
 
+// TS-fix wiki 0031: ApiClient.request trả `T | null` (do retry/redirect 401),
+// nhưng các method service-level cần unwrap về `T`. Dùng helper `unwrap` để strip null
+// thành empty/throw — giữ nguyên runtime, làm chuẩn type cho consumer.
+const unwrapList = <T>(v: T[] | null | undefined): T[] => v ?? [];
+const unwrapVoid = (_v: any): void => undefined;
+const unwrapObj = <T>(v: T | null | undefined): T => {
+  if (v == null) throw new Error('ContentService: API returned null/undefined');
+  return v;
+};
+
 // --- IMPLEMENTATION ---
 export const ContentService: ContentServiceType = {
   // Public
   getBanners: async (location) => {
-    return apiClient.get('/content/banners', { params: { location } });
+    const res = await apiClient.get<Banner[]>('/content/banners', { params: { location } });
+    return unwrapList(res);
   },
   getConfig: async (key) => {
     return apiClient.get(`/content/config/${key}`);
@@ -74,19 +85,24 @@ export const ContentService: ContentServiceType = {
 
   // Admin
   getAllBannersAdmin: async () => {
-    return apiClient.get('/content/admin/banners');
+    const res = await apiClient.get<Banner[]>('/content/admin/banners');
+    return unwrapList(res);
   },
   createBanner: async (data) => {
-    return apiClient.post('/content/admin/banners', data);
+    const res = await apiClient.post<Banner>('/content/admin/banners', data);
+    return unwrapObj(res);
   },
   updateBanner: async (id, data) => {
-    return apiClient.patch(`/content/admin/banners/${id}`, data);
+    const res = await apiClient.patch<Banner>(`/content/admin/banners/${id}`, data);
+    return unwrapObj(res);
   },
   deleteBanner: async (id) => {
-    return apiClient.delete(`/content/admin/banners/${id}`);
+    const res = await apiClient.delete(`/content/admin/banners/${id}`);
+    return unwrapVoid(res);
   },
   reorderBanners: async (items) => {
-    return apiClient.patch('/content/admin/banners/reorder', { items });
+    const res = await apiClient.patch('/content/admin/banners/reorder', { items });
+    return unwrapVoid(res);
   },
   saveConfig: async (key, value) => {
     return apiClient.post('/content/admin/config', { key, value });

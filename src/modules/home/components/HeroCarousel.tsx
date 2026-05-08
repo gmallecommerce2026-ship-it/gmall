@@ -1,7 +1,7 @@
 // src/modules/home/components/HeroCarousel.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTracking } from "@/hooks/useTracking";
 import Link from "next/link";
 
@@ -40,9 +40,10 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
     });
   };
 
-  const goToNext = () => {
+  // hooks-fix wiki 0031: useCallback cho goToNext để stable identity (dùng trong effect autoplay)
+  const goToNext = useCallback(() => {
     setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
+  }, [slides.length]);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
@@ -54,7 +55,7 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
       timeoutRef.current = setTimeout(goToNext, autoPlayInterval);
     }
     return () => resetTimeout();
-  }, [currentIndex, autoPlayInterval]);
+  }, [currentIndex, autoPlayInterval, goToNext]);
 
   if (!slides || slides.length === 0) return null;
 

@@ -8,16 +8,22 @@ import { VoucherService, Voucher } from '@/services/voucher.service';
 import { toast } from 'react-hot-toast';
 
 // --- PROPS ---
+// TS-fix wiki 0031: thêm các props legacy mà GiftPaymentPage truyền (onSelectVoucher, selectedVoucherText, discountAmount)
 interface VoucherSectionProps {
-  cartTotal: number;
+  cartTotal?: number; // Tùy chọn vì gift-payment không truyền (dùng discountAmount)
   useCoins: boolean;
   onToggleCoins: (val: boolean) => void;
-  coinBalance?: number;    
+  coinBalance?: number;
   coinDiscount?: number;
-  
+
   // [FIX] Thêm props này để khớp với PaymentPage
-  selectedVoucherId?: string | null; 
+  selectedVoucherId?: string | null;
   onApplyVoucher?: (voucher: Voucher | null) => void;
+
+  // Legacy props từ GiftPaymentPage
+  onSelectVoucher?: () => void;
+  selectedVoucherText?: string;
+  discountAmount?: number;
 }
 
 // --- ICONS ---
@@ -57,7 +63,7 @@ const ToggleSwitch: React.FC<{ enabled: boolean; setEnabled: (val: boolean) => v
 
 // --- MAIN COMPONENT ---
 const VoucherSection: React.FC<VoucherSectionProps> = ({
-  cartTotal,
+  cartTotal = 0,
   useCoins,
   onToggleCoins,
   coinBalance = 0,
@@ -98,8 +104,10 @@ const VoucherSection: React.FC<VoucherSectionProps> = ({
   const canUseCoins = coinBalance > 0;
 
   // 3. Fetch Vouchers khi mở Modal
+  // hooks-fix wiki 0031: setLoading(true) là sync UI flag — legitimate
   useEffect(() => {
     if (isModalOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       VoucherService.getMyVouchers()
         .then((data) => {

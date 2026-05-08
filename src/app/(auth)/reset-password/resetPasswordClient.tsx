@@ -53,9 +53,10 @@ const ResetPasswordClient = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Tự động xóa lỗi khi người dùng nhập lại
+  // hooks-fix wiki 0031: include 'error' dep — guard `if (error)` prevents infinite loop
   useEffect(() => {
     if (error) setError("");
-  }, [email, token, password, confirmPassword]);
+  }, [email, token, password, confirmPassword, error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

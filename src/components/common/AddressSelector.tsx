@@ -62,6 +62,9 @@ export const AddressSelector: React.FC<Props> = ({ value, onChange, disabled }) 
     const [mapQuery, setMapQuery] = useState("");
 
     // 1. Load Tỉnh/Thành khi mount
+    // hooks-fix wiki 0031: external API fetch — set loading state là sync-loading-flag
+    // hợp lệ. Disable set-state-in-effect; thêm provinces.length vào deps gây re-fetch
+    // vô tận, dùng eslint-disable cho exhaustive-deps cũng cần.
     useEffect(() => {
         if (provinces.length > 0) return; // Tránh gọi lại nếu đã có data
         setLoadingLoc(prev => ({ ...prev, p: true }));
@@ -69,6 +72,7 @@ export const AddressSelector: React.FC<Props> = ({ value, onChange, disabled }) 
             .then(res => setProvinces(res?.map((p:any) => ({ value: p.ProvinceID, label: p.ProvinceName })) || []))
             .catch(() => toast.error("Lỗi kết nối GHN"))
             .finally(() => setLoadingLoc(prev => ({ ...prev, p: false })));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // 2. Load Quận/Huyện khi chọn Tỉnh
@@ -79,13 +83,13 @@ export const AddressSelector: React.FC<Props> = ({ value, onChange, disabled }) 
             apiClient.get(`/ghn/districts?province_id=${value.provinceId}`)
                 .then(res => setDistricts(res?.map((d:any) => ({ value: d.DistrictID, label: d.DistrictName })) || []))
                 .finally(() => setLoadingLoc(prev => ({ ...prev, d: false })));
-            
+
             // Cập nhật label ngay cả khi provinces chưa load xong (sẽ update lại khi provinces load xong)
             const pName = provinces.find(p => p.value == value.provinceId)?.label || '';
             if (pName) setLabels(prev => ({ ...prev, p: pName }));
         } else {
             // [QUAN TRỌNG] Chỉ clear khi thực sự không có provinceId (tránh lỗi khi init value rỗng rồi mới có data)
-            setDistricts([]); 
+            setDistricts([]);
             setWards([]);
         }
     }, [value?.provinceId, provinces]);
@@ -106,6 +110,7 @@ export const AddressSelector: React.FC<Props> = ({ value, onChange, disabled }) 
     }, [value?.districtId, districts]);
 
     // 4. Update Map Query khi đủ thông tin
+    // hooks-fix wiki 0031: thêm mapQuery vào deps; guard `if(query !== mapQuery)` ngăn loop
     useEffect(() => {
         // Logic tìm tên Phường khi Wards đã load xong và có value.wardCode
         if(value?.wardCode && wards.length > 0) {
@@ -119,7 +124,7 @@ export const AddressSelector: React.FC<Props> = ({ value, onChange, disabled }) 
                 }
             }
         }
-    }, [value?.wardCode, wards, labels.p, labels.d]);
+    }, [value?.wardCode, wards, labels.p, labels.d, mapQuery]);
 
     // Xử lý thay đổi dropdown
     const handleChange = (field: keyof AddressData, val: any) => {

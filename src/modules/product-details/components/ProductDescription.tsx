@@ -1,21 +1,23 @@
 // src/modules/product-detail/components/ProductDescription.tsx
 "use client";
 import React, { useState } from "react";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface ProductDescriptionProps {
-  productTitle: string; 
+  productTitle: string;
   description?: string;
 }
 const ProductDescription: React.FC<ProductDescriptionProps> = ({productTitle, description}) => {
   const [activeTab, setActiveTab] = useState("details");
 
   return (
-    <div className="bg-white rounded-2xl p-6">
+    // Fix #43: padding y nhỏ + không content empty → bớt khoảng trắng dôi.
+    <div className="bg-white rounded-2xl px-6 py-4">
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6">
+      <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveTab("details")}
-          className={`py-4 px-6 text-lg font-medium transition-colors ${
+          className={`py-3 px-6 text-base font-medium transition-colors ${
             activeTab === "details"
               ? "text-brand-orange border-b-2 border-brand-orange"
               : "text-gray-500 hover:text-black"
@@ -25,7 +27,7 @@ const ProductDescription: React.FC<ProductDescriptionProps> = ({productTitle, de
         </button>
         <button
           onClick={() => setActiveTab("reviews")}
-          className={`py-4 px-6 text-lg font-medium transition-colors ${
+          className={`py-3 px-6 text-base font-medium transition-colors ${
             activeTab === "reviews"
               ? "text-brand-orange border-b-2 border-brand-orange"
               : "text-gray-500 hover:text-black"
@@ -36,21 +38,19 @@ const ProductDescription: React.FC<ProductDescriptionProps> = ({productTitle, de
       </div>
 
       {/* Tab Content */}
-      <div>
+      <div className="pt-4">
         {activeTab === "details" && (
           // Sử dụng class 'prose' của Tailwind Typography để tự động format text
-          <div className="prose prose-sm max-w-none text-black prose-h3:font-semibold prose-h4:font-semibold">
+          <div className="prose prose-sm max-w-none text-black prose-h3:font-semibold prose-h3:mt-0 prose-h3:mb-3 prose-h4:font-semibold">
             <h3>MÔ TẢ SẢN PHẨM</h3>
-            <br />
-            <div dangerouslySetInnerHTML={{ __html: description || "" }} />
+            {/* Fix BUG-FE-3 (wiki 0030): sanitize HTML từ seller — chống stored XSS */}
+            <div dangerouslySetInnerHTML={sanitizeHtml(description)} />
           </div>
         )}
         {activeTab === "reviews" && (
-          <div>
-            <p className="text-gray-600">
-              {/* Chưa có đánh giá nào cho sản phẩm này. */}
-            </p>
-          </div>
+          <p className="text-gray-500 text-sm py-4">
+            Chưa có đánh giá nào cho sản phẩm này.
+          </p>
         )}
       </div>
     </div>

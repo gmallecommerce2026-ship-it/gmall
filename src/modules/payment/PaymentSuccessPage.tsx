@@ -25,7 +25,11 @@ const getProductImage = (images: any): string => {
 };
 
 // --- MAIN COMPONENT ---
-const PaymentSuccessPage = () => {
+// TS-fix wiki 0031: nhận optional `orderCode` để client wrapper truyền orderId từ query param
+interface PaymentSuccessPageProps {
+  orderCode?: string;
+}
+const PaymentSuccessPage: React.FC<PaymentSuccessPageProps> = (_props) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { track } = useTracking();

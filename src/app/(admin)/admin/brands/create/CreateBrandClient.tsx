@@ -4,19 +4,22 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { ArrowLeft, Save, UploadCloud, X } from "lucide-react";
-// import { useGoBack } from "@/hooks/useGoBack"; // Nếu bạn có hook này
+import { toast } from "react-hot-toast";
+import { apiClient } from "@/lib/api/ApiClient";
+import { uploadFileToR2 } from "@/services/uploadService";
 
 export default function CreateBrandClient() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
     description: "",
-    status: true // true: Active, false: Inactive
+    status: true, // true: Active, false: Inactive
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,25 +39,60 @@ export default function CreateBrandClient() {
     }
   };
 
-  // Giả lập upload ảnh
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const objectUrl = URL.createObjectURL(file);
-      setLogoPreview(objectUrl);
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo phải <= 2MB");
+      return;
     }
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim()) {
+      toast.error("Vui lòng nhập tên thương hiệu");
+      return;
+    }
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-        console.log("Submitting:", { ...formData, logoPreview });
-        setLoading(false);
-        router.push("/admin/brands"); // Quay lại danh sách
-    }, 1000);
+    try {
+      // Upload logo TRƯỚC khi tạo brand — tránh tạo bản ghi brand thiếu logo
+      // trong DB nếu upload R2 fail.
+      let logoUrl: string | null = null;
+      if (logoFile) {
+        logoUrl = await uploadFileToR2(logoFile);
+      }
+
+      // BE DTO yêu cầu slug NotEmpty + format ^[a-z0-9]+(?:-[a-z0-9]+)*$
+      // và status enum ['active','inactive']. Auto-slug từ name nếu user
+      // bỏ trống để tránh validate fail.
+      const slugRaw = (formData.slug.trim() || formData.name.trim())
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      await apiClient.post("/admin/brands", {
+        name: formData.name.trim(),
+        slug: slugRaw,
+        description: formData.description.trim() || undefined,
+        logoUrl: logoUrl || undefined,
+        status: formData.status ? "active" : "inactive",
+      });
+
+      toast.success("Thêm thương hiệu thành công!");
+      router.push("/admin/brands");
+    } catch (err: any) {
+      console.error("Create brand failed:", err);
+      const msg = err?.response?.data?.message || err?.message || "Tạo thương hiệu thất bại";
+      toast.error(typeof msg === "string" ? msg : "Tạo thương hiệu thất bại");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

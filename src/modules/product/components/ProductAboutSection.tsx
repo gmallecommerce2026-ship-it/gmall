@@ -19,7 +19,7 @@ const ProductAboutSection = () => {
         {/* Cột Text */}
         <div className="flex flex-col items-start gap-6">
           <h2 className="font-sans text-4xl font-bold text-brand-dark-green tracking-wide">
-            lovegifts
+            GMall
           </h2>
           
           {/* Thêm overflow-hidden và transition-all */}
