@@ -13,6 +13,8 @@ import { HelpCircle, Settings } from 'lucide-react';
 import classNames from 'classnames';
 import { SellerAuthService } from '@/services/SellerAuthService';
 import { useUserStore } from '@/store/useUserStore';
+// Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
+import { API_BASE_URL } from '@/lib/api/config';
 
 interface MenuItem {
   id: string;
@@ -201,14 +203,48 @@ const SidebarItem = ({ item, level = 0, isOpen, toggleOpen }: {
 
 // [2] Đổi tên component chính thành SellerSidebarContent
 const SellerSidebarContent = () => {
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>({ 
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({
     'orders': false,
-    'products': true 
+    'products': true
   });
   const router = useRouter();
+  const { user } = useUserStore();
   const toggleOpen = (id: string) => {
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // Spec [0018]: sidebar bổ sung số đơn chờ + doanh thu hôm nay.
+  // Endpoint /admin/dashboard/seller/stats trả `todo.pending` và `chart[6].revenue`
+  // (phần tử cuối là ngày hôm nay).
+  const [stats, setStats] = useState<{ pending: number; revenueToday: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/admin/dashboard/seller/stats`, {
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const pending = data?.todo?.pending ?? 0;
+        const revenueToday = data?.chart?.[data.chart.length - 1]?.revenue ?? 0;
+        setStats({ pending, revenueToday });
+      } catch {
+        // silent — sidebar widget optional, không block UX
+      }
+    };
+    fetchStats();
+    // Refresh mỗi 60s để số đơn chờ và doanh thu cập nhật mà không phải F5
+    const t = setInterval(fetchStats, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  const formatVND = (n: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n);
   const handleLogout = async () => {
     try {
       // 1. Gọi API để xóa Cookie ở Backend
@@ -237,6 +273,55 @@ const SellerSidebarContent = () => {
             <span className="text-[11px] text-gray-400 font-medium">QUẢN LÝ CỬA HÀNG</span>
         </div>
       </div>
+
+      {/* Shop info block (B7.1, B7.2) — hiển thị seller đang ở shop nào.
+          Trước đây sidebar chỉ có "Seller Hub" generic, seller login nhiều
+          account không biết mình đang ở cái nào. */}
+      {user && (
+        <div className="px-4 py-3 border-b border-gray-100 bg-orange-50/40">
+          <div className="flex items-center gap-3">
+            {user.coverImage || user.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.coverImage || user.avatar}
+                alt={user.shopName || 'Shop avatar'}
+                className="w-10 h-10 rounded-lg object-cover border border-orange-100"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                {(user.shopName || user.name || 'S').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-gray-900 truncate">
+                {user.shopName || user.name || 'Shop của bạn'}
+              </p>
+              <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+              {(user as any).phone && (
+                <p className="text-[11px] text-gray-400 truncate">
+                  SĐT: {(user as any).phone}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick stats (spec [0018]): số đơn chờ + doanh thu hôm nay */}
+      {stats && (
+        <div className="px-4 py-3 border-b border-gray-100 grid grid-cols-2 gap-2">
+          <div className="bg-orange-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] uppercase font-semibold text-orange-700 tracking-wide">Đơn chờ</p>
+            <p className="text-base font-bold text-orange-900">{stats.pending}</p>
+          </div>
+          <div className="bg-green-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] uppercase font-semibold text-green-700 tracking-wide">Doanh thu hôm nay</p>
+            <p className="text-sm font-bold text-green-900 truncate" title={formatVND(stats.revenueToday)}>
+              {stats.revenueToday > 0 ? formatVND(stats.revenueToday) : '0đ'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Menu List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar py-4">

@@ -1,8 +1,9 @@
 // src/modules/blog/components/CategoryBlock.tsx
+// TS-fix wiki 0031: dùng BlogCard cùng module để có đủ variants ('overlay', 'simple') + imageHeight
 import React from 'react';
 import Link from 'next/link';
 import { BlogPost, Category } from '@/types/blog';
-import { BlogCard } from '@/components/blog/BlogCard';
+import { BlogCard } from './BlogCard';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -19,8 +19,9 @@ import PaymentSummary from '@/modules/payment/components/PaymentSummary';
 import AddressInfo from './components/AddressInfo';
 import OrderItem from '@/modules/payment/components/OrderItem';
 import VoucherSelectionModal from '@/components/ui/VoucherSelectionModal';
-import AddressSelectionModal from './components/AddressSelectionModal'; 
-import AddressFormModal from './components/AddressFormModal'; 
+import AddressSelectionModal from './components/AddressSelectionModal';
+import AddressFormModal from './components/AddressFormModal';
+import CharityCampaignSelect from '@/modules/payment/components/CharityCampaignSelect'; // Spec [0018]
 
 // --- ICONS ---
 const Icons = {
@@ -48,8 +49,11 @@ const CoinInputBlock = ({
   const [isEnabled, setIsEnabled] = useState(appliedCoins > 0);
 
   // Sync khi appliedCoins thay đổi từ bên ngoài (hoặc reset)
+  // hooks-fix wiki 0031: guard `if (appliedCoins===0 && !isEnabled)` đã có; setInputValue
+  // là sync local form input — disable rule.
   useEffect(() => {
     if (appliedCoins === 0 && !isEnabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue('');
     }
   }, [appliedCoins, isEnabled]);
@@ -181,6 +185,8 @@ const PaymentPage = () => {
 
   // --- LOCAL STATE ---
   const [selectedPayment, setSelectedPayment] = useState<'cod' | 'pay2s' | 'momo'>('cod');
+  // Spec [0018]: user chọn quỹ campaign cho 1% commission. Null = quỹ primary mặc định.
+  const [charityFundId, setCharityFundId] = useState<string | null>(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [currentShopIdForVoucher, setCurrentShopIdForVoucher] = useState<string | null>(null);
   
@@ -337,11 +343,13 @@ const PaymentPage = () => {
           coinDiscount, // Trả về để truyền xuống PaymentSummary
           total: finalTotal > 0 ? finalTotal : 0
       };
-  }, [groupedItems, shopVouchers, previewData, selectedSystemVoucher, appliedCoins]);
+    // hooks-fix wiki 0031: bỏ selectedSystemVoucher (unnecessary dep — không read trong body)
+  }, [groupedItems, shopVouchers, previewData, appliedCoins]);
 
 
   // --- LOGIC 2: BUILD PAYLOAD ---
-  const buildPayload = (isPreview = false): CreateOrderPayload | null => {
+  // hooks-fix wiki 0031: useCallback wrap để dùng làm dep ổn định trong effect preview
+  const buildPayload = useCallback((isPreview = false): CreateOrderPayload | null => {
     if (validPaymentItems.length === 0) return null;
 
     const voucherIds: string[] = [];
@@ -363,20 +371,26 @@ const PaymentPage = () => {
       },
       paymentMethod: selectedPayment,
       note: shopMessages,
-      
+
       // [UPDATE] Truyền thông tin xu lên BE
-      useCoins: appliedCoins > 0, 
+      useCoins: appliedCoins > 0,
       appliedCoins: appliedCoins,
 
       senderInfo: senderInfo.name ? senderInfo : undefined,
-    };
-  };
+      // Spec [0018]: charityCampaignFundId — BE sẽ lưu sau migration. Hiện tại
+      // gửi lên đã sẵn sàng, BE bỏ qua nếu chưa có cột.
+      charityCampaignFundId: charityFundId,
+    } as any;
+  }, [
+    validPaymentItems, selectedSystemVoucher, shopVouchers, isBuyNowFlow,
+    receiverInfo, selectedPayment, shopMessages, appliedCoins, senderInfo, charityFundId
+  ]);
 
   // --- LOGIC 3: PREVIEW ORDER ---
   useEffect(() => {
     const fetchPreview = async () => {
       if (validPaymentItems.length === 0 || !isAuthenticated) return;
-      
+
       const payload = buildPayload(true);
       if (!payload) return;
 
@@ -393,8 +407,8 @@ const PaymentPage = () => {
 
     const timer = setTimeout(fetchPreview, 500);
     return () => clearTimeout(timer);
-  // Thêm appliedCoins vào dependency để khi nhập xu thì gọi lại BE tính tiền
-  }, [validPaymentItems, shopVouchers, selectedSystemVoucher, appliedCoins, receiverInfo, isAuthenticated]);
+  // hooks-fix wiki 0031: dùng buildPayload memoized — đã capture các dep cần thiết
+  }, [validPaymentItems, isAuthenticated, buildPayload]);
 
   // --- LOGIC 4: HANDLE CHECKOUT ---
   const handlePlaceOrder = async () => {
@@ -604,11 +618,17 @@ const PaymentPage = () => {
            </div>
             
            {/* [NEW] Khối nhập xu - Đặt ngay sau Voucher */}
-           <CoinInputBlock 
+           <CoinInputBlock
                userPoints={user?.point || 0}
                appliedCoins={appliedCoins}
                onCoinChange={(val) => setAppliedCoins(val)}
                orderTotal={frontendCalculations.subtotal}
+           />
+
+           {/* Spec [0018]: chọn quỹ từ thiện cho 1% commission */}
+           <CharityCampaignSelect
+              selectedFundId={charityFundId}
+              onSelect={setCharityFundId}
            />
 
            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">

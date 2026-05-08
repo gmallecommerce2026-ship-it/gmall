@@ -13,6 +13,7 @@ import {
 import classNames from "classnames";
 
 import { AdminService } from "@/services/AdminService";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { Product, ProductVariant, ProductTier } from "@/types/product"; 
 import Button from "@/components/ui/Button";
 
@@ -338,7 +339,10 @@ export default function AdminProductApprovalDetailPage() {
                     <h3 className="font-bold text-gray-800 flex items-center gap-2"><FileText size={18} className="text-blue-600"/> Mô tả chi tiết</h3>
                 </div>
                 <div className="p-6">
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: product.description || "<em>Chưa có mô tả</em>" }} />
+                    {/* Fix BUG-FE-3 (wiki 0030): sanitize TRƯỚC KHI hiện cho admin —
+                        admin có cookie quyền cao, XSS payload từ seller sẽ chạy với
+                        session admin → critical security risk. */}
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={sanitizeHtml(product.description || "<em>Chưa có mô tả</em>")} />
                 </div>
             </div>
         </div>

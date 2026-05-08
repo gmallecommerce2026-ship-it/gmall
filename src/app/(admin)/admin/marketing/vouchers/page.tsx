@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { VoucherService, Voucher } from '@/services/voucher.service';
 import { FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
@@ -10,11 +10,8 @@ export default function AdminVoucherPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [activeTab]);
-
-  const loadData = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === 'SYSTEM') {
@@ -22,7 +19,7 @@ export default function AdminVoucherPage() {
         setVouchers(data);
       } else {
         // Lấy toàn bộ voucher (có thể lọc scope=SHOP để xem riêng shop)
-        const data = await VoucherService.getAllVouchers('SHOP'); 
+        const data = await VoucherService.getAllVouchers('SHOP');
         setVouchers(data);
       }
     } catch (error) {
@@ -30,7 +27,11 @@ export default function AdminVoucherPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   return (
     <div className="p-6">

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { AdminService } from "@/services/AdminService";
 import { toast } from "react-hot-toast";
 import { FiRefreshCcw, FiFilter, FiSearch } from "react-icons/fi";
@@ -14,12 +14,13 @@ export default function ApprovalsPage() {
   // State quản lý shop đang chọn để xem hồ sơ
   const [selectedShop, setSelectedShop] = useState<any>(null);
 
-  const fetchData = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       let res;
       if (activeTab === 'register') {
-        res = await AdminService.getPendingShops(1, 20); 
+        res = await AdminService.getPendingShops(1, 20);
       } else {
         res = await AdminService.getShopUpdateRequests(1, 20);
       }
@@ -29,11 +30,11 @@ export default function ApprovalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchData();
-  }, [activeTab]);
+  }, [fetchData]);
 
   // Hành động Duyệt
   const handleApprove = async () => {

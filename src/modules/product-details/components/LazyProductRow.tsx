@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import ProductCard from "@/modules/product/components/ProductCard";
 import { ChevronRight } from "lucide-react";
 
@@ -22,6 +22,22 @@ export const LazyProductRow: React.FC<LazyProductRowProps> = ({
   const [hasFetched, setHasFetched] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetcher(productId);
+      // Xử lý nếu API trả về { data: [] } hoặc [] trực tiếp
+      const productList = Array.isArray(data) ? data : data?.data || [];
+      setProducts(productList);
+    } catch (error) {
+      console.error(`Failed to load ${title}`, error);
+    } finally {
+      setIsLoading(false);
+      setHasFetched(true);
+    }
+  }, [fetcher, productId, title]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -37,22 +53,7 @@ export const LazyProductRow: React.FC<LazyProductRowProps> = ({
     }
 
     return () => observer.disconnect();
-  }, [productId, hasFetched]);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetcher(productId);
-      // Xử lý nếu API trả về { data: [] } hoặc [] trực tiếp
-      const productList = Array.isArray(data) ? data : data?.data || [];
-      setProducts(productList);
-    } catch (error) {
-      console.error(`Failed to load ${title}`, error);
-    } finally {
-      setIsLoading(false);
-      setHasFetched(true);
-    }
-  };
+  }, [productId, hasFetched, loadData]);
 
   // --- [FIX] Helper function xử lý ảnh "đa hệ" (string hoặc object) ---
   const getSafeImageUrl = (item: any) => {

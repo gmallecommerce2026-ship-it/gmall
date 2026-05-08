@@ -10,6 +10,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { AdminService } from "@/services/AdminService";
 import Button from "@/components/ui/Button";
 import { InputGroup } from "@/components/ui/InputGroup";
+import { BRAND } from "@/lib/brand";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -75,7 +76,7 @@ export default function AdminLoginPage() {
                  <InputGroup
                     label="Email quản trị"
                     type="email"
-                    placeholder="admin@lovegifts.com"
+                    placeholder={BRAND.adminEmail}
                     {...register("email", { required: "Vui lòng nhập email" })}
                     error={errors.email?.message as string}
                  />

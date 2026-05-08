@@ -1,7 +1,7 @@
 // src/app/(admin)/admin/marketing/flash-sale/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { FiPlus, FiClock, FiCalendar, FiMoreVertical, FiPlayCircle, FiCheckCircle, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
 import { Zap } from 'lucide-react';
@@ -36,7 +36,8 @@ export default function FlashSalePage() {
   const { register, handleSubmit, reset, setValue, setError, formState: { errors, isSubmitting } } = useForm<CreateFlashSaleDto>();
 
   // Fetch Data
-  const fetchSessions = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchSessions = useCallback(async () => {
     setLoading(true);
     try {
       const res = await AdminService.getFlashSaleSessions(selectedDate);
@@ -49,11 +50,11 @@ export default function FlashSalePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
 
   useEffect(() => {
     fetchSessions();
-  }, [selectedDate]);
+  }, [fetchSessions]);
 
   // Handlers
   const handleCreate = () => {

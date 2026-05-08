@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import { ShopService } from '@/services/shop.service';
 import { FiSearch, FiX } from 'react-icons/fi';
@@ -20,18 +20,15 @@ const ProductSelectionModal = ({ isOpen, onClose, categoryId, onSuccess }: Produ
   const [loading, setLoading] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
 
-  useEffect(() => {
-    if (isOpen) fetchProducts();
-  }, [isOpen, debouncedSearch]);
-
-  const fetchProducts = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       // Lấy danh sách sản phẩm của Shop để chọn
-      const res: any = await ShopService.getSellerProducts({ 
-        page: 1, 
-        limit: 20, 
-        keyword: debouncedSearch 
+      const res: any = await ShopService.getSellerProducts({
+        page: 1,
+        limit: 20,
+        keyword: debouncedSearch
       });
       if (res) {
         setProducts(res);
@@ -41,7 +38,11 @@ const ProductSelectionModal = ({ isOpen, onClose, categoryId, onSuccess }: Produ
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (isOpen) fetchProducts();
+  }, [isOpen, fetchProducts]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => 

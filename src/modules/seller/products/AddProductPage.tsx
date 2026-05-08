@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  CheckCircle2, AlertCircle, Image as ImageIcon, Video, 
+import {
+  CheckCircle2, AlertCircle, Image as ImageIcon, Video,
   Plus, ChevronDown, ChevronUp, Info, Truck, Box, Flame,
   Edit2, Smartphone, Eye, HelpCircle, X,
   Star, Play, Film, ImagePlus, Ruler, TableProperties,
@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import classNames from 'classnames';
 import { api } from '@/services/api';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import { uploadFileToR2 } from '@/services/uploadService';
 import { CrossSellSelector } from './components/CrossSellSelector';
 import { Edit } from 'lucide-react';
@@ -38,6 +39,7 @@ interface SkuRow {
 const TABS = [
   { id: 'basic', label: 'Thông tin cơ bản', active: true },
   { id: 'details', label: 'Thông tin chi tiết', active: false },
+  { id: 'short-desc', label: 'Mô tả ngắn', active: false }, // Spec [0018] block 6 fields
   { id: 'desc', label: 'Mô tả', active: false },
   { id: 'sales', label: 'Thông tin bán hàng', active: false },
   { id: 'shipping', label: 'Vận chuyển', active: false },
@@ -216,8 +218,92 @@ const SelectField = ({ placeholder, value, onChange, options = [] }: any) => (
 
 // --- Main Page Component ---
 
+// Spec [0018]: block paste link Shopee/Tiki -> BE crawl -> trả brand/name/image
+// để seller click "Áp dụng" auto-fill form. Inline component để tránh thêm file.
+const CrawlFromUrlBlock = ({ onApply }: { onApply: (data: any) => void }) => {
+    const [url, setUrl] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [preview, setPreview] = useState<any>(null);
+
+    const handleCrawl = async () => {
+        if (!url) return toast.error('Nhập link sản phẩm Shopee hoặc Tiki');
+        setLoading(true);
+        try {
+            const res: any = await api.post('/brands/crawl', { url });
+            const data = res?.data || res;
+            setPreview(data);
+            toast.success('Đã crawl xong, kiểm tra rồi bấm Áp dụng');
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || e?.message || 'Lỗi crawl link');
+            setPreview(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="mb-6 bg-purple-50 border border-purple-100 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <LinkIcon size={16} className="text-purple-500" />
+                <span className="text-sm font-semibold text-purple-700">
+                    Auto-fill từ link Shopee / Tiki
+                </span>
+            </div>
+            <div className="flex gap-2">
+                <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="Dán link sản phẩm Shopee/Tiki..."
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:border-purple-500 bg-white"
+                />
+                <button
+                    type="button"
+                    onClick={handleCrawl}
+                    disabled={loading || !url}
+                    className="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-all"
+                >
+                    {loading ? 'Đang lấy...' : 'Lấy thông tin'}
+                </button>
+            </div>
+
+            {preview && (
+                <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-start gap-3">
+                    {preview.image && (
+                        <img src={preview.image} alt={preview.name} className="w-16 h-16 object-cover rounded" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <div className="text-xs uppercase font-bold text-gray-400">{preview.source}</div>
+                        <div className="text-sm font-semibold text-gray-800 truncate">{preview.name || '(không có tên)'}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                            Brand: <strong>{preview.brand || '(không có)'}</strong>
+                            {preview.category && <> · DM: {preview.category}</>}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => onApply(preview)}
+                        className="px-3 py-1.5 text-xs bg-orange-600 text-white font-semibold rounded hover:bg-orange-700 shrink-0"
+                    >
+                        Áp dụng
+                    </button>
+                </div>
+            )}
+
+            <div className="text-[11px] text-gray-500 leading-snug">
+                * Lazada chưa hỗ trợ. * Shopee có thể bị anti-bot tuỳ thời điểm.
+            </div>
+        </div>
+    );
+};
+
 const AddProductPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Spec [0018]: nút "Sửa SP" load lại form tạo mới với data prefilled.
+  // editId từ query ?editId=<productId>. Nếu có -> fetch + prefill.
+  const editId = searchParams.get('editId') || null;
+  const isEditMode = !!editId;
   const [activeTab, setActiveTab] = useState('basic');
   const [imageRatio, setImageRatio] = useState<'1:1' | '3:4'>('1:1'); 
   const [sizeChartMode, setSizeChartMode] = useState<'template' | 'image'>('template');
@@ -241,6 +327,15 @@ const AddProductPage = () => {
   const [style, setStyle] = useState('');
   const [isShowMoreAttributes, setIsShowMoreAttributes] = useState(false);
   const [extraAttributes, setExtraAttributes] = useState<Record<string, string>>({});
+
+  // Spec [0018]: Mô tả ngắn — block 6 fields hiển thị nhanh trên trang SP
+  // (khác với "Mô tả sản phẩm" rich text dài bên dưới). Lưu vào Product.shortDesc Json.
+  const [shortDescBrand, setShortDescBrand] = useState('');       // 1. Thương hiệu (story ngắn)
+  const [shortDescFeatures, setShortDescFeatures] = useState(''); // 2. Đặc điểm nổi bật
+  const [shortDescBenefits, setShortDescBenefits] = useState(''); // 3. Lợi ích
+  const [shortDescRecipient, setShortDescRecipient] = useState(''); // 4. Phù hợp tặng cho
+  const [shortDescOccasion, setShortDescOccasion] = useState('');   // 5. Dịp tặng
+  const [shortDescNote, setShortDescNote] = useState('');           // 6. Ghi chú
   
   // Shipping
   const [weight, setWeight] = useState(0);
@@ -297,6 +392,77 @@ const AddProductPage = () => {
       };
       fetchData();
   }, []);
+
+  // Spec [0018]: prefill form khi editId có. Map từ Product schema -> state.
+  // Một số field phức tạp (tiers/variants) chỉ cố gắng best-effort, nếu schema
+  // attributes khác giữa create vs read thì admin có thể phải tinh chỉnh sau.
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res: any = await api.get(`/products/${editId}`);
+        const product = res?.data || res;
+        if (!product || cancelled) return;
+
+        setName(product.name ?? '');
+        setDesc(product.description ?? '');
+        setSinglePrice(Number(product.price ?? 0));
+        setSingleStock(Number(product.stock ?? 0));
+        setCategoryId(product.categoryId ?? '');
+        setShopCategoryId(product.shopCategoryId ?? '');
+        setBrand(product.brand ?? '');
+        setOrigin(product.origin ?? '');
+        setWeight(Number(product.weight ?? 0));
+        setLength(Number(product.length ?? 0));
+        setWidth(Number(product.width ?? 0));
+        setHeight(Number(product.height ?? 0));
+
+        // images: schema lưu Json (array URL string hoặc array {url})
+        if (Array.isArray(product.images)) {
+          const urls = product.images.map((i: any) => typeof i === 'string' ? i : i.url).filter(Boolean);
+          setImages(urls);
+        }
+        if (Array.isArray(product.videos)) {
+          const urls = product.videos.map((v: any) => typeof v === 'string' ? v : v.url).filter(Boolean);
+          setVideos(urls);
+        }
+
+        // Spec [0018]: shortDesc 6 fields
+        if (product.shortDesc) {
+          try {
+            const sd = typeof product.shortDesc === 'string' ? JSON.parse(product.shortDesc) : product.shortDesc;
+            setShortDescBrand(sd.brand ?? '');
+            setShortDescFeatures(sd.features ?? '');
+            setShortDescBenefits(sd.benefits ?? '');
+            setShortDescRecipient(sd.recipient ?? '');
+            setShortDescOccasion(sd.occasion ?? '');
+            setShortDescNote(sd.note ?? '');
+          } catch {/* ignore */}
+        }
+
+        // attributes JSON string -> parse và spread vào state riêng
+        if (product.attributes) {
+          try {
+            const a = typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes;
+            if (a.material) setMaterial(a.material);
+            if (a.style) setStyle(a.style);
+            if (a.gtin) setGtin(a.gtin);
+            if (a.condition) setCondition(a.condition);
+            if (a.conditionPercent) setConditionPercent(a.conditionPercent);
+          } catch {/* ignore */}
+        }
+
+        if (Array.isArray(product.crossSellProducts)) {
+          setCrossSellIds(product.crossSellProducts.map((p: any) => p.id));
+        }
+      } catch (e: any) {
+        console.error('[AddProductPage] prefill fail:', e);
+        toast.error('Không tải được dữ liệu sản phẩm để chỉnh sửa');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editId]);
 
   const handleSizeChartCreated = (url: string) => {
     setSizeChartImage(url);
@@ -446,6 +612,8 @@ const AddProductPage = () => {
       return rows;
   }, [tiers]);
 
+  // hooks-fix wiki 0031: cố ý bỏ skuRows khỏi deps — effect sync skuRows từ tiers,
+  // thêm skuRows sẽ infinite loop vì setSkuRows lại trigger chính nó.
   useEffect(() => {
       const newRows = generateSkuMatrix();
       const merged = newRows.map(r => {
@@ -453,6 +621,7 @@ const AddProductPage = () => {
           return exist ? exist : r;
       });
       setSkuRows(merged);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiers, generateSkuMatrix]);
 
   const updateSkuRow = (idx: number, field: keyof SkuRow, val: any) => {
@@ -504,15 +673,25 @@ const AddProductPage = () => {
               width: Number(width),
               height: Number(height),
               
-              attributes: JSON.stringify({ 
-                  material, 
-                  style, 
-                  gtin, 
+              attributes: JSON.stringify({
+                  material,
+                  style,
+                  gtin,
                   // [UPGRADE] Gửi thêm thông tin tình trạng
                   condition,
                   conditionPercent: condition === 'used' ? conditionPercent : 100,
-                  ...extraAttributes 
+                  ...extraAttributes
               }),
+
+              // Spec [0018]: shortDesc 6 fields lưu Json (BE đã thêm cột Product.shortDesc)
+              shortDesc: {
+                  brand: shortDescBrand,
+                  features: shortDescFeatures,
+                  benefits: shortDescBenefits,
+                  recipient: shortDescRecipient,
+                  occasion: shortDescOccasion,
+                  note: shortDescNote,
+              },
               
               tiers: validTiers,
               variations: validVariations,
@@ -521,13 +700,19 @@ const AddProductPage = () => {
               systemTags: [],
           };
           
-          await api.post('/seller/products', payload);
-          alert('Đăng sản phẩm thành công!');
+          if (isEditMode && editId) {
+            // Spec [0018]: edit -> PATCH endpoint, prefill form đã load data cũ.
+            await api.patch(`/seller/products/${editId}`, payload);
+            toast.success('Cập nhật sản phẩm thành công!');
+          } else {
+            await api.post('/seller/products', payload);
+            toast.success('Đăng sản phẩm thành công!');
+          }
           router.push('/seller-dashboard/products/all');
 
       } catch (error: any) {
           console.error("LỖI KHI SUBMIT:", error);
-          alert('Lỗi: ' + (error.response?.data?.message || error.message));
+          toast.error('Lỗi: ' + (error.response?.data?.message || error.message));
       } finally {
           setIsLoading(false);
       }
@@ -537,8 +722,14 @@ const AddProductPage = () => {
     <div className="w-full max-w-[1440px] mx-auto pb-32">
         {/* Header Title */}
         <div className="mb-6">
-             <h1 className="text-2xl font-bold text-gray-900">Thêm sản phẩm mới</h1>
-             <p className="text-sm text-gray-500 mt-1">Vui lòng điền đầy đủ thông tin để sản phẩm được duyệt nhanh nhất</p>
+             <h1 className="text-2xl font-bold text-gray-900">
+                {isEditMode ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
+             </h1>
+             <p className="text-sm text-gray-500 mt-1">
+                {isEditMode
+                    ? 'Cập nhật thông tin sản phẩm. Các thay đổi sẽ áp dụng ngay sau khi lưu.'
+                    : 'Vui lòng điền đầy đủ thông tin để sản phẩm được duyệt nhanh nhất'}
+             </p>
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -779,6 +970,17 @@ const AddProductPage = () => {
                   </div>
               </div>
 
+              {/* Spec [0018]: crawl brand từ URL Shopee/Tiki để auto-fill */}
+              <CrawlFromUrlBlock
+                  onApply={(data) => {
+                      if (data.brand) setBrand(data.brand);
+                      if (data.name && !name) setName(data.name);
+                      if (data.image && images.length === 0) setImages([data.image]);
+                      if (data.description && !desc) setDesc(data.description);
+                      toast.success(`Đã lấy dữ liệu từ ${data.source}`);
+                  }}
+              />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                   <div><FormLabel required>Thương hiệu</FormLabel><SelectField value={brand} onChange={setBrand} options={['No Brand', 'Nike', 'Adidas']} placeholder="Chọn thương hiệu" /></div>
                   <div><FormLabel required>Xuất xứ</FormLabel><SelectField value={origin} onChange={setOrigin} options={['Việt Nam', 'Trung Quốc', 'Hàn Quốc']} placeholder="Chọn xuất xứ" /></div>
@@ -796,6 +998,97 @@ const AddProductPage = () => {
                      <button onClick={() => setIsShowMoreAttributes(!isShowMoreAttributes)} className="flex items-center gap-2 text-orange-600 text-sm font-medium hover:bg-orange-50 px-3 py-2 rounded-lg transition-colors w-full justify-center border border-dashed border-orange-200">
                         {isShowMoreAttributes ? <><ChevronUp size={16} /> Thu gọn</> : <><ChevronDown size={16} /> Hiển thị thêm 14 thuộc tính khác</>}
                      </button>
+                  </div>
+              </div>
+          </SectionCard>
+
+          {/* Spec [0018]: Mô tả ngắn — 6 fields hiển thị nhanh trên trang SP.
+              Khác mô tả dài bên dưới: dùng để khoe nhanh "tặng cho ai - dịp gì - điểm nổi bật".
+              Lưu vào Product.shortDesc Json. Tất cả optional. */}
+          <SectionCard title="Mô tả ngắn (Giới thiệu nhanh)" id="short-desc">
+              <div className="mb-5 bg-amber-50 border border-amber-100 rounded-lg p-4 flex gap-3 items-start">
+                  <Info className="text-amber-500 shrink-0 mt-0.5" size={18} />
+                  <div>
+                      <p className="text-sm text-amber-800 font-medium">Hiển thị ngay đầu trang sản phẩm</p>
+                      <p className="text-xs text-amber-700 mt-1">Khách lướt qua đọc ngay phần này. Điền ngắn, đủ ý, có cảm xúc — đặc biệt là <strong>tặng ai</strong> và <strong>dịp nào</strong>.</p>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                  <div className="md:col-span-2">
+                      <FormLabel>Câu chuyện thương hiệu</FormLabel>
+                      <textarea
+                          value={shortDescBrand}
+                          onChange={(e) => setShortDescBrand(e.target.value)}
+                          maxLength={200}
+                          rows={2}
+                          placeholder="VD: Thương hiệu thủ công Việt với 10 năm kinh nghiệm làm gốm Bát Tràng..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                      />
+                      <div className="text-right text-xs text-gray-400 mt-1">{shortDescBrand.length}/200</div>
+                  </div>
+
+                  <div>
+                      <FormLabel>Đặc điểm nổi bật</FormLabel>
+                      <textarea
+                          value={shortDescFeatures}
+                          onChange={(e) => setShortDescFeatures(e.target.value)}
+                          maxLength={300}
+                          rows={3}
+                          placeholder="VD: Hộp gỗ óc chó nguyên khối, lót nhung đỏ, khắc tên miễn phí..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                      />
+                      <div className="text-right text-xs text-gray-400 mt-1">{shortDescFeatures.length}/300</div>
+                  </div>
+
+                  <div>
+                      <FormLabel>Lợi ích cho người nhận</FormLabel>
+                      <textarea
+                          value={shortDescBenefits}
+                          onChange={(e) => setShortDescBenefits(e.target.value)}
+                          maxLength={300}
+                          rows={3}
+                          placeholder="VD: Lưu giữ kỷ niệm, sang trọng, dùng được nhiều năm..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                      />
+                      <div className="text-right text-xs text-gray-400 mt-1">{shortDescBenefits.length}/300</div>
+                  </div>
+
+                  <div>
+                      <FormLabel>Phù hợp tặng cho</FormLabel>
+                      <input
+                          type="text"
+                          value={shortDescRecipient}
+                          onChange={(e) => setShortDescRecipient(e.target.value)}
+                          maxLength={150}
+                          placeholder="VD: Bố, sếp, đối tác, người thân U50..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
+                      />
+                  </div>
+
+                  <div>
+                      <FormLabel>Dịp tặng phù hợp</FormLabel>
+                      <input
+                          type="text"
+                          value={shortDescOccasion}
+                          onChange={(e) => setShortDescOccasion(e.target.value)}
+                          maxLength={150}
+                          placeholder="VD: Sinh nhật, kỷ niệm, Tết, khai trương, tân gia..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
+                      />
+                  </div>
+
+                  <div className="md:col-span-2">
+                      <FormLabel>Ghi chú thêm</FormLabel>
+                      <textarea
+                          value={shortDescNote}
+                          onChange={(e) => setShortDescNote(e.target.value)}
+                          maxLength={200}
+                          rows={2}
+                          placeholder="VD: Có hộp quà miễn phí, tặng kèm thiệp, gói trong 24h..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                      />
+                      <div className="text-right text-xs text-gray-400 mt-1">{shortDescNote.length}/200</div>
                   </div>
               </div>
           </SectionCard>
@@ -1033,12 +1326,16 @@ const AddProductPage = () => {
                 <div className="hidden md:flex items-center gap-2 text-sm text-gray-500"><CheckCircle2 size={16} className="text-green-500" />Đã lưu bản nháp lúc 12:30</div>
                 <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                     <button onClick={() => router.back()} className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all">Hủy bỏ</button>
-                    <button 
+                    <button
                         onClick={handleSubmit}
                         disabled={isLoading || isUploading}
                         className="px-8 py-2.5 rounded-lg bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/30 hover:bg-orange-700 hover:shadow-orange-600/40 hover:-translate-y-0.5 transition-all disabled:opacity-50"
                     >
-                        {isLoading ? 'Đang lưu...' : (isUploading ? 'Đang tải ảnh...' : 'Lưu & Hiển thị')}
+                        {isLoading
+                            ? 'Đang lưu...'
+                            : (isUploading
+                                ? 'Đang tải ảnh...'
+                                : (isEditMode ? 'Cập nhật sản phẩm' : 'Lưu & Hiển thị'))}
                     </button>
                 </div>
            </div>

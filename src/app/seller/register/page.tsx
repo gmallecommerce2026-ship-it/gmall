@@ -236,7 +236,7 @@ const SellerRegisterPage = () => {
             </div>
 
             <div className="max-w-[600px] mx-auto w-full space-y-5">
-                <AuthInput label="Tên Shop" value={formData.shopName} onChange={(e) => handleInputChange('shopName', e.target.value)} required placeholder="VD: LoveGifts Official" />
+                <AuthInput label="Tên Shop" value={formData.shopName} onChange={(e) => handleInputChange('shopName', e.target.value)} required placeholder="VD: GMall Official" />
                 
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-gray-700">Địa chỉ kho hàng (Quan trọng)</label>

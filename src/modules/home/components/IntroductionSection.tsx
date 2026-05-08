@@ -15,7 +15,7 @@ export const IntroductionSection = () => {
         <div className={`relative overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[1000px]' : 'max-h-[100px] md:max-h-[110px]'}`}>
           <div className="text-gray-600 text-[13px] md:text-[14px] leading-7 md:leading-relaxed space-y-3 text-justify md:text-center">
             <p>
-              Chào mừng bạn đến với <strong className="text-brand-orange">[Tên Website]</strong> – nền tảng mua sắm trực tuyến hàng đầu chuyên cung cấp các sản phẩm công nghệ và quà tặng độc đáo. Tại đây, chúng tôi không chỉ bán hàng, mà còn mang đến những giải pháp công nghệ tiên tiến nhất.
+              Chào mừng bạn đến với <strong className="text-brand-orange">GMall</strong> – nền tảng mua sắm trực tuyến hàng đầu chuyên cung cấp các sản phẩm công nghệ và quà tặng độc đáo. Tại đây, chúng tôi không chỉ bán hàng, mà còn mang đến những giải pháp công nghệ tiên tiến nhất.
             </p>
             <p>
               Chúng tôi cam kết mang đến trải nghiệm mua sắm liền mạch, giao hàng nhanh chóng và dịch vụ chăm sóc khách hàng tận tâm 24/7. Với hệ thống tích điểm đổi quà hấp dẫn và hàng ngàn voucher giảm giá được tung ra mỗi ngày, chúng tôi hy vọng sẽ trở thành người bạn đồng hành tin cậy của bạn trên mọi hành trình mua sắm.

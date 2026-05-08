@@ -56,7 +56,8 @@ export const mapShopeeToSystemProduct = (shopeeData: any): ShopeeMappedData => {
     brand: item.brand,
     attributes: attributes, // Map thêm attributes
     tiers,
-    variations,
+    // TS-fix wiki 0031: Product type dùng `variants` (không phải `variations`)
+    variants: variations,
     rating: item.item_rating?.rating_star || 0,
     salesCount: item.historical_sold || 0,
     

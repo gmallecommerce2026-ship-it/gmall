@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { FiMonitor, FiSmartphone, FiPrinter, FiMessageCircle, FiPhoneCall, FiMail } from 'react-icons/fi';
 import Button from '@/components/ui/Button';
+import { BRAND } from '@/lib/brand';
 
 const FAQ_ITEMS = [
   {
@@ -91,7 +93,14 @@ export default function TechSupportPage() {
                     <div>
                         <h4 className="font-semibold text-gray-900">Live Chat</h4>
                         <p className="text-xs text-gray-500 mb-2">Phản hồi trung bình: 5 phút</p>
-                        <Button variant="outline" className="!py-2 !px-4 text-sm w-full">Chat với Admin</Button>
+                        {/* #66: link tới trang messages — module chat đã có sẵn,
+                            seller chọn admin trong contact list. Đỡ phải làm
+                            widget chat embed riêng, tận dụng infra hiện có. */}
+                        <Link href="/messages?role=admin" className="block">
+                          <Button variant="outline" className="!py-2 !px-4 text-sm w-full">
+                            Chat với Admin
+                          </Button>
+                        </Link>
                     </div>
                 </div>
 
@@ -117,7 +126,7 @@ export default function TechSupportPage() {
                     <div>
                         <h4 className="font-semibold text-gray-900">Email hỗ trợ</h4>
                         <p className="text-xs text-gray-500 mb-2">Phản hồi trong 24h</p>
-                        <a href="mailto:support@g-mall.vn" className="text-sm font-medium text-blue-600 hover:underline">support@g-mall.vn</a>
+                        <a href={`mailto:${BRAND.email}`} className="text-sm font-medium text-blue-600 hover:underline">{BRAND.email}</a>
                     </div>
                 </div>
 

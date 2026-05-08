@@ -12,14 +12,14 @@ const ProductAboutSection = () => {
         {/* Cột Ảnh */}
         <img
           src="/assets-product/ImageAsset1.png"
-          alt="LoveGifts Promotion"
+          alt="GMall Promotion"
           className="w-full h-auto max-h-[430px] object-cover rounded-2xl"
         />
 
         {/* Cột Text */}
         <div className="flex flex-col items-start gap-6">
           <h2 className="font-sans text-4xl font-bold text-brand-dark-green tracking-wide">
-            lovegifts
+            GMall
           </h2>
           
           {/* Thêm overflow-hidden và transition-all */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button"; // Tận dụng component có sẵn
 import { Plus, Search, Edit, Trash2, Filter, Eye, MoreHorizontal } from "lucide-react";
@@ -21,13 +21,13 @@ export default function BrandsClient() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Giả lập fetch data
-  const fetchBrands = async () => {
+  // hooks-fix wiki 0031: wrap in useCallback + add to effect deps (was set-state-in-effect + missing dep)
+  const fetchBrands = useCallback(async () => {
     setLoading(true);
     try {
-      // const res = await apiClient.get('/brands'); 
+      // const res = await apiClient.get('/brands');
       // setBrands(res);
-      
+
       // MOCK DATA để bạn thấy giao diện ngay
       setTimeout(() => {
         setBrands([
@@ -41,11 +41,13 @@ export default function BrandsClient() {
       console.error("Lỗi tải thương hiệu", error);
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // hooks-fix wiki 0031: fetchBrands là async load; setState bên trong là expected
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBrands();
-  }, []);
+  }, [fetchBrands]);
 
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">

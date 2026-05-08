@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { apiClient } from '@/lib/api/ApiClient';
 import { useUserStore } from './useUserStore';
+// Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
+import { API_BASE_URL } from '@/lib/api/config';
 
 export interface Message {
   id: string;
@@ -65,12 +67,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const currentSocket = get().socket;
     if (currentSocket && currentSocket.connected) return;
 
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const socketUrl = API_BASE_URL;
     
+    // B3.3 fix: thêm 'polling' làm fallback. Chỉ dùng 'websocket' thuần sẽ
+    // chết nếu proxy (Nginx/Render) không route WS correctly, khiến user
+    // thấy chat "không gửi được" mà không hiểu vì sao.
     const newSocket = io(socketUrl, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
-      withCredentials: true, 
+      withCredentials: true,
     });
 
     newSocket.on('receive_message', (msg: any) => {
@@ -139,13 +144,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const isExactDuplicate = currentMsgs.some(m => m.id === incomingMsg.id);
         if (isExactDuplicate) return;
 
+        // B3.3 fix: merge theo clientTempId (BE echo về), không match theo
+        // content. Trước đây nếu user gõ 2 tin "OK" liên tiếp thì chỉ 1 tin
+        // được replace đúng, tin còn lại bị duplicate.
         let isOptimisticMerged = false;
         if (currentUserId && incomingMsg.senderId === currentUserId) {
-            const optimisticIndex = currentMsgs.findIndex(m => 
-                m.content === incomingMsg.content && 
-                m.type === incomingMsg.type &&
-                m.id !== incomingMsg.id 
-            );
+            const tempIdFromServer = (msg as any).clientTempId;
+            const optimisticIndex = tempIdFromServer
+              ? currentMsgs.findIndex((m: any) => m.clientTempId === tempIdFromServer)
+              : currentMsgs.findIndex(m =>
+                  m.content === incomingMsg.content &&
+                  m.type === incomingMsg.type &&
+                  m.id !== incomingMsg.id
+                );
 
             if (optimisticIndex !== -1) {
                 const updatedMsgs = [...currentMsgs];
@@ -173,7 +184,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 const targetConv = { ...updatedConversations[targetConvIndex] };
                 targetConv.lastMessage = incomingMsg.type === 'IMAGE' ? '[Hình ảnh]' : incomingMsg.content;
                 targetConv.lastMessageAt = incomingMsg.createdAt;
-                
+
                 if (incomingMsg.senderId !== currentUserId && activeConversationId !== targetId) {
                     targetConv.unreadCount = (targetConv.unreadCount || 0) + 1;
                 }
@@ -185,13 +196,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
         }
     });
-    
+
+    // B3.3 fix: khi BE report save fail, flag tin optimistic là failed để UI
+    // hiển thị "!" + nút Gửi lại (UI dành cho tin này - có field `failed`).
+    newSocket.on('message_error', (err: { clientTempId?: string; message?: string }) => {
+        console.error('Message send failed:', err);
+        if (!err.clientTempId) return;
+        const { messages } = get();
+        const next: Record<string, Message[]> = {};
+        for (const [convId, msgs] of Object.entries(messages)) {
+            next[convId] = msgs.map((m: any) =>
+                m.clientTempId === err.clientTempId
+                    ? { ...m, pending: false, failed: true, error: err.message }
+                    : m,
+            );
+        }
+        set({ messages: next });
+    });
+
     set({ socket: newSocket });
   },
 
   disconnectSocket: () => {
     const socket = get().socket;
     if (socket) {
+      // Fix BUG-FE-7 (wiki 0030): removeAllListeners() TRƯỚC disconnect().
+      // Trước đây chỉ disconnect() — internal listeners (receive_message,
+      // message_error...) vẫn registered trên socket instance. Khi
+      // connectSocket() chạy lại (logout/login, HMR dev), .on() đăng ký thêm
+      // → mỗi event nhận N lần → tin nhắn duplicate trong UI. Liên quan B3.3
+      // (wiki 0014) — fix BE đã làm, fix FE bù phần listener leak.
+      socket.removeAllListeners();
       socket.disconnect();
     }
     set({ socket: null });
@@ -335,10 +370,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!socket) return;
 
     let receiverId = 'AI_ASSISTANT';
-    let targetConvId = 'temp_ai_chat'; 
+    let targetConvId = 'temp_ai_chat';
 
     if (activeConversationId && activeConversationId !== 'temp_ai_chat') {
-        // 👇 3. UPDATE LOGIC LẤY RECEIVER ID (Hỗ trợ cả Shop & User)
         if (activeConversationId.startsWith('temp_shop_')) {
             receiverId = activeConversationId.replace('temp_shop_', '');
         } else if (activeConversationId.startsWith('temp_user_')) {
@@ -352,28 +386,36 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (receiverId === 'AI_ASSISTANT') set({ isAiTyping: true });
 
+    // B3.3 fix: clientTempId để identify tin optimistic. BE echo lại value
+    // này trong receive_message -> FE thay thế chính xác, không cần match
+    // theo content (dễ sai khi user gõ 2 tin giống nhau).
+    const clientTempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
     const payload = {
       receiverId: receiverId,
       content,
       type,
+      clientTempId,
       ...metadata
     };
 
     socket.emit('send_message', payload);
 
-    const tempMessage: Message = {
-        id: Date.now().toString(),
+    const tempMessage: Message & { clientTempId?: string; pending?: boolean } = {
+        id: clientTempId,
         senderId: useUserStore.getState().user?.id || 'ME',
         content: content,
         type: type,
         createdAt: new Date().toISOString(),
-    };
-    
+        clientTempId,
+        pending: true,
+    } as any;
+
     const { messages } = get();
     set({
         messages: {
             ...messages,
-            [targetConvId]: [...(messages[targetConvId] || []), tempMessage] 
+            [targetConvId]: [...(messages[targetConvId] || []), tempMessage]
         }
     });
   },

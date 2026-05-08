@@ -10,8 +10,9 @@ import ProductSortBar from "@/modules/product/components/ProductSortBar";
 import ProductFilterSidebar from "@/modules/product/components/ProductFilterSidebar";
 import ProductGridCard from "@/modules/product/components/ProductGridCard";
 import PromoBanner from "@/modules/product/components/PromoBanner";
-import Pagination from "@/components/ui/Pagination"; 
+import Pagination from "@/components/ui/Pagination";
 import { CategoryService } from "@/services/category.service";
+import { humanizeTag } from "@/lib/tag-data";
 
 interface SearchProductPageProps {
   initialCategorySlug?: string;
@@ -45,11 +46,16 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [categoryDisplayName, setCategoryDisplayName] = useState("");
+  // Spec [0018]: filterKeys per category — đọc từ Category.filterKeys, truyền xuống sidebar
+  const [categoryFilterKeys, setCategoryFilterKeys] = useState<any[]>([]);
 
-  // Logic lấy tên danh mục hiển thị
+  // Logic lấy tên danh mục hiển thị + filterKeys
   useEffect(() => {
     const fetchCategoryName = async () => {
-        if (!categorySlug) return;
+        if (!categorySlug) {
+            setCategoryFilterKeys([]);
+            return;
+        }
         try {
             const tree = await CategoryService.getTree();
             const findCategoryBySlug = (items: any[], slug: string): any => {
@@ -65,11 +71,18 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
             const cat = findCategoryBySlug(tree, categorySlug);
             if (cat) {
                 setCategoryDisplayName(cat.name);
+                // Parse filterKeys (Json column có thể là string hoặc array)
+                let fk: any[] = [];
+                try {
+                    fk = typeof cat.filterKeys === 'string' ? JSON.parse(cat.filterKeys) : (Array.isArray(cat.filterKeys) ? cat.filterKeys : []);
+                } catch { fk = []; }
+                setCategoryFilterKeys(fk);
             } else {
                 const fallbackName = categorySlug.split('-')
                     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                     .join(' ');
                 setCategoryDisplayName(fallbackName);
+                setCategoryFilterKeys([]);
             }
         } catch (e) {
             console.error(e);
@@ -82,9 +95,14 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const breadcrumbItems = useMemo(() => {
     const items = [{ name: "Trang chủ", href: "/" }];
     if (categorySlug) {
-        items.push({ name: categoryDisplayName || categorySlug, href: "#" });
+        // Khi categoryDisplayName chưa fetch xong, fallback NHẸ: human-ize slug
+        // (thay '-' bằng space + capitalize) thay vì hiện UUID/slug raw — fix #44.
+        const fallback = (categorySlug || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        items.push({ name: categoryDisplayName || fallback, href: "#" });
     } else {
-        if (tag) items.push({ name: `Tag: ${tag}`, href: "#" });
+        // #28: dùng humanizeTag để map tag slug → tên tiếng Việt thay vì hiện
+        // chuỗi raw kiểu "Tag: occasion_14_2_valentine".
+        if (tag) items.push({ name: humanizeTag(tag), href: "#" });
         if (query) items.push({ name: `Tìm: "${query}"`, href: "#" });
     }
     return items;
@@ -148,6 +166,9 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
     };
 
     fetchProducts();
+    // hooks-fix wiki 0031: searchParams chỉ dùng cho log debug; thêm vào deps sẽ
+    // gây refetch khi URL params chuyển dạng (vd hash) — disable rule.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, sort, page, tag, minPrice, maxPrice, rating, locations, categorySlug]);
 
   const pageTitle = categorySlug 
@@ -170,7 +191,7 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
 
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           <div className="w-full lg:w-[250px] flex-shrink-0 hidden lg:block">
-            <ProductFilterSidebar />
+            <ProductFilterSidebar dynamicFilters={categoryFilterKeys} />
           </div>
 
           <div className="flex-1 min-w-0">

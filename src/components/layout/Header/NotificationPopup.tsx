@@ -8,7 +8,7 @@ const NOTIFICATIONS = [
   {
     id: 1,
     title: "Đơn hàng #DH123456 đã được giao thành công",
-    desc: "Cảm ơn bạn đã mua sắm tại LoveGifts. Hãy đánh giá sản phẩm để nhận 200 xu nhé!",
+    desc: "Cảm ơn bạn đã mua sắm tại GMall. Hãy đánh giá sản phẩm để nhận 200 xu nhé!",
     image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=100&q=80",
     isRead: false,
     time: "12:30 25/12/2025"

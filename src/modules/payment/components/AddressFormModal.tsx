@@ -90,16 +90,19 @@ const AddressFormModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initial
   }, []);
 
   // 2. Load Districts
+  // hooks-fix wiki 0031: chỉ trigger khi formData.provinceId thay đổi — initialData/provinces
+  // chỉ dùng để compute label ban đầu; thêm sẽ gây re-fetch không cần thiết. Disable rule.
   useEffect(() => {
     if (formData.provinceId && (!initialData || formData.provinceId !== initialData.provinceId)) {
         setLoadingLoc(prev => ({ ...prev, d: true }));
         apiClient.get(`/ghn/districts?province_id=${formData.provinceId}`)
             .then(res => setDistricts(res?.map((d:any) => ({ value: d.DistrictID, label: d.DistrictName })) || []))
             .finally(() => setLoadingLoc(prev => ({ ...prev, d: false })));
-        
+
         const pLabel = provinces.find(p => p.value == formData.provinceId)?.label || '';
         setSelectedLabels(prev => ({ ...prev, province: pLabel }));
-    } 
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.provinceId]);
 
   // 3. Load Wards
@@ -113,17 +116,19 @@ const AddressFormModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initial
         const dLabel = districts.find(d => d.value == formData.districtId)?.label || '';
         setSelectedLabels(prev => ({ ...prev, district: dLabel }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.districtId]);
 
   // 4. Update Labels & Map Query (FIXED LOGIC)
+  // hooks-fix wiki 0031: thêm mapQuery vào deps; guard `if(newQuery !== mapQuery)` ngăn loop
   useEffect(() => {
      if (formData.wardCode) {
          const wLabel = wards.find(w => w.value == formData.wardCode)?.label || '';
          const dLabel = districts.find(d => d.value == formData.districtId)?.label || '';
          const pLabel = provinces.find(p => p.value == formData.provinceId)?.label || '';
-         
+
          setSelectedLabels({ province: pLabel, district: dLabel, ward: wLabel });
-         
+
          // FIX DEADLOCK: Chỉ setMapQuery khi có đủ 3 cấp và khác query cũ
          if(pLabel && dLabel && wLabel) {
              const newQuery = `${wLabel}, ${dLabel}, ${pLabel}`;
@@ -132,7 +137,7 @@ const AddressFormModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initial
              }
          }
      }
-  }, [formData.wardCode, formData.districtId, formData.provinceId, wards, districts, provinces]);
+  }, [formData.wardCode, formData.districtId, formData.provinceId, wards, districts, provinces, mapQuery]);
 
   const handleSubmit = async () => {
       try {

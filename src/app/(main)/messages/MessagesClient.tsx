@@ -14,7 +14,9 @@ export default function MessagesClient() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  useEffect(() => { loadConversations(); }, []);
+  // hooks-fix wiki 0031: thêm loadConversations vào deps. Hàm từ Zustand store
+  // ổn định identity nên không gây re-run, an toàn để add.
+  useEffect(() => { loadConversations(); }, [loadConversations]);
 
   // Hàm xử lý tìm kiếm (nên dùng debounce nếu có thể)
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {

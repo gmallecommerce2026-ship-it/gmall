@@ -103,7 +103,14 @@ export default function PoliciesPage() {
 
       <div className="mt-12 p-6 bg-gray-50 rounded-xl text-center">
           <p className="text-gray-500 text-sm mb-4">Cập nhật lần cuối: 01/01/2026</p>
-          <button className="text-brand-orange hover:text-orange-700 font-medium text-sm underline">
+          {/* #68: dùng window.print() — browser tự sinh PDF qua "Save as PDF"
+              printer, không cần thêm jsPDF/html2pdf (giảm bundle ~150KB).
+              CSS @media print có thể thêm sau để ẩn header/sidebar khi in. */}
+          <button
+              type="button"
+              onClick={() => typeof window !== 'undefined' && window.print()}
+              className="text-brand-orange hover:text-orange-700 font-medium text-sm underline"
+          >
               Tải xuống bản PDF đầy đủ
           </button>
       </div>

@@ -35,19 +35,24 @@ export default function ProductPickerModal({ isOpen, onClose, initialSelectedIds
   const debouncedSearch = useDebounce(search, 500);
 
   // Reset state khi mở modal
+  // hooks-fix wiki 0031: cố ý chỉ chạy khi đổi isOpen (init selectedIds từ prop chỉ
+  // 1 lần / mỗi lần mở). Disable rule.
   useEffect(() => {
     if (isOpen) {
       setSelectedIds(new Set(initialSelectedIds));
       setPage(1);
       fetchProducts(1, debouncedSearch, true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Fetch khi search thay đổi
+  // hooks-fix wiki 0031: deliberate dep set; disable for isOpen.
   useEffect(() => {
     if (!isOpen) return;
     setPage(1);
     fetchProducts(1, debouncedSearch, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   const fetchProducts = async (currentPage: number, keyword: string, isReset: boolean) => {

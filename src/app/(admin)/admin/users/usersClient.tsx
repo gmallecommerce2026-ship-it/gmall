@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { AdminService } from '@/services/AdminService';
 import { AdminUser } from '@/types/admin';
 import { 
@@ -120,25 +120,26 @@ export default function UsersClient() {
   }, []);
 
   // 2. Fetch Users từ Server
-  const fetchUsers = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const params = { 
-          page, 
-          limit: 10, 
+      const params = {
+          page,
+          limit: 10,
           search: debouncedSearch,
           // Gửi đúng role lên Server (BUYER/SELLER/ADMIN)
           role: roleFilter,
           minPoints: debouncedMinPoint || undefined,
           maxPoints: debouncedMaxPoint || undefined,
       };
-      
+
       const response: any = await AdminService.getUsers(params);
-      
+
       if (response && (response.data || Array.isArray(response))) {
         const dataList = Array.isArray(response) ? response : response.data;
         const meta = response.meta || {};
-        
+
         setUsers(dataList);
         setTotalPages(meta.totalPages || 1);
         setTotalUsers(meta.total || dataList.length);
@@ -153,7 +154,7 @@ export default function UsersClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, debouncedSearch, roleFilter, debouncedMinPoint, debouncedMaxPoint]);
 
   // --- EFFECT HANDLERS ---
   
@@ -163,9 +164,9 @@ export default function UsersClient() {
   }, [debouncedSearch, debouncedMinPoint, debouncedMaxPoint]);
   
   // Gọi API khi các dependency thay đổi
-  useEffect(() => { 
-      fetchUsers(); 
-  }, [page, debouncedSearch, roleFilter, debouncedMinPoint, debouncedMaxPoint]);
+  useEffect(() => {
+      fetchUsers();
+  }, [fetchUsers]);
 
   // --- ACTIONS HANDLERS ---
 
@@ -231,7 +232,8 @@ export default function UsersClient() {
       }
       try {
           setCreateLoading(true);
-          await AdminService.createUser(formData);
+          // TS-fix wiki 0031: CreateUserForm shape match CreateUserDto qua cast (BE accept extra `phone`,`shopName`)
+          await AdminService.createUser(formData as any);
           toast.success(`Đã tạo ${formData.role === 'SELLER' ? 'Seller & Shop' : 'người dùng'} thành công!`);
           setIsCreateModalOpen(false);
           setFormData(INITIAL_FORM); // Reset form về mặc định (BUYER)

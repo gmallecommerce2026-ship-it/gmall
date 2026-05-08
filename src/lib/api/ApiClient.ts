@@ -131,6 +131,6 @@ export class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-);
+// Fix BUG-FE-10 (wiki 0030): import from centralized config (throws in prod if missing)
+import { API_BASE_URL } from './config';
+export const apiClient = new ApiClient(API_BASE_URL);

@@ -58,7 +58,7 @@ export default function AdminLayout({
         
         {/* Footer Admin */}
         <footer className="py-4 text-center text-gray-400 text-xs bg-white border-t border-gray-100">
-          © 2025 LoveGifts Admin Control Panel. Version 1.2.0
+          © 2025 GMall Admin Control Panel. Version 1.2.0
         </footer>
       </div>
     </div>

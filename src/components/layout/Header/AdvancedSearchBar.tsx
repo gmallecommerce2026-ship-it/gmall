@@ -1,13 +1,14 @@
 // src/components/layout/Header/AdvancedSearchBar.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTracking, EventType } from '@/hooks/useTracking';
 import { HeaderIcons as Icons } from './HeaderIcons';
 import { HOT_KEYWORDS, SUGGESTED_PRODUCTS, SEARCH_BANNERS } from './constants';
 import { useDebounce } from '@/hooks/useDebounce';
+import { api } from '@/services/api';
 // Giả sử ApiClient export default hoặc export class static. 
 // Nếu lỗi import, hãy kiểm tra lại file ApiClient.ts của bạn.
 import { apiClient, ApiClient } from '@/lib/api/ApiClient'; 
@@ -30,42 +31,79 @@ const AdvancedSearchBar = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
 
   // --- EFFECT: GỌI API KHI TYPING ---
+  // Fix BUG-FE-2 (wiki 0030): AbortController + cleanup. Trước đây gõ "iphone"
+  // (request A chậm) rồi gõ "iphone 15" (request B nhanh hơn) → B về trước rồi
+  // A về sau ghi đè kết quả của B → user thấy gợi ý sai keyword.
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      // Nếu không có từ khóa, clear danh sách gợi ý
-      if (!debouncedKeyword.trim()) {
-        setSuggestedProducts([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        // Gọi API search public
-        const res = await apiClient.get(`/store/products`, { 
-            params: { 
-                search: debouncedKeyword, 
-                limit: 6 
-            } 
-        });
-        setSuggestedProducts(res.data || []);
-      } catch (error) {
-        console.error("Search suggestion error", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (showSuggestions) {
-        fetchSuggestions();
+    if (!showSuggestions) return;
+    if (!debouncedKeyword.trim()) {
+      // hooks-fix wiki 0031: clear là legitimate reset on dep change
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSuggestedProducts([]);
+      return;
     }
+
+    const controller = new AbortController();
+    setIsLoading(true);
+    apiClient
+      .get(`/store/products`, {
+        params: { search: debouncedKeyword, limit: 6 },
+        signal: controller.signal,
+      })
+      .then((res) => {
+        setSuggestedProducts(res.data || []);
+      })
+      .catch((error) => {
+        // axios cancellation: error.code === 'ERR_CANCELED' hoặc error.name === 'CanceledError'
+        if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') return;
+        console.error("Search suggestion error", error);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    // Cleanup: cancel request đang in-flight khi keyword đổi → kết quả cũ không
+    // ghi đè state mới.
+    return () => controller.abort();
   }, [debouncedKeyword, showSuggestions]);
   
+  // --- EFFECT: LOAD TRENDING KEYWORDS từ BE (#20 + #38) ---
+  // Cache-by-default ở BE (5 phút) nên refetch mỗi lần dropdown mở chấp nhận được.
+  // Fallback hardcoded HOT_KEYWORDS nếu BE down hoặc fetch fail.
+  const [trendingKw, setTrendingKw] = useState<{ keyword: string; count: number }[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<{ keyword: string; count: number }[]>('/tracking/trending-keywords?limit=8')
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) setTrendingKw(rows);
+      })
+      .catch(() => {
+        // Silent fail — fallback to HOT_KEYWORDS hardcoded.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  // Item shape compat với HOT_KEYWORDS: { id, text, isHot }
+  const displayHotKeywords = useMemo(() => {
+    if (!trendingKw || trendingKw.length === 0) return HOT_KEYWORDS;
+    return trendingKw.map((r, idx) => ({
+      id: idx + 1,
+      text: r.keyword,
+      isHot: idx < 3,
+    }));
+  }, [trendingKw]);
+
   // --- EFFECT: LOAD HISTORY ---
+  // hooks-fix wiki 0031: load từ localStorage on mount — sync from external system,
+  // legitimate setState in effect.
   useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("search_history");
       if (saved) {
         try {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setHistory(JSON.parse(saved));
         } catch (e) {
           console.error("Lỗi parse history", e);
@@ -221,7 +259,7 @@ const AdvancedSearchBar = () => {
                 <Icons.Fire className="w-3.5 h-3.5 text-red-500" /> Xu hướng
               </h3>
               <div className="space-y-1">
-                {HOT_KEYWORDS.map((item, index) => (
+                {displayHotKeywords.map((item, index) => (
                   <div
                     key={item.id}
                     onClick={() => handleSearch(item.text)}

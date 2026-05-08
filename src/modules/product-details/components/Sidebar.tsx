@@ -49,6 +49,31 @@ const Sidebar: React.FC<SidebarProps> = ({ vouchers, featuredProduct }) => {
           </div>
         </div>
       )}
+
+      {/* 3. KHỐI CAM KẾT — fix #5: tránh sidebar trống bên phải khi không có
+          voucher và không có sản phẩm nổi bật. Cam kết là static, không phụ
+          thuộc data → luôn render được, đỡ chiếm whitespace.  */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+          <h3 className="text-base font-bold text-gray-900">Cam kết của GMall</h3>
+        </div>
+        <ul className="p-4 text-sm text-gray-700 space-y-2.5">
+          {[
+            { icon: "🛡️", title: "Bảo hành chính hãng", desc: "Hỗ trợ đổi trả 7 ngày" },
+            { icon: "🚚", title: "Miễn phí vận chuyển", desc: "Cho đơn từ 199.000đ" },
+            { icon: "💎", title: "Sản phẩm chất lượng", desc: "Đã qua kiểm duyệt" },
+            { icon: "💬", title: "Hỗ trợ 24/7", desc: "Chat trực tiếp với shop" },
+          ].map((c) => (
+            <li key={c.title} className="flex gap-3">
+              <span aria-hidden className="text-lg leading-none mt-0.5">{c.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 leading-tight">{c.title}</p>
+                <p className="text-xs text-gray-500 leading-tight mt-0.5">{c.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

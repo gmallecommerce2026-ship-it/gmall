@@ -59,6 +59,8 @@ export default function ProductSelector({ selectedIds, onChange, shopId, onShopC
   }, [shopId]);
 
   // [NEW] Fetch chi tiết sản phẩm cũ khi mới mount (để hiển thị đúng shop của các ID đã lưu từ trước)
+  // hooks-fix wiki 0031: chạy 1 lần khi mount với selectedIds đầu tiên — tránh re-run
+  // làm reset selectedDetails khi user thao tác. Disable rule.
   useEffect(() => {
     if (selectedIds.length > 0 && selectedDetails.length === 0) {
         const fetchExistingDetails = async () => {
@@ -69,7 +71,7 @@ export default function ProductSelector({ selectedIds, onChange, shopId, onShopC
                 // Ở đây tôi dùng tạm endpoint giả định
                 const res = await apiClient.post('/admin/products/get-by-ids', { ids: selectedIds });
                 const items = res.data || [];
-                
+
                 // Map data trả về vào state (Đảm bảo BE trả về object có relation shop)
                 const mappedItems = items.map((p: any) => ({
                     ...p,
@@ -85,26 +87,30 @@ export default function ProductSelector({ selectedIds, onChange, shopId, onShopC
         };
         fetchExistingDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Chỉ chạy 1 lần khi mount
 
   // --- 2. FETCH SHOPS ---
+  // hooks-fix wiki 0031: chạy 1 lần khi mount; thêm shopId/internalShopId/onShopChange
+  // sẽ làm refetch không cần thiết. Disable rule.
   useEffect(() => {
     const fetchShops = async () => {
       setLoadingShops(true);
       try {
-        const res = await apiClient.get('/shops', { params: { limit: 100 } }); 
+        const res = await apiClient.get('/shops', { params: { limit: 100 } });
         const items = Array.isArray(res?.data) ? res.data : (res?.items || []);
         setShops(items);
-        
+
         if (!shopId && !internalShopId && items.length > 0) {
           const firstShopId = items[0].id;
           setInternalShopId(firstShopId);
           if (onShopChange) onShopChange(firstShopId);
         }
-      } catch (error) { console.error(error); } 
+      } catch (error) { console.error(error); }
       finally { setLoadingShops(false); }
     };
     fetchShops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- 3. FETCH PRODUCTS ---

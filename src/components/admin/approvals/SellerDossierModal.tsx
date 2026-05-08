@@ -12,19 +12,20 @@ interface SellerDossierModalProps {
   onReject: () => void;
 }
 
+// hooks-fix wiki 0031: move InfoRow ra ngoài (was static-components — component định
+// nghĩa trong render reset state mỗi lần render)
+const InfoRow = ({ icon: Icon, label, value }: { icon: any, label: string, value: string }) => (
+  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+    <div className="mt-1 text-gray-400"><Icon size={18} /></div>
+    <div>
+      <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">{label}</p>
+      <p className="text-gray-800 font-medium mt-0.5">{value || "---"}</p>
+    </div>
+  </div>
+);
+
 export const SellerDossierModal = ({ shop, type, onClose, onApprove, onReject }: SellerDossierModalProps) => {
   const [activeTab, setActiveTab] = useState<'info' | 'legal'>('info');
-
-  // Helper render trường thông tin
-  const InfoRow = ({ icon: Icon, label, value }: { icon: any, label: string, value: string }) => (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <div className="mt-1 text-gray-400"><Icon size={18} /></div>
-      <div>
-        <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">{label}</p>
-        <p className="text-gray-800 font-medium mt-0.5">{value || "---"}</p>
-      </div>
-    </div>
-  );
 
   // Helper lấy ảnh (Support logic cũ của bạn)
   const getDocImage = (field: string) => {

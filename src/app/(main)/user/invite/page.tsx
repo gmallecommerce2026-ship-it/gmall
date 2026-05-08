@@ -40,11 +40,16 @@ export default function InvitePage() {
   // State cho copy link
   const [copied, setCopied] = useState(false);
   const { user } = useUserStore(); // Lấy user ID
-  
-  // Link ref động theo user ID
-  const referralLink = user?.id 
-    ? `https://lovegifts.vn/register?ref=${user.id}` 
-    : "https://lovegifts.vn/register";
+
+  // B3.6: dùng origin hiện tại (gmall.onrender.com, gmall.vn, localhost...) thay vì
+  // hardcode lovegifts.vn. SSR fallback về env NEXT_PUBLIC_SITE_URL hoặc empty string.
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_SITE_URL ?? '');
+  const referralLink = user?.id
+    ? `${origin}/register?ref=${user.id}`
+    : `${origin}/register`;
 
   // Khi chọn template, fill nội dung vào textarea
   useEffect(() => {
@@ -100,7 +105,7 @@ export default function InvitePage() {
          <div>
              <h2 className="text-lg font-bold text-gray-800 mb-2">Mời bạn thêm vui - Nhận quà cực chất</h2>
              <p className="text-sm text-gray-700 leading-relaxed">
-                Mời bạn bè tham gia đăng ký thành viên thành công tại Lovegifts, bạn sẽ được cộng <span className="font-bold text-brand-orange text-orange-600">20.000 điểm thưởng</span> vào tài khoản tích lũy.
+                Mời bạn bè tham gia đăng ký thành viên thành công tại GMall, bạn sẽ được cộng <span className="font-bold text-brand-orange text-orange-600">20.000 điểm thưởng</span> vào tài khoản tích lũy.
              </p>
          </div>
       </div>
@@ -188,7 +193,7 @@ export default function InvitePage() {
               <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col justify-between">
                   <div>
                     <p className="text-sm text-gray-500 mb-4">
-                        Hãy copy link dưới đây vào email, facebook để gửi cho bạn bè của bạn cùng tham gia LoveGifts.
+                        Hãy copy link dưới đây vào email, facebook để gửi cho bạn bè của bạn cùng tham gia GMall.
                     </p>
                     
                     <div className="space-y-3">

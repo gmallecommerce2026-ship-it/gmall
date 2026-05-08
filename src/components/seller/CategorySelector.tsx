@@ -21,7 +21,9 @@ export default function CategorySelector({ selectedIds, onChange, singleSelect =
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [debugError, setDebugError] = useState<string | null>(null);
 
+  // hooks-fix wiki 0031: setLoading(true) là sync flag cho UI loading; legitimate
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     console.log("⚡ [DEBUG] Bắt đầu gọi API /categories...");
 

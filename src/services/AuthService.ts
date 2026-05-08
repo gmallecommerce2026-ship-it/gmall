@@ -5,13 +5,23 @@ import { api } from './api';
 export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
-  gender?: string;
-  dob?: string;
-  avatar?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: string; // ISO date (YYYY-MM-DD)
+  avatar?: string; // URL sau upload
 }
 
 export interface ChangePasswordPayload {
   currentPassword: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  token: string;      // OTP 6 số nhận qua email
   newPassword: string;
 }
 
@@ -31,6 +41,8 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string;
   password: string;
+  // #48: optional flag — BE có thể đọc để adjust cookie maxAge.
+  rememberMe?: boolean;
 }
 
 export const AuthService = {
@@ -85,18 +97,30 @@ export const AuthService = {
     return null;
   },
 
-  // [MỚI] Cập nhật thông tin cá nhân
+  // Cập nhật profile. Endpoint: PUT /auth/profile (B2.1, B2.4 — trước đây
+  // gọi /users/profile không tồn tại -> 404 -> FE hiển thị "có lỗi").
   updateProfile: async (data: UpdateProfilePayload) => {
-    const res = await api.put('/users/profile', data);
-    // Cập nhật lại store sau khi update thành công
+    const res = await api.put('/auth/profile', data);
     const updatedUser = res.data || res;
     useUserStore.getState().setUser(updatedUser);
     return updatedUser;
   },
 
-  // [MỚI] Đổi mật khẩu
+  // Đổi mật khẩu khi đã login. BE endpoint: POST /auth/change-password
+  // (xem docs/wiki/decisions/0007-password-flows.md)
   changePassword: async (data: ChangePasswordPayload) => {
-    return api.put('/auth/change-password', data);
+    return api.post('/auth/change-password', data);
+  },
+
+  // Quên mật khẩu bước 1: gửi email nhận link + OTP reset.
+  // Response message identical dù email tồn tại hay không (chống user enumeration).
+  forgotPassword: async (data: ForgotPasswordPayload) => {
+    return api.post('/auth/forgot-password', data);
+  },
+
+  // Quên mật khẩu bước 2: nhập OTP + mật khẩu mới.
+  resetPassword: async (data: ResetPasswordPayload) => {
+    return api.post('/auth/reset-password', data);
   },
 
   // [MỚI] Upload Avatar (Giả định bạn có endpoint upload)
@@ -114,9 +138,11 @@ export const AuthService = {
     } catch (e) {
         console.error(e);
     }
-    
+
     useUserStore.getState().logout();
-    
-    window.location.href = '/login';
+
+    // B2.5: redirect về trang chủ thay vì /login — sau logout user muốn thấy
+    // trang chủ (có thể tiếp tục xem SP), không phải ép login lại ngay.
+    window.location.href = '/';
   }
 };

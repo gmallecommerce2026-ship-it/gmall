@@ -73,23 +73,6 @@ const MegaMenu = ({ isSticky = false, headerHeight = 0, onMenuOpenChange }: Mega
       });
   };
 
-  const RenderSubCategories = ({ items }: { items?: CategoryTreeItem[] }) => {
-    if (!items || items.length === 0) return null;
-    return (
-      <div className="flex flex-col gap-1 mt-2 pl-3 border-l border-gray-100">
-        {items.map(sub => (
-          <Link 
-            key={sub.id} 
-            href={getSafeLink(sub)} // [FIX] Link
-            className="text-[13px] text-gray-500 hover:text-orange-600 block py-0.5 transition-colors"
-          >
-            {sub.name}
-          </Link>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div 
       className="relative z-40 group/menu w-full" 
@@ -157,32 +140,15 @@ const MegaMenu = ({ isSticky = false, headerHeight = 0, onMenuOpenChange }: Mega
                        </Link>
                    </div>
                    
-                   <div className="grid grid-cols-3 xl:grid-cols-4 gap-x-10 gap-y-10">
+                   <div className="grid grid-cols-3 xl:grid-cols-4 gap-x-10 gap-y-6">
                        {activeCategory.children?.map(lvl2 => (
-                           <div key={lvl2.id} className="flex flex-col gap-3">
-                               <Link 
-                                   href={getSafeLink(lvl2)}
-                                   className="font-bold text-gray-800 text-[14px] hover:text-orange-600 transition-colors uppercase tracking-tight"
-                               >
-                                   {lvl2.name}
-                               </Link>
-                               
-                               <div className="flex flex-col gap-2 border-l border-gray-100 pl-3">
-                                   {lvl2.children && lvl2.children.length > 0 ? (
-                                       lvl2.children.map(lvl3 => (
-                                           <div key={lvl3.id}>
-                                               <Link
-                                                   href={getSafeLink(lvl3)}
-                                                   className="text-[13px] text-gray-500 hover:text-orange-600 transition-all hover:translate-x-1 duration-200 block"
-                                               >
-                                                   {lvl3.name}
-                                               </Link>
-                                               <RenderSubCategories items={lvl3.children} />
-                                           </div>
-                                       ))
-                                   ) : null}
-                               </div>
-                           </div>
+                           <Link
+                               key={lvl2.id}
+                               href={getSafeLink(lvl2)}
+                               className="font-medium text-gray-700 text-[14px] hover:text-orange-600 transition-colors leading-snug py-1"
+                           >
+                               {lvl2.name}
+                           </Link>
                        ))}
                    </div>
                  </div>

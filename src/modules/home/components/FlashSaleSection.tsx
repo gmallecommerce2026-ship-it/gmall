@@ -15,18 +15,29 @@ interface FlashSaleProps {
 }
 
 const FlashSaleSection: React.FC<FlashSaleProps> = ({ data }) => {
-  // Nếu không có data hoặc không có sản phẩm -> Ẩn section
-  if (!data || !data.products || data.products.length === 0) return null;
+  // Fix BUG-FE-4 (wiki 0030): KHÔNG early-return TRƯỚC hooks. React track hooks
+  // bằng order — render 1 (data null) chạy 0 hooks, render 2 (data có) chạy
+  // useState+useEffect → "Rendered more hooks than during previous render" crash.
+  // Đẩy guard xuống return JSX (sau hooks).
+  // Fix BUG-FE-9: useState lazy init để SSR không render 00:00:00 rồi nhấp nháy.
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (!data?.endTime) return { hours: 0, minutes: 0, seconds: 0 };
+    const diff = new Date(data.endTime).getTime() - Date.now();
+    if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 };
+    return {
+      hours: Math.floor(diff / (1000 * 60 * 60)),
+      minutes: Math.floor((diff / 1000 / 60) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    };
+  });
 
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
-
-  // Logic đếm ngược
   useEffect(() => {
+    if (!data?.endTime) return;
     const calculateTimeLeft = () => {
-      const difference = new Date(data.endTime).getTime() - new Date().getTime();
+      const difference = new Date(data.endTime).getTime() - Date.now();
       if (difference > 0) {
         setTimeLeft({
-          hours: Math.floor((difference / (1000 * 60 * 60))), // Có thể > 24h
+          hours: Math.floor(difference / (1000 * 60 * 60)),
           minutes: Math.floor((difference / 1000 / 60) % 60),
           seconds: Math.floor((difference / 1000) % 60),
         });
@@ -38,7 +49,10 @@ const FlashSaleSection: React.FC<FlashSaleProps> = ({ data }) => {
     calculateTimeLeft();
     const timer = setInterval(calculateTimeLeft, 1000);
     return () => clearInterval(timer);
-  }, [data.endTime]);
+  }, [data?.endTime]);
+
+  // Guard sau hooks — KHÔNG vi phạm Rules of Hooks
+  if (!data || !data.products || data.products.length === 0) return null;
 
   return (
     <section className="container mx-auto px-4 mb-8">

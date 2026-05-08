@@ -93,15 +93,66 @@ export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) =
   };
 
   const handleAddAllToCart = async () => {
-      setIsAdding(true);
-      try {
-          // Logic thêm vào giỏ hàng
-          toast.success("Đã thêm combo vào giỏ hàng!");
-      } catch (e) {
-          toast.error("Có lỗi xảy ra");
-      } finally {
-          setIsAdding(false);
+    if (selectedIds.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một sản phẩm");
+      return;
+    }
+    setIsAdding(true);
+    try {
+      const allItems: any[] = [mainProduct, ...relatedProducts];
+      const itemsToAdd = allItems.filter((p) => p && selectedIds.includes(p.id));
+
+      // resolveVariantId: nếu user đã chọn options, tìm productVariant tương ứng.
+      // Backend cần variantId chính xác để track tồn kho biến thể; pass undefined
+      // nếu sản phẩm không có options hoặc không tìm thấy variant phù hợp.
+      const resolveVariantId = (product: any): string | undefined => {
+        if (!product?.variants || !Array.isArray(product.variants)) return undefined;
+        const sel = selections[product.id];
+        if (!sel || Object.keys(sel).length === 0) return product.variants[0]?.id;
+        const match = product.variants.find((v: any) => {
+          const vOptions = v.optionValues || v.options || [];
+          if (!Array.isArray(vOptions) || vOptions.length === 0) return false;
+          return Object.entries(sel).every(([optName, optVal]) =>
+            vOptions.some(
+              (ov: any) =>
+                (ov.optionName === optName || ov.option?.name === optName) &&
+                (ov.value === optVal || ov.optionValue?.value === optVal),
+            ),
+          );
+        });
+        return match?.id;
+      };
+
+      // Add tuần tự để tránh race condition trên BE (mỗi addToCart write Redis +
+      // Postgres). Promise.all có thể double-charge inventory check khi BE chưa
+      // có optimistic lock.
+      for (const product of itemsToAdd) {
+        const imageUrl =
+          product.imageUrl ||
+          (typeof product.images?.[0] === "string"
+            ? product.images[0]
+            : product.images?.[0]?.url) ||
+          "";
+        await addToCart(
+          {
+            productId: product.id,
+            productVariantId: resolveVariantId(product),
+            name: product.name,
+            price: Number(product.price) || 0,
+            imageUrl,
+            shopId: product.shopId || product.shop?.id,
+            shopName: product.shopName || product.shop?.name,
+          },
+          1,
+        );
       }
+      toast.success(`Đã thêm ${itemsToAdd.length} sản phẩm vào giỏ hàng!`);
+    } catch (e) {
+      console.error("Add combo to cart failed:", e);
+      toast.error("Có lỗi xảy ra khi thêm combo");
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const { totalPrice, totalSavings, totalItems } = useMemo(() => {

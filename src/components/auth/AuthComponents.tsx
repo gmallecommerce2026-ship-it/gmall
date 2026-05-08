@@ -27,10 +27,12 @@ export const AuthInput = ({ label, icon, className, ...props }: AuthInputProps) 
 };
 
 // --- 2. Primary Button (Màu cam) ---
-export const PrimaryButton = ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+// TS-fix wiki 0031: accept full ButtonHTMLAttributes (disabled, type, ...) cho seller-register form
+type PrimaryButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+export const PrimaryButton = ({ children, className = '', ...props }: PrimaryButtonProps) => (
   <button
-    onClick={onClick}
-    className="w-full h-[50px] bg-brand-orange text-white rounded-full font-medium text-base shadow-lg shadow-orange-200 hover:opacity-90 transition-opacity flex items-center justify-center"
+    {...props}
+    className={`w-full h-[50px] bg-brand-orange text-white rounded-full font-medium text-base shadow-lg shadow-orange-200 hover:opacity-90 transition-opacity flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
   >
     {children}
   </button>

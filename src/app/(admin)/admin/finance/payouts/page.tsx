@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { AdminService } from '@/services/AdminService';
 import { PayoutRequest } from '@/types/admin';
 import { formatCurrency } from '@/lib/utils';
@@ -14,16 +14,13 @@ export default function PayoutsPage() {
   const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPayouts();
-  }, [activeTab]);
-
-  const fetchPayouts = async () => {
+  // hooks-fix wiki 0031: useCallback for fetchPayouts so effect deps are stable
+  const fetchPayouts = useCallback(async () => {
     setLoading(true);
     try {
       // Gọi API thực tế thông qua AdminService (đã cập nhật ở Phần 1)
       const res: any = await AdminService.getPayoutRequests({ status: activeTab });
-      
+
       if (res && (res.data || Array.isArray(res))) {
           setPayouts(Array.isArray(res) ? res : res.data);
       } else {
@@ -36,7 +33,11 @@ export default function PayoutsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchPayouts();
+  }, [fetchPayouts]);
 
   const handleApprove = async (id: string) => {
     if (!confirm('Xác nhận đã chuyển khoản cho Shop này? Hành động này không thể hoàn tác.')) return;

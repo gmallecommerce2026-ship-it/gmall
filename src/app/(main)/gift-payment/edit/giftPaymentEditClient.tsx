@@ -16,10 +16,15 @@ export default function GiftPaymentEditClient() {
   const [formData, setFormData] = useState<any>({});
   const [isDirty, setIsDirty] = useState(false);
 
-  // Load data từ Store khi mount
+  // Load data từ Store khi mount/đổi type
+  // hooks-fix wiki 0031: disable set-state-in-effect — sync store→form chỉ chạy khi
+  // type/store thay đổi, hành vi đúng ý đồ; không thể chuyển sang derived state vì
+  // form còn được edit local (formData).
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (type === 'sender') setFormData({ ...senderInfo });
     else if (type === 'receiver') setFormData({ ...receiverInfo });
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [type, senderInfo, receiverInfo]);
 
   // Xử lý thay đổi input

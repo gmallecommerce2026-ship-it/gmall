@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { 
-  FiSearch, FiFilter, FiDownload, FiEye, 
-  FiAlertCircle, FiRefreshCw 
+import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import {
+  FiSearch, FiFilter, FiDownload, FiEye,
+  FiAlertCircle, FiRefreshCw
 } from 'react-icons/fi';
-import { AdminService, AdminOrder } from '@/services/AdminService';
+// TS-fix wiki 0031: AdminOrder không export từ AdminService — lấy từ @/types/admin
+import { AdminService } from '@/services/AdminService';
+import type { AdminOrder } from '@/types/admin';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -27,7 +30,8 @@ export default function OrdersClient() {
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   // --- FETCH DATA ---
-  const fetchOrders = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
@@ -54,16 +58,63 @@ export default function OrdersClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, statusFilter, debouncedSearch]);
 
   // Gọi API khi filter/page thay đổi
   useEffect(() => {
     fetchOrders();
-  }, [page, statusFilter, debouncedSearch]);
+  }, [fetchOrders]);
 
   // --- HELPERS ---
-  const handleExport = () => {
-    toast.success('Đang xuất báo cáo Excel... (Demo)');
+  // #54: xuất CSV (mở được Excel) — không cần thêm dependency. Tạo Blob
+  // bằng tay với BOM UTF-8 để Excel render dấu tiếng Việt đúng.
+  const handleExport = async () => {
+    try {
+      // Lấy đầy đủ orders theo filter hiện tại (cap 1000 dòng để tránh OOM
+      // browser nếu data lớn — admin chia nhỏ filter nếu cần xuất hết).
+      const res: any = await AdminService.getAllOrders({
+        page: 1,
+        limit: 1000,
+        status: statusFilter === 'ALL' ? undefined : statusFilter,
+        search: debouncedSearch,
+      });
+      const rows: AdminOrder[] = res?.data || [];
+      if (rows.length === 0) {
+        toast.error('Không có đơn hàng để xuất');
+        return;
+      }
+      const escape = (v: any) => {
+        const s = v === null || v === undefined ? '' : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const header = ['Mã đơn', 'Tên KH', 'Email', 'SĐT', 'Tổng tiền', 'Trạng thái', 'PT thanh toán', 'Ngày tạo'];
+      const lines = rows.map((o: any) =>
+        [
+          o.id,
+          o.recipientName || o.user?.name || '',
+          o.user?.email || '',
+          o.recipientPhone || o.user?.phone || '',
+          o.totalAmount,
+          o.status,
+          o.paymentMethod || '',
+          new Date(o.createdAt).toLocaleString('vi-VN'),
+        ]
+          .map(escape)
+          .join(','),
+      );
+      const csv = '﻿' + [header.join(','), ...lines].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gmall-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Đã xuất ${rows.length} đơn hàng`);
+    } catch (e) {
+      console.error('Export failed', e);
+      toast.error('Xuất báo cáo thất bại');
+    }
   };
 
   // Badge Status
@@ -192,13 +243,13 @@ export default function OrdersClient() {
                       <div className="text-xs">{new Date(order.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</div>
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-full transition-all shadow-sm border border-transparent hover:border-gray-200"
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="inline-flex p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-full transition-all shadow-sm border border-transparent hover:border-gray-200"
                         title="Xem chi tiết"
-                        onClick={() => toast('Tính năng chi tiết đang phát triển')}
                       >
                         <FiEye size={18} />
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

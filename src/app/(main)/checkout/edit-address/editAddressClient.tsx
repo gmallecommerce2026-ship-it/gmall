@@ -22,18 +22,21 @@ export default function EditAddressClient() {
     name: "", phone: "", address: "", email: "", message: "", relation: ""
   });
 
-  // Load dữ liệu từ Store vào Form khi component mount
+  // Load dữ liệu từ Store vào Form khi `type` thay đổi
+  // hooks-fix wiki 0031: chỉ sync khi đổi type → giữ ý đồ "không reset form khi user đang edit".
+  // Disable exhaustive-deps cho store info; nếu thêm sẽ ghi đè input của user.
   useEffect(() => {
     // Dùng kỹ thuật Hydration safe cho Zustand trong Next.js
-    useCheckoutStore.persist.rehydrate(); 
-    
+    useCheckoutStore.persist.rehydrate();
+
     let currentData: UserInfo;
     if (type === 'sender') currentData = senderInfo;
     else if (type === 'receiver') currentData = receiverInfo;
     else currentData = buyerInfo;
 
     setFormData(currentData);
-  }, [type]); // Chỉ chạy lại khi type thay đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
 
   const handleChange = (field: keyof UserInfo, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

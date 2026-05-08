@@ -107,7 +107,7 @@ export const HeroRightSidebar = () => {
               {user ? "Xin chào," : "Chào ngày mới,"}
             </span>
             <h3 className="font-sans text-sm font-bold text-gray-800 truncate max-w-[180px]">
-              {user ? (user.name || user.email) : "Bạn của LoveGifts"}
+              {user ? (user.name || user.email) : "Bạn của GMall"}
             </h3>
           </div>
         </div>

@@ -1068,7 +1068,15 @@ export default function BlogsPage() {
                                                     </td>
                                                     <td className="p-4 text-right">
                                                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button title="Xem thử" className="p-2 text-gray-500 hover:bg-gray-100 rounded"><FiEye /></button>
+                                                            <a
+                                                                href={`/blog/${post.slug || post.id}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                title="Xem thử (mở tab mới)"
+                                                                className="p-2 text-gray-500 hover:bg-gray-100 rounded inline-flex items-center"
+                                                            >
+                                                                <FiEye />
+                                                            </a>
                                                             <button onClick={() => handleEdit(post)} title="Chỉnh sửa" className="p-2 text-blue-600 hover:bg-blue-50 rounded"><FiEdit2 /></button>
                                                             <button onClick={() => handleDelete(post.id)} title="Xóa" className="p-2 text-red-600 hover:bg-red-50 rounded"><FiTrash2 /></button>
                                                         </div>

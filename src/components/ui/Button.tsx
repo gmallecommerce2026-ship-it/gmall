@@ -1,14 +1,20 @@
+// TS-fix wiki 0031: Button props - thêm isLoading + leftIcon (đa dụng cho admin/auth flow)
 import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   // Thêm "ghost" vào định nghĩa kiểu
   variant?: "primary" | "secondary" | "outline" | "ghost";
+  isLoading?: boolean;
+  leftIcon?: React.ReactNode;
 }
 
 const Button: React.FC<ButtonProps> = ({
   children,
   className = "",
   variant = "primary",
+  isLoading = false,
+  leftIcon,
+  disabled,
   ...props
 }) => {
   const baseStyle =
@@ -37,9 +43,17 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`${baseStyle} ${variantStyles[variant]} ${className}`}
+      disabled={disabled || isLoading}
       {...props}
     >
       <span className="relative z-10 flex items-center justify-center gap-2">
+        {isLoading && (
+          <span
+            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+            aria-hidden="true"
+          />
+        )}
+        {!isLoading && leftIcon}
         {children}
       </span>
     </button>

@@ -23,6 +23,7 @@ export default function RevenuePage() {
     platformFee: 0,
     pendingPayout: 0
   });
+  const [chartData, setChartData] = useState<{ date: string; value: number }[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
@@ -33,14 +34,14 @@ export default function RevenuePage() {
       try {
         setLoading(true);
         const res: any = await AdminService.getRevenueStats('year');
-        
-        // KIỂM TRA DỮ LIỆU TRẢ VỀ TRƯỚC KHI SET STATE
+
         if (res) {
           setStats({
             totalRevenue: Number(res.totalRevenue) || 0,
             platformFee: Number(res.platformFee) || 0,
             pendingPayout: Number(res.pendingPayout) || 0
           });
+          setChartData(Array.isArray(res.chartData) ? res.chartData : []);
         }
       } catch (error) {
         console.error("Lỗi tải doanh thu:", error);
@@ -108,10 +109,104 @@ export default function RevenuePage() {
           </div>
        </div>
 
-       {/* Placeholder Chart */}
-       <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm h-[400px] flex items-center justify-center">
-          <p className="text-gray-400">Biểu đồ đang cập nhật...</p>
-       </div>
+       {/* #60: biểu đồ doanh thu 12 tháng — SVG inline, không phụ thuộc lib. */}
+       <RevenueChart data={chartData} />
     </div>
   );
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// RevenueChart — bar chart đơn giản dựng bằng SVG (#60).
+// Không dùng recharts/d3 → tránh thêm ~80KB bundle. Đủ cho 12 cột.
+// ──────────────────────────────────────────────────────────────────────
+
+const RevenueChart: React.FC<{ data: { date: string; value: number }[] }> = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm h-[400px] flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Chưa có dữ liệu doanh thu để vẽ biểu đồ.</p>
+      </div>
+    );
+  }
+
+  const W = 800;
+  const H = 320;
+  const PAD_LEFT = 64;
+  const PAD_BOTTOM = 36;
+  const PAD_TOP = 16;
+  const PAD_RIGHT = 16;
+  const innerW = W - PAD_LEFT - PAD_RIGHT;
+  const innerH = H - PAD_TOP - PAD_BOTTOM;
+
+  const max = Math.max(...data.map((d) => d.value), 1); // tránh chia 0
+  const barGap = 8;
+  const barW = innerW / data.length - barGap;
+
+  const formatShort = (n: number) => {
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B';
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(0) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K';
+    return String(n);
+  };
+
+  // 4 horizontal grid lines tại 0/25/50/75/100% max
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map((p) => {
+    const y = PAD_TOP + innerH * (1 - p);
+    return { y, label: formatShort(max * p) };
+  });
+
+  return (
+    <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-800">Doanh thu 12 tháng gần nhất</h3>
+        <span className="text-xs text-gray-500">đơn vị: VND</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Biểu đồ doanh thu 12 tháng">
+        {/* Grid lines */}
+        {gridLines.map((g, i) => (
+          <g key={i}>
+            <line x1={PAD_LEFT} x2={W - PAD_RIGHT} y1={g.y} y2={g.y} stroke="#e5e7eb" strokeDasharray="3 3" />
+            <text x={PAD_LEFT - 8} y={g.y + 4} textAnchor="end" fontSize="10" fill="#9ca3af">
+              {g.label}
+            </text>
+          </g>
+        ))}
+        {/* Bars */}
+        {data.map((d, i) => {
+          const x = PAD_LEFT + i * (barW + barGap);
+          const h = (d.value / max) * innerH;
+          const y = PAD_TOP + innerH - h;
+          return (
+            <g key={d.date}>
+              <rect
+                x={x}
+                y={y}
+                width={barW}
+                height={h}
+                fill="url(#barGradient)"
+                rx={3}
+              >
+                <title>{`${d.date}: ${d.value.toLocaleString('vi-VN')} đ`}</title>
+              </rect>
+              <text
+                x={x + barW / 2}
+                y={H - PAD_BOTTOM + 16}
+                textAnchor="middle"
+                fontSize="10"
+                fill="#6b7280"
+              >
+                {d.date.slice(5)}
+              </text>
+            </g>
+          );
+        })}
+        <defs>
+          <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fb923c" />
+            <stop offset="100%" stopColor="#f97316" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+};

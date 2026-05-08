@@ -157,7 +157,7 @@ const RegisterClient = () => {
                   className="mt-1 w-4 h-4 rounded border-gray-300 text-brand-orange focus:ring-brand-orange cursor-pointer accent-orange-500" 
                 />
                 <label htmlFor="terms" className="text-sm text-gray-600 leading-relaxed select-none">
-                  Bằng việc đăng ký, bạn đồng ý với LoveGifts về{" "}
+                  Bằng việc đăng ký, bạn đồng ý với GMall về{" "}
                   <Link href="/terms" className="text-brand-orange font-medium hover:underline">
                     Điều khoản dịch vụ
                   </Link>{" "}

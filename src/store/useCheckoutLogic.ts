@@ -129,6 +129,12 @@ export const useCheckoutLogic = () => {
   };
 
   // Trigger preview
+  // Fix BUG-FE-6 (wiki 0030): thêm shopShipping + senderInfo + receiverInfo
+  // vào deps. Trước đây user đổi shipping method, BE preview không re-fetch
+  // → giá hiển thị mismatch giá BE tính lúc checkout → toast lỗi cuối flow.
+  // buildPayload đọc cả 3 field này nên chúng PHẢI là deps.
+  // hooks-fix wiki 0031: handlePreviewOrder closure đọc từ list deps đã có; thêm
+  // handlePreviewOrder vào deps sẽ tạo closure mới mỗi render. Disable rule.
   useEffect(() => {
     if (validPaymentItems.length > 0 && isAuthenticated) {
       const timer = setTimeout(() => {
@@ -136,7 +142,8 @@ export const useCheckoutLogic = () => {
       }, 500); // Debounce nhẹ 500ms
       return () => clearTimeout(timer);
     }
-  }, [validPaymentItems, shopVouchers, selectedSystemVoucher, isAuthenticated, appliedCoins]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validPaymentItems, shopVouchers, selectedSystemVoucher, isAuthenticated, appliedCoins, shopShipping, senderInfo, receiverInfo]);
 
 
   // 5. Hàm Checkout

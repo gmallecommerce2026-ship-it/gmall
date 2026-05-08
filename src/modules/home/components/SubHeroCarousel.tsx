@@ -22,9 +22,21 @@ const SubHeroCarousel: React.FC<SubHeroCarouselProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [currentTranslate, setCurrentTranslate] = useState(0);
+  // hooks-fix wiki 0031: track containerWidth in state thay vì đọc ref khi render
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Đo lại width khi mount + resize
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const totalSlides = slides.length;
 
@@ -90,7 +102,7 @@ const SubHeroCarousel: React.FC<SubHeroCarouselProps> = ({
     if (offset < 0) offset += totalSlides;
     if (offset > totalSlides / 2) offset -= totalSlides;
 
-    const dragRatio = containerRef.current ? currentTranslate / containerRef.current.offsetWidth : 0; 
+    const dragRatio = containerWidth ? currentTranslate / containerWidth : 0;
     const effectiveOffset = offset - dragRatio * 1.5;
 
     const xOffsetPercent = 25; 

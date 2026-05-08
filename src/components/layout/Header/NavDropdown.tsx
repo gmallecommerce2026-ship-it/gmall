@@ -52,12 +52,15 @@ export default function NavDropdown({ label, configKey, icon }: NavDropdownProps
   const buttonRef = useRef<HTMLButtonElement>(null);
   
   const [dropdownTop, setDropdownTop] = useState(0);
+  // hooks-fix wiki 0031: lưu button bottom vào state thay vì đọc ref khi render
+  const [buttonBottom, setButtonBottom] = useState(0);
   const [mounted, setMounted] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isOpen = activeDropdown === configKey;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -67,12 +70,14 @@ export default function NavDropdown({ label, configKey, icon }: NavDropdownProps
   // --- EVENT HANDLERS ---
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    
+
     if (buttonRef.current) {
       const navContainer = buttonRef.current.closest('header') || buttonRef.current.closest('.category-nav-bar');
       if (navContainer) {
         setDropdownTop(navContainer.getBoundingClientRect().bottom);
       }
+      // Cập nhật bottom của button để spacer dùng (tránh đọc ref khi render)
+      setButtonBottom(buttonRef.current.getBoundingClientRect().bottom);
     }
     setActiveDropdown(configKey);
   };
@@ -125,9 +130,9 @@ export default function NavDropdown({ label, configKey, icon }: NavDropdownProps
         />
         
         {isOpen && (
-            <div 
+            <div
                 className="absolute top-full left-0 w-full h-4 bg-transparent z-50"
-                style={{ height: dropdownTop - (buttonRef.current?.getBoundingClientRect().bottom || 0) + 10 }}
+                style={{ height: dropdownTop - buttonBottom + 10 }}
             />
         )}
       </button>

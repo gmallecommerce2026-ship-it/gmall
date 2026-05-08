@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthLayout, AuthInput, PrimaryButton } from "@/components/auth/AuthComponents";
+import { AuthService } from "@/services/AuthService";
 
 // Icon Mắt (Eye) - Tái sử dụng
 const EyeIcon = ({ isVisible }: { isVisible: boolean }) => (
@@ -32,13 +33,17 @@ const CheckShieldIcon = () => (
 const ResetPasswordClient = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  // Lấy token từ URL (ví dụ: ?token=abc...) để gửi lên API
-  const token = searchParams.get("token"); 
 
+  // Email + token nhận từ URL query (link trong email reset password).
+  // User cũng có thể tự nhập nếu link không hoạt động (paste OTP từ email).
+  const emailFromUrl = searchParams.get("email") ?? "";
+  const tokenFromUrl = searchParams.get("token") ?? "";
+
+  const [email, setEmail] = useState(emailFromUrl);
+  const [token, setToken] = useState(tokenFromUrl);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   // Quản lý ẩn/hiện mật khẩu riêng biệt cho 2 ô
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
@@ -48,14 +53,23 @@ const ResetPasswordClient = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Tự động xóa lỗi khi người dùng nhập lại
+  // hooks-fix wiki 0031: include 'error' dep — guard `if (error)` prevents infinite loop
   useEffect(() => {
     if (error) setError("");
-  }, [password, confirmPassword]);
+  }, [email, token, password, confirmPassword, error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // 1. Validate cơ bản
+    if (!email) {
+      setError("Thiếu email. Hãy mở lại link từ email đặt lại mật khẩu.");
+      return;
+    }
+    if (!token) {
+      setError("Thiếu mã xác nhận. Hãy dán mã từ email của bạn.");
+      return;
+    }
     if (password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự");
       return;
@@ -67,12 +81,22 @@ const ResetPasswordClient = () => {
 
     setIsLoading(true);
 
-    // 2. Giả lập gọi API (Reset Password)
-    // Thực tế: await api.post('/auth/reset-password', { token, password });
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await AuthService.resetPassword({
+        email,
+        token,
+        newPassword: password,
+      });
       setIsSuccess(true);
-    }, 1500);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể đặt lại mật khẩu. Vui lòng thử lại.";
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -93,7 +117,27 @@ const ResetPasswordClient = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              
+
+              {/* Email — prefill từ URL nhưng cho phép sửa nếu link không rõ */}
+              <AuthInput
+                label="Email tài khoản"
+                placeholder="email@example.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+
+              {/* OTP — prefill từ URL. User cũng có thể gõ tay 6 số từ email. */}
+              <AuthInput
+                label="Mã xác nhận (6 số)"
+                placeholder="123456"
+                type="text"
+                value={token}
+                onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                required
+              />
+
               {/* Password Field */}
               <div onClick={() => setShowPass(!showPass)}>
                 <AuthInput

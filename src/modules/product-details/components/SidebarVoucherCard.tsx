@@ -1,23 +1,47 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import { toast } from "react-hot-toast";
+import { VoucherService } from "@/services/voucher.service";
 
 interface SidebarVoucherCardProps {
   voucher: any;
 }
 
 const SidebarVoucherCard: React.FC<SidebarVoucherCardProps> = ({ voucher }) => {
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   // Hàm format tiền tệ
-  const formatCurrency = (val: number) => 
+  const formatCurrency = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
   // Xử lý text giảm giá
-  const discountText = voucher.discountType === "PERCENTAGE" 
-    ? `Giảm ${voucher.discountValue}%` 
+  const discountText = voucher.discountType === "PERCENTAGE"
+    ? `Giảm ${voucher.discountValue}%`
     : `Giảm ${formatCurrency(Number(voucher.discountValue))}`;
 
   // Xử lý điều kiện
   const minOrderText = voucher.minOrderPrice && Number(voucher.minOrderPrice) > 0
     ? `Đơn tối thiểu ${formatCurrency(Number(voucher.minOrderPrice))}`
     : "Cho mọi đơn hàng";
+
+  // #8: wire button "Lưu" voucher.
+  const handleSave = async () => {
+    if (saved || saving) return;
+    setSaving(true);
+    try {
+      await VoucherService.claimVoucher(voucher.code);
+      setSaved(true);
+      toast.success(`Đã lưu mã ${voucher.code}!`);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Không thể lưu mã";
+      // BE thường trả 401 nếu chưa login → AxiosClient interceptor sẽ tự redirect /login,
+      // ở đây chỉ cần báo lỗi cho user khi mã đã claim hoặc đã hết.
+      toast.error(typeof msg === "string" ? msg : "Không thể lưu mã");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="relative group flex flex-col bg-orange-50/40 border border-orange-200 rounded-lg p-3 transition-all hover:border-brand-orange hover:shadow-sm">
@@ -35,8 +59,17 @@ const SidebarVoucherCard: React.FC<SidebarVoucherCardProps> = ({ voucher }) => {
            </span>
         </div>
         
-        <button className="text-xs font-semibold text-brand-orange hover:bg-brand-orange hover:text-white px-2 py-1 rounded transition-colors border border-transparent hover:border-brand-orange">
-          Lưu
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saved || saving}
+          className={`text-xs font-semibold px-2 py-1 rounded transition-colors border ${
+            saved
+              ? "bg-green-100 text-green-700 border-green-200 cursor-default"
+              : "text-brand-orange hover:bg-brand-orange hover:text-white border-transparent hover:border-brand-orange disabled:opacity-50"
+          }`}
+        >
+          {saved ? "Đã lưu" : saving ? "..." : "Lưu"}
         </button>
       </div>
 

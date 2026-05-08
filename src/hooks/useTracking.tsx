@@ -4,6 +4,8 @@
 import React, { useCallback, useEffect, useRef, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/ApiClient';
+// Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
+import { API_BASE_URL } from '@/lib/api/config';
 
 export enum EventType {
   VIEW_PAGE = 'view_page',
@@ -31,12 +33,20 @@ const generateUUID = () => {
   });
 }
 
+// Fix BUG-FE-5 (wiki 0030): module-level state là singleton qua mọi useTracking
+// hook caller — đúng nhu cầu "batch toàn app". Vấn đề trước: timer pending
+// khi user navigate/close → events mất (không flush). Fix bằng:
+// 1. Đăng ký `beforeunload` để flush trước khi rời page (dùng sendBeacon — sync).
+// 2. `visibilitychange` flush khi tab ẩn (mobile, switch tab).
+// Vẫn giữ module-level cho batch share giữa pages, KHÔNG đổi sang useRef
+// (useRef per-instance sẽ làm batch nhỏ hơn, gọi API nhiều hơn).
 let eventQueue: any[] = [];
 let timer: NodeJS.Timeout | null = null;
+let unloadHandlerRegistered = false;
 
 export const useTracking = () => {
   // LƯU Ý: Không gọi useSearchParams ở đây để tránh lỗi build cho các component static
-  const pathname = usePathname(); 
+  const pathname = usePathname();
   const deviceIdRef = useRef<string>('');
 
   useEffect(() => {
@@ -47,6 +57,27 @@ export const useTracking = () => {
             localStorage.setItem('tracking_device_id', storedId);
         }
         deviceIdRef.current = storedId;
+
+        // Fix BUG-FE-5: register beforeunload + visibilitychange ONCE (idempotent
+        // qua flag). Đảm bảo events trong queue được flush trước khi tab close.
+        if (!unloadHandlerRegistered) {
+          const flushOnExit = () => {
+            if (eventQueue.length === 0) return;
+            const batch = [...eventQueue];
+            eventQueue = [];
+            if (timer) { clearTimeout(timer); timer = null; }
+            const currentDeviceId = localStorage.getItem('tracking_device_id') || '';
+            const blob = new Blob([JSON.stringify({ events: batch })], { type: 'application/json' });
+            const url = `${API_BASE_URL}/tracking/batch?deviceId=${currentDeviceId}`;
+            // sendBeacon là sync + reliable trong unload context, không bị browser kill
+            navigator.sendBeacon?.(url, blob);
+          };
+          window.addEventListener('beforeunload', flushOnExit);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flushOnExit();
+          });
+          unloadHandlerRegistered = true;
+        }
     }
   }, []);
 
@@ -64,8 +95,7 @@ export const useTracking = () => {
     const currentDeviceId = deviceIdRef.current || (typeof window !== 'undefined' ? localStorage.getItem('tracking_device_id') : '');
     
     const blob = new Blob([JSON.stringify({ events: batchToSend })], { type: 'application/json' });
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const url = `${baseUrl}/tracking/batch?deviceId=${currentDeviceId}`;
+    const url = `${API_BASE_URL}/tracking/batch?deviceId=${currentDeviceId}`;
 
     if (navigator.sendBeacon) {
         navigator.sendBeacon(url, blob);

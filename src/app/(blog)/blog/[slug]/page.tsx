@@ -4,9 +4,11 @@ import BlogDetailClient from './BlogDetailClient';
 import { Metadata, ResolvingMetadata } from 'next';
 import { blogService } from '@/services/blog.service';
 import { notFound } from 'next/navigation'; // Import để xử lý 404 chuẩn
+import { BRAND } from '@/lib/brand';
 
+// TS-fix wiki 0031: Next 15+ — params chỉ Promise (bỏ union với object cũ)
 interface Props {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // 1. Tạo Metadata chuẩn SEO + Keywords + Canonical
@@ -34,7 +36,7 @@ export async function generateMetadata(
         title: blog.metaTitle || blog.title,
         description: blog.metaDescription,
         url: `/blog/${slug}`,
-        siteName: 'Tên Sàn Thương Mại',
+        siteName: BRAND.name,
         images: images,
         type: 'article', // Khai báo rõ là bài viết
         publishedTime: blog.createdAt,
@@ -83,15 +85,15 @@ export default async function BlogDetailPage({ params }: Props) {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Tên Sàn Thương Mại', // Tên brand của bạn
+      name: BRAND.name,
       logo: {
         '@type': 'ImageObject',
-        url: 'https://domain.com/logo.png', // Thay bằng link logo thật của bạn
+        url: `https://${BRAND.domain}/images/gmall-logo.png`,
       },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://domain.com/blog/${decodedSlug}`,
+      '@id': `https://${BRAND.domain}/blog/${decodedSlug}`,
     },
   };
 

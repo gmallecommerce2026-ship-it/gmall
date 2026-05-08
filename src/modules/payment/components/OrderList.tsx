@@ -2,6 +2,7 @@
 import React from 'react';
 import OrderItem from './OrderItem';
 
+// TS-fix wiki 0031: OrderItem không nhận `originalPrice` — bỏ khỏi spread
 // Dữ liệu sản phẩm (đã được dọn dẹp)
 const orderItemsData = [
   {
@@ -11,7 +12,6 @@ const orderItemsData = [
     color: 'xanh',
     size: 'S',
     price: '11.990.000',
-    originalPrice: '14.690.000',
     quantity: 1,
   },
   {
@@ -21,7 +21,6 @@ const orderItemsData = [
     color: 'đỏ',
     size: 'M',
     price: '11.990.000',
-    originalPrice: '14.690.000',
     quantity: 1, // Số lượng 1 được suy ra từ code gốc
   },
 ];
@@ -38,7 +37,6 @@ const OrderList: React.FC = () => {
           color={item.color}
           size={item.size}
           price={item.price}
-          originalPrice={item.originalPrice}
           quantity={item.quantity}
         />
       ))}

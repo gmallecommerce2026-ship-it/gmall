@@ -133,6 +133,13 @@ export default function BlogClient() {
              <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
              <p className="text-gray-500 font-medium">Đang tải nội dung...</p>
           </div>
+        ) : !loading && rootCategories.length === 0 && heroPosts.length === 0 ? (
+          // Defensive empty state — tránh user nhìn page trắng tưởng 404 khi
+          // BE blog endpoint chưa có data hoặc fetch fail im lặng.
+          <div className="h-96 flex flex-col items-center justify-center text-center">
+             <p className="text-gray-700 font-semibold text-lg mb-2">Chưa có bài viết nào</p>
+             <p className="text-gray-500 text-sm">Hãy quay lại sau, đội ngũ nội dung đang chuẩn bị bài mới.</p>
+          </div>
         ) : (
           <main>
             {/* HERO: Chỉ hiện khi không filter */}
@@ -140,7 +147,7 @@ export default function BlogClient() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
               <div className="col-span-12 lg:col-span-8 space-y-2">
-                
+
                 {/* TRƯỜNG HỢP 1: Filter/Search -> Hiện list kết quả */}
                 {selectedCategory || search ? (
                    <div className="animate-fade-in">

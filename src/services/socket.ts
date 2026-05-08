@@ -1,9 +1,9 @@
 // src/services/socket.ts
 import { io } from 'socket.io-client';
+// Fix BUG-FE-10 (wiki 0030): centralized config (throws in prod if env missing)
+import { API_BASE_URL } from '@/lib/api/config';
 
-// URL này phải trỏ về Backend NestJS của bạn.
-// Nếu chạy local thường là http://localhost:3001 hoặc http://localhost:3000
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SOCKET_URL = API_BASE_URL;
 
 const socket = io(SOCKET_URL, {
   transports: ['websocket'], // Bắt buộc dùng websocket để giảm độ trễ

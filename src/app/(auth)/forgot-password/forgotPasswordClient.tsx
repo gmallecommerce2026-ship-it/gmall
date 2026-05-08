@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { AuthLayout, AuthInput, PrimaryButton } from "@/components/auth/AuthComponents";
+import { AuthService } from "@/services/AuthService";
 
 // Icon mũi tên quay lại
 const ArrowLeftIcon = () => (
@@ -24,19 +25,30 @@ const ForgotPasswordClient = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setIsLoading(true);
+    setErrorMessage("");
 
-    // Giả lập gọi API gửi mail (Delay 1.5s để tạo cảm giác xử lý)
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await AuthService.forgotPassword({ email });
+      // BE luôn trả cùng 1 message dù email có tồn tại hay không (chống user
+      // enumeration). FE cũng hiển thị success giống nhau — không hint ngược.
       setIsSubmitted(true);
-      // Ở thực tế, bạn sẽ gọi API: await authService.forgotPassword(email);
-    }, 1500);
+    } catch (err: any) {
+      // Chỉ vào đây nếu BE 4xx/5xx thật sự (network down, rate limit...).
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể gửi yêu cầu. Vui lòng thử lại sau.";
+      setErrorMessage(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,6 +77,12 @@ const ForgotPasswordClient = () => {
                 required
                 className="placeholder:text-gray-400"
               />
+
+              {errorMessage && (
+                <div className="bg-red-50 text-red-600 text-sm py-2 px-3 rounded-lg">
+                  {errorMessage}
+                </div>
+              )}
 
               <PrimaryButton>
                 {isLoading ? (

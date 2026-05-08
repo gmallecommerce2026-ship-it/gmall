@@ -50,7 +50,9 @@ const ADMIN_MENU: MenuItem[] = [
     label: 'Quản lý người dùng',
     icon: <FiUsers size={20} />,
     children: [
-      { id: 'all_users', label: 'Danh sách người dùng', path: '/admin/users' },
+      // #56: exact để khi vào /admin/users/sellers, "Danh sách người dùng"
+      // KHÔNG bị highlight thêm + group "users" KHÔNG bị mở cùng "shops".
+      { id: 'all_users', label: 'Danh sách người dùng', path: '/admin/users', exact: true },
     ]
   },
   {
@@ -73,11 +75,10 @@ const ADMIN_MENU: MenuItem[] = [
     label: 'Quản lí sản phẩm',
     icon: <FiBox size={20} />,
     children: [
-      // [FIX] Thêm exact: true nếu bạn muốn chỉ sáng khi đúng url này (nhưng sẽ không sáng khi vào trang chi tiết sản phẩm)
-      // Cách tốt nhất là giữ nguyên logic nhưng đảm bảo path của các item khác không trùng prefix.
-      { id: 'all_products', label: 'Tất cả sản phẩm', path: '/admin/products' },
+      // #59: exact để "Tất cả sản phẩm" KHÔNG sáng cùng lúc với "Duyệt sản phẩm"
+      // / "Gắn thẻ quà tặng" — path /admin/products là prefix của /admin/products/approvals.
+      { id: 'all_products', label: 'Tất cả sản phẩm', path: '/admin/products', exact: true },
       { id: 'product_approvals', label: 'Duyệt sản phẩm', path: '/admin/products/approvals' },
-      // [NEW] Đã thêm mục Gắn thẻ quà tặng với path riêng biệt
       { id: 'product_tags', label: 'Gắn thẻ quà tặng', path: '/admin/products/tagging' },
     ]
   },
@@ -235,10 +236,11 @@ const SidebarItem = ({ item, level = 0, isOpen, toggleOpen }: {
 };
 
 const AdminSidebar = () => {
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>({ 
-    'users': true,
-    'products': true 
-  });
+  // Default chỉ mở những menu group user thường xuyên dùng. KHÔNG default-open
+  // 'users' VÀ 'products' đồng thời — vì user thường chỉ ở 1 group tại 1 thời
+  // điểm; đồng-loạt-mở gây cảm giác sidebar lộn xộn (#56). Group con sẽ tự
+  // mở khi pathname match qua useEffect trong SidebarItem.
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
   
   const toggleOpen = (id: string) => {
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
@@ -261,7 +263,7 @@ const AdminSidebar = () => {
           <FiShield size={18}/>
         </div>
         <div>
-            <h1 className="font-bold text-lg text-gray-800 leading-none">LoveGifts</h1>
+            <h1 className="font-bold text-lg text-gray-800 leading-none">GMall</h1>
             <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">Admin Portal</span>
         </div>
       </div>

@@ -67,9 +67,11 @@ const FilterChipCarousel: React.FC<FilterChipCarouselProps> = ({
     setBarLeft(leftPercent);
   };
 
+  // hooks-fix wiki 0031: updateScrollBar đo DOM rồi setState — đây là sync với external system
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (el) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         updateScrollBar();
         el.addEventListener("scroll", updateScrollBar);
         window.addEventListener("resize", updateScrollBar);

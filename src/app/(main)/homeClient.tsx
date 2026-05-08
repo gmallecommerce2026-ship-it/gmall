@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from 'next/dynamic';
 import HeroCarousel from "@/modules/home/components/HeroCarousel";
 import { HeroRightSidebar } from "@/modules/home/components/HeroRightSidebar";
+import GiftFinderFilter from "@/modules/home/components/GiftFinderFilter";
 import ProductCard from "@/modules/product/components/ProductCard";
 import SubHeroCarousel from "@/modules/home/components/SubHeroCarousel";
 import CategoryMenu from "@/modules/home/components/CategoryMenu";
@@ -249,8 +250,19 @@ const TwoRowSectionWrapper = ({ config }: { config: any }) => {
 };
 
 // 4. SUGGESTED SECTION
+// #18 + #19: "Xem thêm" load thêm SP inline thay vì navigate; ưu tiên SP
+// popular (theo soldCount/rating) thay vì SP mới đăng (logic ở BE).
 const SuggestedSection = ({ products = [] }: { products: any[] }) => {
-  const uiProducts = Array.isArray(products) ? products.map(mapApiToUI) : [];
+  const uiProducts = React.useMemo(
+    () => (Array.isArray(products) ? products.map(mapApiToUI).filter(Boolean) : []),
+    [products],
+  );
+  // Hiện 12 SP đầu, click "Xem thêm" thì +12 mỗi lần. Khi đã hết, ẩn nút.
+  const PAGE = 12;
+  const [visible, setVisible] = React.useState(PAGE);
+  const shown = uiProducts.slice(0, visible);
+  const hasMore = uiProducts.length > visible;
+
   if (uiProducts.length === 0) return null;
 
   return (
@@ -264,21 +276,27 @@ const SuggestedSection = ({ products = [] }: { products: any[] }) => {
        </div>
 
        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {uiProducts.map((p, idx) => {
+          {shown.map((p, idx) => {
             if (!p) return null;
             return (
-              <Link href={`/product-details/${p.id}`} key={idx} className="hover:-translate-y-1 transition-transform duration-200">
+              <Link href={`/product-details/${p.id}`} key={p.id ?? idx} className="hover:-translate-y-1 transition-transform duration-200">
                   <ProductCard {...p} />
               </Link>
             );
           })}
         </div>
-       
-       <div className="mt-8 flex justify-center">
-          <Link href="/search" className="px-10 py-3 bg-white border border-gray-300 rounded-full text-gray-600 font-medium hover:border-brand-orange hover:text-brand-orange hover:shadow-md transition-all">
-             Xem Thêm
-          </Link>
-       </div>
+
+       {hasMore && (
+         <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setVisible((v) => v + PAGE)}
+              className="px-10 py-3 bg-white border border-gray-300 rounded-full text-gray-600 font-medium hover:border-brand-orange hover:text-brand-orange hover:shadow-md transition-all"
+            >
+               Xem thêm
+            </button>
+         </div>
+       )}
     </div>
   );
 };
@@ -345,10 +363,13 @@ const HomeClient = ({ initialSections = [], suggestedProducts = [], flashSaleDat
            </div>
         </div>
       </div>
-  
+
+      {/* #25 — Gift Finder filter dưới hero banner */}
+      <GiftFinderFilter />
+
       {/* FLASH SALE */}
-      <FlashDealSection key={flashSaleData?.products?.id} data={flashSaleData?.products || []} />;
-      
+      <FlashDealSection key={flashSaleData?.products?.id} data={flashSaleData?.products || []} />
+
       {/* 2. DYNAMIC SECTIONS */}
       {dynamicSections.length > 0 && dynamicSections.map(renderSection)}
 

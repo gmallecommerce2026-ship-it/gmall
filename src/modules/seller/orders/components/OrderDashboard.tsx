@@ -33,9 +33,11 @@ const OrderDashboard = ({ defaultTab = 'all' }: OrderDashboardProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // 2. Lắng nghe sự thay đổi của defaultTab (khi user bấm tab trên OrderManagementPage)
+  // hooks-fix wiki 0031: derived state sync — guard với check khác để tránh re-render thừa
   useEffect(() => {
     const mappedStatus = TAB_TO_STATUS_MAP[defaultTab] || 'all';
-    setActiveStatus(mappedStatus);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveStatus(prev => (prev === mappedStatus ? prev : mappedStatus));
   }, [defaultTab]);
 
   return (

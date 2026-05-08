@@ -101,6 +101,9 @@ const GiftPaymentPage: React.FC = () => {
     if (hasChanges) {
         router.replace(`?${currentParams.toString()}`, { scroll: false });
     }
+    // hooks-fix wiki 0031: cố ý bỏ deps store/setters để tránh infinite loop
+    // (ghi chú đã có sẵn). Disable rule.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, searchParams]); // Bỏ dependencies store để tránh loop
 
   // --- EFFECT 2: GỌI API TÍNH TIỀN ---

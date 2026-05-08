@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useChatStore } from '@/store/useChatStore';
 import { useUserStore } from '@/store/useUserStore';
 import { 
@@ -76,14 +76,19 @@ export default function ChatWindow() {
     }
   }, [user?.id, disconnectSocket, connectSocket]);
 
-  useEffect(() => { loadConversations(); }, []);
+  // hooks-fix wiki 0031: include loadConversations dep — Zustand store fn ổn định identity
+  useEffect(() => { loadConversations(); }, [loadConversations]);
 
   const currentConv = conversations.find(c => c.id === activeConversationId);
   const displayConversationId = activeConversationId || 'temp_ai_chat';
-  const currentMessages = messages[displayConversationId] || [];
-  const isAiConversation = 
-    !activeConversationId || 
-    activeConversationId === 'temp_ai_chat' || 
+  // hooks-fix wiki 0031: useMemo cho currentMessages để dep effect scroll ổn định
+  const currentMessages = useMemo(
+    () => messages[displayConversationId] || [],
+    [messages, displayConversationId]
+  );
+  const isAiConversation =
+    !activeConversationId ||
+    activeConversationId === 'temp_ai_chat' ||
     currentConv?.partner?.id === 'AI_ASSISTANT';
 
   useEffect(() => {

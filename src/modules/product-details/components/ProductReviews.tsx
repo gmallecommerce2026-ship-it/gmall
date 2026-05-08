@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Star, User, ThumbsUp } from 'lucide-react';
 import { ProductService } from '@/services/product.service';
 import { format } from 'date-fns'; // hoặc dùng native Date
@@ -12,16 +12,13 @@ export default function ProductReviews({ productId }: { productId: string }) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchReviews();
-  }, [productId, filterRating, page]);
-
-  const fetchReviews = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
-      const res: any = await ProductService.getReviews(productId, { 
-        page, 
-        rating: filterRating || undefined 
+      const res: any = await ProductService.getReviews(productId, {
+        page,
+        rating: filterRating || undefined
       });
       setReviews(res.data);
       if (!filterRating) {
@@ -33,7 +30,11 @@ export default function ProductReviews({ productId }: { productId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId, page, filterRating]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const renderStars = (rating: number) => (
     <div className="flex text-yellow-400">

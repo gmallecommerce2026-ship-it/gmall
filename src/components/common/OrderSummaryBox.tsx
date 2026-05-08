@@ -66,7 +66,7 @@ const OrderSummaryBox: React.FC<OrderSummaryBoxProps> = ({
 
       {/* 6. Xu */}
       {coinDiscount > 0 && (
-        <SummaryRow label="Giảm giá LoveGifts xu" value={coinDiscount} isNegative />
+        <SummaryRow label="Giảm giá GMall xu" value={coinDiscount} isNegative />
       )}
 
       {/* 7. Tổng thanh toán */}
@@ -86,7 +86,7 @@ const OrderSummaryBox: React.FC<OrderSummaryBoxProps> = ({
       </button>
       
       <p className="text-[11px] text-center text-gray-400 mt-3">
-          Nhấn "{buttonText}" đồng nghĩa với việc bạn đồng ý tuân theo <span className="underline cursor-pointer hover:text-brand-orange">Điều khoản LoveGifts</span>
+          Nhấn "{buttonText}" đồng nghĩa với việc bạn đồng ý tuân theo <span className="underline cursor-pointer hover:text-brand-orange">Điều khoản GMall</span>
       </p>
     </div>
   );

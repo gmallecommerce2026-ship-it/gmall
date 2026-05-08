@@ -57,10 +57,12 @@ const DiscountConfigModal: React.FC<DiscountConfigModalProps> = ({
     return product.tiers.map((tier, i) => tier.options[indices[i]]).join(" - ");
   };
 
+  // hooks-fix wiki 0031: getVariantName là helper closure thuần — đọc product.tiers
+  // mà product đã trong deps; thêm getVariantName gây re-render thừa. Disable rule.
   useEffect(() => {
     if (isOpen && product) {
       const formatDate = (dateStr?: string | null) => dateStr ? new Date(dateStr).toISOString().slice(0, 16) : '';
-      
+
       const mappedVariants = (product.variants || []).map(v => ({
         id: v.id!,
         sku: v.sku || '',
@@ -77,13 +79,14 @@ const DiscountConfigModal: React.FC<DiscountConfigModalProps> = ({
 
       reset({
         isDiscountActive: product.isDiscountActive || false,
-        applyToAll: true, 
+        applyToAll: true,
         commonDiscountValue: product.discountValue || 0,
         discountStartDate: formatDate(product.discountStartDate),
         discountEndDate: formatDate(product.discountEndDate),
         variants: mappedVariants
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, product, reset]);
 
   const handlePercentChange = (val: number, index?: number) => {

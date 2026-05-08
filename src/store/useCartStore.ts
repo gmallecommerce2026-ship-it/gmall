@@ -244,7 +244,7 @@ const useCartStoreBase = create<CartState & CartActions>()(
         // Nếu BE không tự xóa, cần loop gọi API delete ở đây (nhưng thường BE sẽ làm)
       },
 
-      clearCart: () => set({ items: [], selectedIds: [], totalItems: 0, totalPrice: 0 }),
+      clearCart: () => set({ items: [], selectedIds: [], totalItems: 0, totalPrice: 0, totalSelectedPrice: 0 }),
 
       toggleItemSelection: (itemId) => {
         const currentSelected = get().selectedIds;
@@ -270,11 +270,22 @@ const useCartStoreBase = create<CartState & CartActions>()(
     {
       name: 'cart-storage', // Key lưu trong localStorage
       storage: createJSONStorage(() => localStorage), // Chỉ định dùng localStorage
-      partialize: (state) => ({ 
-        items: state.items, 
+      partialize: (state) => ({
+        items: state.items,
         selectedIds: state.selectedIds,
         // Không lưu status loading
-      }), 
+      }),
+      // Sau khi hydrate từ localStorage, recompute totals — items/selectedIds
+      // được persist riêng nên các trường tổng (totalPrice, totalItems, ...)
+      // sẽ ở giá trị khởi tạo 0 nếu không tính lại tại đây.
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const summary = calculateSummary(state.items, state.selectedIds);
+          state.totalItems = summary.totalItems;
+          state.totalPrice = summary.totalPrice;
+          state.totalSelectedPrice = summary.totalSelectedPrice;
+        }
+      },
     }
   )
 );

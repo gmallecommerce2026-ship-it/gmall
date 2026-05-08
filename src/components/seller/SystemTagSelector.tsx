@@ -74,14 +74,15 @@ export const SystemTagSelector = ({ selectedTags = [], onChange }: SystemTagSele
         const children = col.children || (col as any).items || [];
         
         if (Array.isArray(children)) {
-            children.forEach(group => {
+            children.forEach((group: any) => {
                 if (!group) return;
 
+                // TS-fix wiki 0031: BE menu schema lỏng lẻo (label/title/text/links) -> cast any cho fallback chain
                 const groupLabel = safeString(group.label || group.title || 'Nhóm');
-                const items = group.items || (group as any).links || [];
+                const items = group.items || group.links || [];
 
                 if (Array.isArray(items)) {
-                    items.forEach(item => {
+                    items.forEach((item: any) => {
                         if (!item) return;
 
                         // Chỉ push nếu item có giá trị hợp lệ

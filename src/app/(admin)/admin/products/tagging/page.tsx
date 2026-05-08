@@ -1,7 +1,7 @@
 // src/app/(admin)/admin/products/tagging/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api'; 
 import { SystemTagSelector } from '@/components/seller/SystemTagSelector';
 import { Save, Search, Tag, AlertCircle } from 'lucide-react';
@@ -23,7 +23,8 @@ export default function ProductTaggingPage() {
   // State quản lý tags đang chỉnh sửa { [productId]: tags[] }
   const [editingTags, setEditingTags] = useState<Record<string, string[]>>({});
 
-  const fetchProducts = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const res: any = await api.get('/admin/products', {
@@ -34,7 +35,7 @@ export default function ProductTaggingPage() {
       // TH1: Axios response chuẩn -> res.data.data
       // TH2: Interceptor đã trả về body -> res.data
       const productsData = res?.data?.data || res?.data || [];
-      
+
       if (Array.isArray(productsData)) {
         setProducts(productsData);
       } else {
@@ -49,11 +50,11 @@ export default function ProductTaggingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
 
   useEffect(() => {
     fetchProducts();
-  }, [search]);
+  }, [fetchProducts]);
 
   const handleSaveTags = async (productId: string) => {
     const tags = editingTags[productId];

@@ -214,24 +214,29 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
     router.push('/payment');
   };
 
-  // Giữ nguyên logic Gift (nếu trang gift-payment chưa update store)
+  // B5.2: trước đây nút Tặng dùng Buffer.from(...).toString('base64') + router.push
+  // với raw string. Base64 sinh ra `+` và `/`; URLSearchParams spec coi `+` là
+  // space nên khi gift-payment page đọc lại, atob() fail -> items rỗng ->
+  // "giỏ hàng trống". Fix: encodeURIComponent để escape an toàn trong URL.
   const handleGiftNow = () => {
     if (!validateSelection()) return;
     setIsGifting(true);
-    
+
     const checkoutData = {
         productId: product.id,
-        variantId: currentVariant?.sku || currentVariant?.id,
+        productVariantId: currentVariant?.id, // dùng id (khớp với handleBuyNow + BE)
+        variantId: currentVariant?.id,        // fallback key để BE cũ cũng hiểu
         quantity: quantity,
         selectedOptions: product.tiers ? selections.map((s, i) => ({
             name: product.tiers![i].name,
             value: product.tiers![i].options[s]
         })) : []
     };
-    
-    // Vẫn dùng cách cũ cho Gift payment để tránh lỗi nếu trang kia chưa sửa
-    const query = Buffer.from(JSON.stringify([checkoutData])).toString('base64');
-    
+
+    const query = encodeURIComponent(
+      Buffer.from(JSON.stringify([checkoutData])).toString('base64')
+    );
+
     setTimeout(() => {
         router.push(`/gift-payment?data=${query}`);
         setIsGifting(false);
@@ -255,6 +260,26 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
             <span className="w-[1px] h-4 bg-gray-300"></span>
             <span className="text-gray-500">Đã bán {product.salesCount || 0}</span>
         </div>
+
+        {/* B5.1: mô tả ngắn ngay dưới tên. Dùng shortDescription từ schema
+            nếu có; fallback sang 160 ký tự đầu của description (strip HTML). */}
+        {(() => {
+          const short =
+            (product as any).shortDescription ||
+            (product.description
+              ? String(product.description)
+                  .replace(/<[^>]*>/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .slice(0, 160)
+              : '');
+          return short ? (
+            <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+              {short}
+              {product.description && short.length === 160 ? '…' : ''}
+            </p>
+          ) : null;
+        })()}
       </div>
 
       {/* 2. Price Section */}

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   UserMinus, MessageCircle, UserCheck, UserX, Clock, Loader2, Search, UserPlus, Banknote
@@ -10,6 +10,7 @@ import socket from '@/services/socket';
 import { useDebounce } from '@/hooks/useDebounce'; // Đảm bảo bạn có hook này, nếu chưa có xem phần ghi chú cuối
 import { useChatStore } from '@/store/useChatStore';
 import TransferModal from '@/components/points/TransferModal';
+import FriendHoverCard from '@/components/common/FriendHoverCard'; // Spec [0018]: hover popup
 
 // Định nghĩa kiểu dữ liệu
 interface Friend {
@@ -80,12 +81,45 @@ export default function FriendsPage() {
     // router.push(`/user/wallet/transfer?to=${friend.id}`);
     alert(`Tính năng chuyển tiền cho ${friend.name} đang phát triển!`);
   };
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep — moved up
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'my-friends') {
+        const res = await api.get('/friends/my-friends');
+        // SỬA: Bỏ .data đi, dùng res trực tiếp (vì api.ts đã xử lý rồi)
+        setFriends(res as any);
+      } else if (activeTab === 'requests') {
+        const res = await api.get('/friends/pending');
+        // SỬA: Bỏ .data đi
+        setRequests(res as any);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  const handleSearchUsers = async (query: string) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/friends/search?q=${query}`);
+      // SỬA: Bỏ .data đi
+      setSearchResults(res as any);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 1. Fetch data khi chuyển tab
   useEffect(() => {
     if (activeTab === 'my-friends' || activeTab === 'requests') {
       fetchData();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchData]);
 
   // 2. Fetch search khi query thay đổi (ở tab search)
   useEffect(() => {
@@ -107,9 +141,9 @@ export default function FriendsPage() {
     socket.on('friend_request_accepted', (data: any) => {
        // Refresh lại list nếu cần thiết, hoặc bắn toast
        if (activeTab === 'my-friends') fetchData();
-       
+
        // Cập nhật lại trạng thái trong list tìm kiếm nếu đang search đúng người đó
-       setSearchResults(prev => prev.map(u => 
+       setSearchResults(prev => prev.map(u =>
          u.id === data.receiver.id ? { ...u, status: 'FRIEND' } : u
        ));
     });
@@ -118,39 +152,7 @@ export default function FriendsPage() {
       socket.off('new_friend_request');
       socket.off('friend_request_accepted');
     };
-  }, [activeTab]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'my-friends') {
-        const res = await api.get('/friends/my-friends');
-        // SỬA: Bỏ .data đi, dùng res trực tiếp (vì api.ts đã xử lý rồi)
-        setFriends(res as any); 
-      } else if (activeTab === 'requests') {
-        const res = await api.get('/friends/pending');
-        // SỬA: Bỏ .data đi
-        setRequests(res as any);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearchUsers = async (query: string) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/friends/search?q=${query}`);
-      // SỬA: Bỏ .data đi
-      setSearchResults(res as any);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [activeTab, fetchData]);
 
   // --- ACTIONS ---
 
@@ -306,19 +308,26 @@ export default function FriendsPage() {
               
               {friends?.map((f) => (
                   <div key={f.friendshipId} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow bg-white">
-                     <div className="flex items-center gap-4">
-                        <img 
-                          src={f.avatar || `https://ui-avatars.com/api/?name=${f.name}&background=random`} 
-                          alt={f.name} 
-                          className="w-12 h-12 rounded-full border border-gray-100 object-cover" 
-                        />
-                        <div>
-                            <p className="text-sm font-bold text-gray-800">{f.name}</p>
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
-                               {f.isOnline ? <span className="text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span> Online</span> : "Offline"}
-                            </p>
+                     {/* Spec [0018]: hover avatar/name -> popup info công khai (ẩn SĐT) */}
+                     <FriendHoverCard
+                        friend={f}
+                        onChat={() => handleChat(f)}
+                        onTransfer={() => openTransferModal(f)}
+                     >
+                        <div className="flex items-center gap-4 cursor-pointer">
+                           <img
+                             src={f.avatar || `https://ui-avatars.com/api/?name=${f.name}&background=random`}
+                             alt={f.name}
+                             className="w-12 h-12 rounded-full border border-gray-100 object-cover"
+                           />
+                           <div>
+                               <p className="text-sm font-bold text-gray-800">{f.name}</p>
+                               <p className="text-xs text-gray-500 flex items-center gap-1">
+                                  {f.isOnline ? <span className="text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span> Online</span> : "Offline"}
+                               </p>
+                           </div>
                         </div>
-                     </div>
+                     </FriendHoverCard>
                      <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleChat(f)}

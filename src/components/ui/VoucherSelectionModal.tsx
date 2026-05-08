@@ -1,6 +1,6 @@
 // src/components/ui/VoucherSelectionModal.tsx
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Voucher, VoucherService } from '@/services/voucher.service'; // Import từ service chính
 import { toast } from 'react-hot-toast';
 import { CloseIcon } from '@/icons';
@@ -30,17 +30,8 @@ const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
 
-  // 1. Fetch dữ liệu khi Modal mở
-  useEffect(() => {
-    if (isOpen) {
-        setIsVisible(true);
-        fetchVouchers();
-    } else {
-        setTimeout(() => setIsVisible(false), 200);
-    }
-  }, [isOpen, shopId, isSystem]);
-
-  const fetchVouchers = async () => {
+  // hooks-fix wiki 0031: useCallback wrapping for stable effect dep
+  const fetchVouchers = useCallback(async () => {
     try {
         setLoading(true);
         let data: Voucher[] = [];
@@ -49,15 +40,15 @@ const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
             // Gọi API lấy voucher sàn (bạn cần đảm bảo method này tồn tại hoặc dùng getMyVouchers lọc scope GLOBAL)
             const res = await VoucherService.getSystemVouchers();
             // Nếu API trả về cấu trúc khác, hãy map lại ở đây. Ví dụ: res.data hoặc res
-            data = Array.isArray(res) ? res : []; 
+            data = Array.isArray(res) ? res : [];
         } else if (shopId) {
             // Gọi API lấy voucher shop
             // Lưu ý: service getShopVouchersPublic của bạn đang trả về [], cần backend implement
             // Tạm thời gọi getMyVouchers rồi lọc shopId để demo logic
-            const allMyVouchers = await VoucherService.getMyVouchers(); 
+            const allMyVouchers = await VoucherService.getMyVouchers();
             // Mock logic lọc (sửa lại theo logic backend thực tế của bạn)
             data = allMyVouchers.filter(v => v.scope === 'SHOP' && v.seller?.shopName /* check shopId here */);
-            
+
             // Nếu chưa có backend, giả lập data để test UI:
             if(data.length === 0) {
                data = [
@@ -66,7 +57,7 @@ const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
                ];
             }
         }
-        
+
         // Map data để đảm bảo có field discountValue (fix lỗi 1 ở runtime)
         const mappedData = data.map(v => ({
             ...v,
@@ -80,7 +71,17 @@ const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
     } finally {
         setLoading(false);
     }
-  };
+  }, [isSystem, shopId]);
+
+  // 1. Fetch dữ liệu khi Modal mở
+  useEffect(() => {
+    if (isOpen) {
+        setIsVisible(true);
+        fetchVouchers();
+    } else {
+        setTimeout(() => setIsVisible(false), 200);
+    }
+  }, [isOpen, fetchVouchers]);
 
   if (!isVisible && !isOpen) return null;
 

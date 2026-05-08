@@ -1,6 +1,14 @@
+// URL-safe base64: thay + -> -, / -> _, bỏ = padding.
+// Base64 chuẩn có '+' và '/' — URLSearchParams spec coi '+' là space ->
+// searchParams.get() trả sai giá trị, decode fail. URL-safe tránh vấn đề này
+// mà không cần encodeURIComponent/decodeURIComponent tường minh ở call site.
 export const encodeData = (data: any): string => {
   try {
-    return Buffer.from(JSON.stringify(data)).toString('base64');
+    return Buffer.from(JSON.stringify(data))
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
   } catch (e) {
     console.error("Encode error", e);
     return "";
@@ -10,7 +18,11 @@ export const encodeData = (data: any): string => {
 export const decodeData = (str: string | null): any => {
   if (!str) return null;
   try {
-    return JSON.parse(Buffer.from(str, 'base64').toString('utf-8'));
+    // Restore base64 chuẩn trước khi decode.
+    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    // Pad lại '=' cho đủ bội số 4.
+    const padded = base64 + '==='.slice((base64.length + 3) % 4);
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
   } catch (e) {
     console.error("Decode error", e);
     return null;
