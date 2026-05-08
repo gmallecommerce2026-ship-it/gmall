@@ -17,28 +17,14 @@ const nextConfig: NextConfig = {
   },
   
   images: {
+    // Cho phép mọi https domain. Lý do: project có nhiều nguồn ảnh (Unsplash,
+    // Tiki CDN, R2 bucket, picsum, qrserver, placehold, ảnh seller upload từ
+    // CDN của họ...). Liệt kê từng hostname dễ break #13 blog 500 mỗi khi
+    // có ảnh mới. Trade-off: bỏ image-source whitelist (risk: bandwidth abuse
+    // hoặc serve untrusted SVG), nhưng đáng đổi để page không 500. Khi production
+    // có CDN cố định nên thắt lại.
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.pravatar.cc',
-      },
-      {
-        protocol: 'https',
-        hostname: 'salt.tikicdn.com', // Cho phép ảnh từ Tiki
-      },
-      // 👇 THÊM ĐOẠN NÀY CHO CLOUDFLARE R2 👇
-      {
-        protocol: 'https',
-        // Thay 'media.yourshop.com' bằng domain R2 thực tế của bạn
-        // Ví dụ: 'pub-xxxxxxxx.r2.dev' (nếu chưa map domain) hoặc 'cdn.abc.com'
-        hostname: 'pub-185ebd54bdaf484da9a626bae9f4e36b.r2.dev',
-        port: '',
-        pathname: '/**', // Cho phép load tất cả ảnh trong bucket
-      },
+      { protocol: 'https', hostname: '**' },
     ],
   },
   
