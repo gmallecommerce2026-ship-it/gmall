@@ -236,7 +236,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { conversations, selectConversation, loadConversations } = get();
     set({ isOpen: true, isMinimized: false });
 
-    const existingConv = conversations.find(c => c.partner.id === sellerId);
+    // wiki 0043: optional-chain phòng partner null khi user kia bị xóa
+    const existingConv = conversations.find(c => c.partner?.id === sellerId);
     if (existingConv) {
         await selectConversation(existingConv.id);
         return;
@@ -290,8 +291,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { conversations, selectConversation, loadConversations } = get();
     set({ isOpen: true, isMinimized: false });
 
-    // Check hội thoại thật
-    const existingConv = conversations.find(c => c.partner.id === friendId);
+    // Check hội thoại thật — wiki 0043: optional-chain phòng partner null
+    const existingConv = conversations.find(c => c.partner?.id === friendId);
     if (existingConv) {
         await selectConversation(existingConv.id);
         return;
@@ -379,7 +380,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             receiverId = activeConversationId.replace('temp_user_', '');
         } else {
             const currentConv = conversations.find(c => c.id === activeConversationId);
-            if (currentConv) receiverId = currentConv.partner.id;
+            // wiki 0043: optional-chain — nếu partner null, không gửi message (return early)
+            if (currentConv?.partner?.id) receiverId = currentConv.partner.id;
+            else { console.warn('[chat] currentConv missing partner, skip send'); return; }
         }
         targetConvId = activeConversationId;
     }

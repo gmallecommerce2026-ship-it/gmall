@@ -90,19 +90,30 @@ export default function MessagesClient() {
         ) : (
           /* LIST HỘI THOẠI CŨ (Giữ nguyên code cũ của bạn) */
           <div className="flex-1 overflow-y-auto">
-             {conversations.map(conv => (
-                <div 
-                   key={conv.id} 
+             {conversations.filter(conv => !!conv.partner).map(conv => (
+                <div
+                   key={conv.id}
                    onClick={() => selectConversation(conv.id)}
                    className={`p-3 flex gap-3 cursor-pointer hover:bg-gray-50 ${activeConversationId === conv.id ? 'bg-blue-50' : ''}`}
                 >
-                   {/* Render Avatar & Info */}
+                   {/* Render Avatar & Info — wiki 0043: optional-chain phòng partner null khi user kia bị xóa */}
                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
-                      <img src={conv.partner.avatar || '/assets/user-placeholder.png'} className="w-full h-full object-cover"/>
+                      <img
+                        src={conv.partner?.avatar || '/assets/user-placeholder.png'}
+                        alt={conv.partner?.name || 'User'}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const el = e.target as HTMLImageElement;
+                          if (!el.dataset.fallback) {
+                            el.dataset.fallback = "1";
+                            el.src = "/assets/user-placeholder.png";
+                          }
+                        }}
+                      />
                    </div>
                    <div className="flex-1 min-w-0">
                       <div className="flex justify-between">
-                         <p className="font-semibold truncate">{conv.partner.name}</p>
+                         <p className="font-semibold truncate">{conv.partner?.name || 'Người dùng đã xóa'}</p>
                          {conv.unreadCount > 0 && <span className="bg-red-500 text-white text-[10px] px-1 rounded-full h-fit">{conv.unreadCount}</span>}
                       </div>
                       <p className={`text-sm truncate w-40 ${conv.unreadCount > 0 ? 'font-bold text-gray-800' : 'text-gray-500'}`}>
