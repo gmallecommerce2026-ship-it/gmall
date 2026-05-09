@@ -51,18 +51,26 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onSpinSuccess, onClose }) => {
       setIsProcessing(false); // Tắt loading, bắt đầu quay
       setIsSpinning(true);
 
-      // 3. Logic xác định vị trí dừng
+      // R3-4 (wiki 0045): drive UI bằng `data.won` từ BE thay vì `reward > 0`.
+      // BE return shape: { won, reward, message }. Trước đây nếu BE trả reward
+      // value không nằm trong SEGMENTS (vd 105 trong khi SEGMENTS chỉ có 0/100/1000)
+      // → targetIndexes = [] → finalIndex = undefined → wheel rotate NaN → kim
+      // dừng vị trí ngẫu nhiên (visual) nhưng message FE vẫn nói "Chúc may mắn"
+      // → user bối rối "trúng nhưng bảo trượt".
       let targetIndexes: number[] = [];
-      
-      if (data.reward > 0) {
-          // Tìm tất cả các ô có giá trị reward tương ứng
-          targetIndexes = SEGMENTS.map((s, i) => s.value === data.reward ? i : -1).filter(i => i !== -1);
+      if (data.won && data.reward > 0) {
+        targetIndexes = SEGMENTS.map((s, i) => s.value === data.reward ? i : -1).filter(i => i !== -1);
+        // Fallback: SEGMENTS không có ô khớp value → random ô có value > 0 (mọi ô trúng)
+        if (targetIndexes.length === 0) {
+          targetIndexes = SEGMENTS.map((s, i) => s.value > 0 ? i : -1).filter(i => i !== -1);
+          console.warn(`[LuckyWheel] SEGMENTS không có ô value=${data.reward}, fallback ô trúng bất kỳ`);
+        }
       } else {
-          // Tìm tất cả ô Trượt (value = 0)
-          targetIndexes = SEGMENTS.map((s, i) => s.value === 0 ? i : -1).filter(i => i !== -1);
+        targetIndexes = SEGMENTS.map((s, i) => s.value === 0 ? i : -1).filter(i => i !== -1);
       }
 
-      // Chọn ngẫu nhiên 1 ô trong các ô hợp lệ
+      // Defensive: nếu vẫn rỗng (vd SEGMENTS toàn ô trúng mà BE bảo trượt) → ô 0
+      if (targetIndexes.length === 0) targetIndexes = [0];
       const finalIndex = targetIndexes[Math.floor(Math.random() * targetIndexes.length)];
 
       // 4. Tính toán góc quay
@@ -85,10 +93,11 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onSpinSuccess, onClose }) => {
       // 5. Kết thúc quay (4s sau)
       setTimeout(() => {
         setIsSpinning(false);
-        if (data.reward > 0) {
+        if (data.won && data.reward > 0) {
             setResultMsg(`🎉 +${data.reward} Xu`);
         } else {
-            setResultMsg("😅 Chúc may mắn lần sau");
+            // Dùng message từ BE (nếu có) để consistency, fallback hardcode
+            setResultMsg(data.message || "😅 Chúc may mắn lần sau");
         }
         
         // Đợi thêm 1 chút để người dùng đọc kết quả rồi mới đóng/refresh

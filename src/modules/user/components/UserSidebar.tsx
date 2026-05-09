@@ -3,16 +3,21 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  User, FileText, Bell, CreditCard, 
-  Gift, Ticket, Star, Users, Send, HelpCircle 
+import {
+  User, FileText, Bell,
+  Gift, Users, HelpCircle
 } from 'lucide-react';
+import { useUserStore } from '@/store/useUserStore';
 
+// #49 (wiki 0044/0045): UserSidebar trước đây hardcode user demo "Nguyễn Văn A".
+// Thay bằng useUserStore — hiển tên + avatar thật của user đăng nhập.
+// Fallback gọn nếu chưa có user (loading) hoặc avatar (default placeholder).
 const UserSidebar = () => {
   const pathname = usePathname();
+  const storeUser = useUserStore(s => s.user);
   const user = {
-    name: "Nguyễn Văn A",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
+    name: storeUser?.name || 'Khách',
+    avatar: storeUser?.avatar || '/assets/default-avatar.svg',
   };
 
   const menuItems = [
