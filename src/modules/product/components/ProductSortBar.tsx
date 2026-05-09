@@ -2,48 +2,46 @@
 "use client";
 
 import React from "react";
-import NavButton from "@/components/ui/NavButton";
 import { useProductFilters } from "@/hooks/useProductFilters";
 
 interface ProductSortBarProps {
-  title: string;
+  title?: string;
 }
 
-// Định nghĩa map mapping từ ID sang Label và API Value
 const SORT_OPTIONS = [
-  { id: 'newest', label: 'Mới Nhất' },       // Đã khớp yêu cầu
-  { id: 'sales', label: 'Bán Chạy' },        // Đã khớp yêu cầu
-  { id: 'price_asc', label: 'Giá Thấp - Cao' }, // Đã khớp yêu cầu
-  { id: 'price_desc', label: 'Giá Cao - Thấp' },// Đã khớp yêu cầu
+  { id: 'newest', label: 'Mới Nhất' },
+  { id: 'sales', label: 'Bán Chạy' },
+  { id: 'price_asc', label: 'Giá Thấp - Cao' },
+  { id: 'price_desc', label: 'Giá Cao - Thấp' },
 ];
 
-const ProductSortBar: React.FC<ProductSortBarProps> = ({ title }) => {
+// R3-2 (wiki 0045): refactor sort UI — rời NavButton wrapper sang button native
+// để: (a) active state rõ ràng (background brand-orange), (b) hover smooth,
+// (c) typography đồng bộ system, (d) bỏ prop magic-number của NavButton.
+const ProductSortBar: React.FC<ProductSortBarProps> = () => {
   const { filters, setSort } = useProductFilters();
 
   return (
-    <div className="bg-white rounded-lg w-full p-6 mt-8 shadow-sm border border-gray-100">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-gray-500 text-sm font-medium mr-2">Sắp xếp theo:</span>
-          {SORT_OPTIONS.map((option) => {
-            const isActive = filters.sort === option.id;
-            return (
-              <NavButton
-                key={option.id}
-                prop32={option.label}
-                // Shopee style: Active màu cam, Inactive màu trắng/xám
-                prop14={isActive ? "#ee4d2d" : "#fff"} 
-                prop29={!isActive} // true = text gray, false = text white
-                className={`border ${isActive ? 'border-brand-orange' : 'border-gray-200 hover:bg-gray-50'}`}
-                style={{
-                    color: isActive ? '#fff' : '#555',
-                    fontWeight: isActive ? 600 : 400
-                }}
-                onClick={() => setSort(option.id)}
-              />
-            );
-          })}
-        </div>
+    <div className="bg-white rounded-lg w-full p-4 mt-6 shadow-sm border border-gray-100">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-gray-500 text-sm font-medium mr-1">Sắp xếp theo:</span>
+        {SORT_OPTIONS.map((option) => {
+          const isActive = filters.sort === option.id;
+          return (
+            <button
+              key={option.id}
+              onClick={() => setSort(option.id)}
+              className={`px-4 py-2 rounded-md text-sm font-medium border transition-all ${
+                isActive
+                  ? 'bg-brand-orange text-white border-brand-orange shadow-sm hover:bg-orange-600'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-brand-orange hover:text-brand-orange'
+              }`}
+              aria-pressed={isActive}
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

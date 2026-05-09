@@ -145,8 +145,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
     console.log("[ProductDetailsPage] State categoryBreadcrumbs đã cập nhật:", categoryBreadcrumbs);
   }, [categoryBreadcrumbs]);
   const breadcrumbItems = useMemo(() => {
+      // R3-3 (wiki 0045): root breadcrumb đổi "G-Mall" -> "Trang chủ" theo feedback khách
       const base = [
-        { name: "G-Mall", href: "/" },
+        { name: "Trang chủ", href: "/" },
       ];
 
       // [UPDATED] Render danh mục đa cấp

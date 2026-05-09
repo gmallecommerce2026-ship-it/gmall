@@ -43,19 +43,27 @@ export const useUserStore = create<UserState>()(
       // Fix BUG-FE-1 (wiki 0030): logout phải clear cả localStorage VÀ cookie
       // accessToken. Trước đây chỉ reset state Zustand → token hợp lệ vẫn nằm
       // trên máy → tab khác / refresh vẫn auto-auth qua axios `withCredentials`.
+      // R3-6 (wiki 0045): nếu đang ở route protected, redirect về home để
+      // tránh stuck ở `/user/profile` hiển thị data stale của user vừa logout.
       logout: () => {
+        let needsRedirect = false;
         if (typeof window !== 'undefined') {
           try {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('user-storage');
-            // Clear cookie (chỉ xóa được non-httpOnly từ JS; httpOnly cần BE clear).
-            // Path=/ phải khớp với khi set cookie để xóa thành công.
             document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
           } catch {
             // localStorage có thể fail trong incognito hoặc storage quota — không block logout
           }
+          const path = window.location.pathname;
+          const PROTECTED = ['/user', '/cart', '/checkout', '/payment', '/gift-payment', '/messages', '/seller-dashboard', '/admin'];
+          needsRedirect = PROTECTED.some(p => path.startsWith(p)) && !path.endsWith('/login');
         }
         set({ user: null, isAuthenticated: false });
+        if (needsRedirect) {
+          // assign (không replace) để user có thể back lại nếu cần
+          window.location.assign('/');
+        }
       },
     }),
     {

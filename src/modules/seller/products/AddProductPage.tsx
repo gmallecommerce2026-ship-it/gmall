@@ -556,7 +556,10 @@ const AddProductPage = () => {
   const progressPercent = Math.round((completedCount / totalCriteria) * 100);
 
   // ... (Logic Tier, Options, SKU - Giữ nguyên như cũ) ...
-  const addTier = () => { if (tiers.length < 2) setTiers([...tiers, { name: '', options: [], images: [] }]); };
+  // #16 (wiki 0044/0045): max nhóm phân loại = 5 (theo spec Require GMall + feedback Pass 2 #16).
+  // Trước đây cứng 2. SKU matrix builder giờ dùng generic Cartesian product.
+  const MAX_TIERS = 5;
+  const addTier = () => { if (tiers.length < MAX_TIERS) setTiers([...tiers, { name: '', options: [], images: [] }]); };
   const removeTier = (index: number) => { const n = [...tiers]; n.splice(index, 1); setTiers(n); };
   const updateTierName = (idx: number, v: string) => { const n = [...tiers]; n[idx].name = v; setTiers(n); };
   
@@ -597,19 +600,24 @@ const AddProductPage = () => {
       setTiers(n);
   };
 
+  // #16: Cartesian product generic cho tiers.length từ 1 đến MAX_TIERS=5.
+  // Trước đây hardcode chỉ handle 1 hoặc 2 tiers → SKU matrix rỗng khi tiers > 2.
   const generateSkuMatrix = useCallback(() => {
       if (tiers.length === 0) return [];
-      let rows: SkuRow[] = [];
-      if (tiers.length === 1) {
-          rows = tiers[0].options.map((opt, idx) => ({ key: opt, indices: [idx], price: 0, stock: 0, sku: '' }));
-      } else if (tiers.length === 2) {
-          tiers[0].options.forEach((opt1, idx1) => {
-              tiers[1].options.forEach((opt2, idx2) => {
-                  rows.push({ key: `${opt1} - ${opt2}`, indices: [idx1, idx2], price: 0, stock: 0, sku: '' });
-              });
-          });
-      }
-      return rows;
+      const tierOpts = tiers.map(t => t.options);
+      if (tierOpts.some(opts => opts.length === 0)) return [];
+      // Cartesian: reduce mỗi tier nhân với accumulator.
+      // Bắt đầu với [{ key: '', indices: [] }], mỗi step expand mỗi row × mỗi option của tier kế.
+      const initial: { key: string; indices: number[] }[] = [{ key: '', indices: [] }];
+      const cartesian = tierOpts.reduce((acc, opts) => {
+          return acc.flatMap(row =>
+              opts.map((opt, optIdx) => ({
+                  key: row.key ? `${row.key} - ${opt}` : opt,
+                  indices: [...row.indices, optIdx],
+              }))
+          );
+      }, initial);
+      return cartesian.map(c => ({ ...c, price: 0, stock: 0, sku: '' }));
   }, [tiers]);
 
   // hooks-fix wiki 0031: cố ý bỏ skuRows khỏi deps — effect sync skuRows từ tiers,
@@ -1145,8 +1153,8 @@ const AddProductPage = () => {
                              </div>
                         </div>
                       ))}
-                      {tiers.length < 2 && (
-                          <button onClick={addTier} className="flex items-center gap-2 text-orange-600 border border-orange-200 bg-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-50 transition-colors w-full justify-center border-dashed"><Plus size={16} /> Thêm nhóm phân loại {tiers.length + 1}</button>
+                      {tiers.length < MAX_TIERS && (
+                          <button onClick={addTier} className="flex items-center gap-2 text-orange-600 border border-orange-200 bg-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-50 transition-colors w-full justify-center border-dashed"><Plus size={16} /> Thêm nhóm phân loại {tiers.length + 1} <span className="text-xs text-orange-400">(tối đa {MAX_TIERS})</span></button>
                       )}
                   </div>
               </div>

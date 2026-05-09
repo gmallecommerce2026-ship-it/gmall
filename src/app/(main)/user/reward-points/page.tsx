@@ -37,8 +37,9 @@ export default function RewardPointsPage() {
     setLoadingCheckIn(true);
     try {
       const res: any = await pointService.checkIn();
-      alert(`🎉 Điểm danh thành công! +${res.reward || 100} xu`);
-      refreshData(); // Reload lại toàn bộ state sau khi checkin
+      const bonusMsg = res.bonusApplied ? ' 🔥 Bonus streak 10 ngày!' : '';
+      alert(`🎉 Điểm danh thành công! +${res.earned || 3000} xu${bonusMsg}`);
+      refreshData();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Lỗi điểm danh');
     } finally {
@@ -46,19 +47,22 @@ export default function RewardPointsPage() {
     }
   };
 
-  const weekDays = [
-    { day: 1, label: 'Th 2', reward: 100 },
-    { day: 2, label: 'Th 3', reward: 150 },
-    { day: 3, label: 'Th 4', reward: 200 },
-    { day: 4, label: 'Th 5', reward: 250 },
-    { day: 5, label: 'Th 6', reward: 300 },
-    { day: 6, label: 'Th 7', reward: 400 },
-    { day: 7, label: 'CN', reward: 1000, isBig: true },
-  ];
+  // G3 (wiki 0044/0045): hiển streak 10 ngày — 9 ngày thường 3000 xu + ngày 10 bonus 10000.
+  // Trước đây hiển weekday Mon-Sun (100/150/.../1000) khớp BE cũ. BE mới thay đổi
+  // sang streak-based, FE update tương ứng.
+  const DAYS_PER_CYCLE = 10;
+  const streakDays = Array.from({ length: DAYS_PER_CYCLE }, (_, i) => ({
+    day: i + 1,
+    label: `Ngày ${i + 1}`,
+    reward: 3000 + (i + 1 === DAYS_PER_CYCLE ? 10000 : 0),
+    isBig: i + 1 === DAYS_PER_CYCLE,
+  }));
 
   if (!pointInfo) return <div className="p-12 text-center text-gray-500">Đang tải dữ liệu...</div>;
 
-  const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
+  // Vị trí hiện tại trong cycle 10 ngày (streak modulo)
+  const currentStreak = pointInfo.streak || 0;
+  const currentInCycle = currentStreak === 0 ? 0 : ((currentStreak - 1) % DAYS_PER_CYCLE) + 1;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -82,11 +86,11 @@ export default function RewardPointsPage() {
         <Coins className="absolute -bottom-8 -right-8 text-white opacity-20" size={180} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* 2. CỘT TRÁI: Khu vực kiếm điểm (Điểm danh + Vòng quay) */}
-        <div className="lg:col-span-2 space-y-6">
-            
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* 2. CỘT TRÁI: Điểm danh */}
+        <div>
+
             {/* BOX 1: ĐIỂM DANH */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -110,29 +114,30 @@ export default function RewardPointsPage() {
                     </Button>
                 </div>
 
-                {/* Timeline tuần */}
-                <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
-                    {weekDays.map((item) => {
-                        const isToday = item.day === currentDayOfWeek;
-                        // Logic hiển thị trạng thái checkin visual
-                        const isChecked = item.day < currentDayOfWeek || (isToday && pointInfo.isCheckedInToday);
+                {/* Timeline streak 10 ngày */}
+                <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                    {streakDays.map((item) => {
+                        const isToday = item.day === currentInCycle + (pointInfo.isCheckedInToday ? 0 : 1);
+                        const isChecked = item.day <= currentInCycle;
 
                         return (
                             <div key={item.day} className={`
-                                relative flex flex-col items-center p-3 rounded-xl border transition-all
+                                relative flex flex-col items-center p-2 rounded-xl border transition-all
                                 ${isToday ? 'border-orange-400 bg-orange-50 ring-1 ring-orange-200' : 'border-gray-100 bg-white'}
+                                ${item.isBig ? 'bg-gradient-to-br from-orange-50 to-yellow-50' : ''}
                             `}>
-                                <span className="text-xs font-bold text-gray-500 mb-2">{item.label}</span>
+                                <span className="text-[10px] font-bold text-gray-500 mb-1">{item.label}</span>
                                 {item.isBig ? (
-                                    <Gift size={24} className={isChecked ? "text-orange-500" : "text-gray-300"} />
+                                    <Gift size={20} className={isChecked ? "text-orange-500" : "text-orange-300"} />
                                 ) : (
-                                    <Coins size={20} className={isChecked ? "text-yellow-500" : "text-gray-300"} />
+                                    <Coins size={16} className={isChecked ? "text-yellow-500" : "text-gray-300"} />
                                 )}
-                                <span className="text-[10px] font-bold mt-2 text-gray-600">+{item.reward}</span>
-                                
+                                <span className={`text-[9px] font-bold mt-1 ${item.isBig ? 'text-orange-600' : 'text-gray-600'}`}>
+                                    +{item.reward.toLocaleString()}
+                                </span>
                                 {isChecked && (
                                     <div className="absolute top-1 right-1">
-                                        <CheckCircle2 size={12} className="text-green-500" />
+                                        <CheckCircle2 size={10} className="text-green-500" />
                                     </div>
                                 )}
                             </div>
@@ -141,54 +146,69 @@ export default function RewardPointsPage() {
                 </div>
             </div>
 
-            {/* BOX 2: VÒNG QUAY MAY MẮN */}
-            {/* Hiển thị box này nổi bật nếu chưa quay */}
-            <div className={`transition-all duration-500 ${!pointInfo.hasSpunToday ? 'ring-2 ring-purple-400 ring-offset-2 rounded-xl' : ''}`}>
-                 <LuckyWheel onSpinSuccess={refreshData} />
-            </div>
-
         </div>
 
-        {/* 3. CỘT PHẢI: Lịch sử giao dịch */}
-        <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[600px]">
-                 <div className="p-5 border-b border-gray-100 flex items-center gap-2">
-                    <History className="text-gray-500" size={20}/>
-                    <h3 className="font-bold text-gray-800">Lịch sử biến động</h3>
-                 </div>
-
-                 <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                    {history.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                            <Clock size={40} className="mb-2 opacity-20"/>
-                            <p className="text-sm">Chưa có giao dịch</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-1">
-                            {history.map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-full ${item.type === 'EARN' || item.type === 'EARN_GAME' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                            {item.type.includes('EARN') ? <ArrowDownCircle size={16}/> : <ArrowUpCircle size={16}/>}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-800 line-clamp-1 max-w-[120px]" title={item.description}>
-                                                {item.description}
-                                            </p>
-                                            <p className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</p>
-                                        </div>
-                                    </div>
-                                    <span className={`font-bold text-sm ${item.type.includes('EARN') ? 'text-green-600' : 'text-gray-800'}`}>
-                                        {item.type.includes('EARN') ? '+' : '-'}{item.amount.toLocaleString()}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                 </div>
-            </div>
+        {/* CỘT PHẢI: Vòng quay may mắn */}
+        <div className={`transition-all duration-500 ${!pointInfo.hasSpunToday ? 'ring-2 ring-purple-400 ring-offset-2 rounded-xl' : ''}`}>
+            <LuckyWheel onSpinSuccess={refreshData} />
         </div>
 
+      </div>
+
+      {/* #52 (wiki 0044/0045): bảng lịch sử điểm dạng table với cột rõ ràng
+          ID đơn / Ngày / Điểm / Lý do — theo spec Require GMall §8.
+          Trước đây là card scroll list compact bên cột phải, không phải table. */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="p-5 border-b border-gray-100 flex items-center gap-2">
+              <History className="text-gray-500" size={20}/>
+              <h3 className="font-bold text-gray-800">Lịch sử điểm thưởng</h3>
+              <span className="ml-auto text-xs text-gray-400">{history.length} giao dịch gần nhất</span>
+          </div>
+
+          {history.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <Clock size={48} className="mb-3 opacity-20"/>
+                  <p className="text-sm">Chưa có giao dịch nào</p>
+              </div>
+          ) : (
+              <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                          <tr>
+                              <th className="px-4 py-3 font-semibold w-[140px]">Ngày</th>
+                              <th className="px-4 py-3 font-semibold w-[140px]">Loại</th>
+                              <th className="px-4 py-3 font-semibold">Lý do</th>
+                              <th className="px-4 py-3 font-semibold w-[120px]">Mã đơn / Ref</th>
+                              <th className="px-4 py-3 font-semibold text-right w-[110px]">Điểm</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {history.map((item) => {
+                              const isEarn = item.type?.includes('EARN');
+                              const refId = item.referenceId || item.refId || '—';
+                              return (
+                                  <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                                          {new Date(item.createdAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isEarn ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                              {isEarn ? <ArrowDownCircle size={12}/> : <ArrowUpCircle size={12}/>}
+                                              {isEarn ? 'Cộng' : 'Trừ'}
+                                          </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-700">{item.description || '—'}</td>
+                                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{refId}</td>
+                                      <td className={`px-4 py-3 text-right font-bold ${isEarn ? 'text-green-600' : 'text-gray-800'}`}>
+                                          {isEarn ? '+' : '-'}{item.amount?.toLocaleString() || 0}
+                                      </td>
+                                  </tr>
+                              );
+                          })}
+                      </tbody>
+                  </table>
+              </div>
+          )}
       </div>
     </div>
   );

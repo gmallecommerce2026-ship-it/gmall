@@ -158,35 +158,35 @@ const SEOHomeFooter = () => {
           ))}
         </div>
 
-        {/* 2. DANH MỤC SẢN PHẨM (ĐÃ NÂNG CẤP) */}
+        {/* 2. DANH MỤC SẢN PHẨM */}
+        {/* R3-5 (wiki 0045): bỏ grid 5 cols + gap-y-6 vì cards có height
+            chênh lệch lớn (Bách Hóa 10+ items vs Điện Gia Dụng 2 items) →
+            whitespace lớn dưới cards ngắn. Đổi sang CSS multi-column layout
+            (column-count) — browser tự fill flow theo "newspaper column",
+            cards chảy tự nhiên không tạo dead space giữa rows. */}
         <SectionTitle>Danh Mục Sản Phẩm</SectionTitle>
-        
+
         <div className="relative">
-          {/* Container kiểm soát chiều cao */}
-          <div 
+          <div
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
-              isExpanded ? 'max-h-[3000px]' : 'max-h-[280px]'
+              isExpanded ? 'max-h-[6000px]' : 'max-h-[320px]'
             }`}
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-6">
+            <div className="columns-1 md:columns-3 lg:columns-5 gap-x-8 [column-fill:_balance]">
               {CATEGORIES.map((cat, idx) => {
                 const subItems = cat.items.split('/').map(s => s.trim());
                 return (
-                  <div key={idx} className="flex flex-col gap-1">
-                    {/* Tiêu đề danh mục */}
+                  <div key={idx} className="break-inside-avoid mb-5">
                     <h5 className="font-bold text-gray-900 text-[13px] mb-1">{cat.title}</h5>
-                    
-                    {/* Danh sách item dạng Inline (Dòng chảy) */}
                     <div className="text-[12px] text-gray-500 leading-relaxed">
                       {subItems.map((item, subIdx) => (
                         <React.Fragment key={subIdx}>
                           <Link
                             href={`/search?q=${encodeURIComponent(item)}`}
-                            className="hover:text-gray-900 hover:underline text-gray-500 transition-colors inline-block"
+                            className="hover:text-gray-900 hover:underline text-gray-500 transition-colors"
                           >
                             {item}
                           </Link>
-                          {/* Dấu gạch chéo phân cách */}
                           {subIdx < subItems.length - 1 && (
                             <span className="text-gray-300 mx-1">/</span>
                           )}
@@ -199,7 +199,6 @@ const SEOHomeFooter = () => {
             </div>
           </div>
 
-          {/* Lớp phủ mờ (Gradient Mask) khi thu gọn */}
           {!isExpanded && (
             <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
           )}
