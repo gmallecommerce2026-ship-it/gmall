@@ -30,6 +30,15 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, activeImage }) 
           src={selectedImage}
           alt="Product details"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => {
+            // Wiki 0041: fallback khi src 404 (ảnh seed Tiki CDN nhiều url đã chết).
+            // Set src lần đầu để tránh infinite loop khi placeholder cũng 404.
+            const el = e.target as HTMLImageElement;
+            if (!el.dataset.fallback) {
+              el.dataset.fallback = "1";
+              el.src = "/assets/placeholder.png";
+            }
+          }}
         />
         {/* Badge giả lập (ví dụ) */}
         <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
@@ -56,6 +65,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, activeImage }) 
               src={img}
               alt={`Thumbnail ${index + 1}`}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const el = e.target as HTMLImageElement;
+                if (!el.dataset.fallback) {
+                  el.dataset.fallback = "1";
+                  el.src = "/assets/placeholder.png";
+                }
+              }}
             />
           </button>
         ))}
