@@ -9,20 +9,25 @@ interface CheckInModalProps {
   onSuccess: () => void;
 }
 
-const REWARDS = [100, 150, 200, 250, 300, 400, 1000]; // Map với Backend
+// Wiki 0048 (sync với G3 ở wiki 0046): mỗi ngày 3000 xu, ngày 10 bonus 10000.
+// Trước đây 7 ngày Mon-Sun với rewards 100/150/.../1000 — KHÔNG khớp BE đã đổi.
+const DAYS_PER_CYCLE = 10;
+const DAILY_REWARD = 3000;
+const STREAK_BONUS = 10000;
+const REWARDS = Array.from({ length: DAYS_PER_CYCLE }, (_, i) =>
+  i + 1 === DAYS_PER_CYCLE ? DAILY_REWARD + STREAK_BONUS : DAILY_REWARD
+);
 
 const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [streak, setStreak] = useState(0); // 0-based index
+  const [streak, setStreak] = useState(0); // 0-based index (current position in cycle)
 
   useEffect(() => {
     if (isOpen) {
-      // Lấy streak hiện tại từ server để hiển thị đúng ô
       pointService.getDailyStatus().then((res: any) => {
-         // Giả sử backend trả về currentStreak (1-based), ta trừ 1 để map vào array
-         // Nếu chưa checkin hôm nay, streak hiển thị sẽ là streak cũ. 
-         // Logic hiển thị: Nếu chưa checkin, ta highlight ô (streak hiện tại).
-         setStreak(res.currentStreak || 0);
+         // BE trả `streak` 1-based. Modulo cycle để hiển vị trí trong 10 ngày.
+         const s = res.streak || res.currentStreak || 0;
+         setStreak(s === 0 ? 0 : ((s - 1) % DAYS_PER_CYCLE) + 1);
       });
     }
   }, [isOpen]);
@@ -32,9 +37,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess 
   const handleCheckIn = async () => {
     setLoading(true);
     try {
-      const data = await pointService.checkIn();
-      // data trả về: reward, streak, message
-      onSuccess(); 
+      await pointService.checkIn();
+      onSuccess();
     } catch (error: any) {
       alert(error?.response?.data?.message || 'Lỗi điểm danh');
       onClose();
@@ -46,38 +50,32 @@ const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-300">
       <div className="bg-gradient-to-b from-blue-900 to-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative border border-blue-500/30">
-        
+
         {/* Header */}
         <div className="relative p-6 text-center">
             <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white"><X size={24} /></button>
             <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500 uppercase tracking-wider">
-                Điểm Danh 7 Ngày
+                Điểm Danh 10 Ngày
             </h2>
-            <p className="text-blue-200 text-sm mt-1">Nhận quà mỗi ngày, ngày 7 nổ hũ!</p>
+            <p className="text-blue-200 text-sm mt-1">Mỗi ngày {DAILY_REWARD.toLocaleString()} xu — đủ {DAYS_PER_CYCLE} ngày liên tục thưởng thêm {STREAK_BONUS.toLocaleString()} xu!</p>
         </div>
 
-        {/* Grid Quà Tặng */}
+        {/* Grid Quà Tặng — 5 cột × 2 hàng cho 10 ngày */}
         <div className="px-6 pb-6">
-            <div className="grid grid-cols-4 gap-3 mb-3">
-                {REWARDS.slice(0, 4).map((point, index) => (
-                    <DayCard key={index} day={index + 1} point={point} active={index === streak} passed={index < streak} />
-                ))}
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-                 {REWARDS.slice(4, 7).map((point, index) => {
-                    const realIndex = index + 4;
-                    const isBigGift = realIndex === 6; // Ngày 7
+            <div className="grid grid-cols-5 gap-2">
+                {REWARDS.map((point, index) => {
+                    const isBigGift = index === DAYS_PER_CYCLE - 1; // Ngày 10
                     return (
-                        <DayCard 
-                            key={realIndex} 
-                            day={realIndex + 1} 
-                            point={point} 
-                            active={realIndex === streak} 
-                            passed={realIndex < streak}
+                        <DayCard
+                            key={index}
+                            day={index + 1}
+                            point={point}
+                            active={index + 1 === streak + 1 || (streak === 0 && index === 0)}
+                            passed={index < streak}
                             isBig={isBigGift}
                         />
                     );
-                 })}
+                })}
             </div>
         </div>
 
@@ -99,25 +97,25 @@ const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess 
 // Component con hiển thị từng ngày
 const DayCard = ({ day, point, active, passed, isBig = false }: any) => {
     return (
-        <div className={`relative flex flex-col items-center justify-center rounded-xl border-2 transition-all duration-300
-            ${isBig ? 'col-span-1 bg-yellow-900/40 border-yellow-500/50 aspect-square' : 'aspect-[3/4]'}
+        <div className={`relative flex flex-col items-center justify-center rounded-xl border-2 transition-all duration-300 aspect-square
+            ${isBig ? 'bg-yellow-900/40 border-yellow-500/50' : ''}
             ${active ? 'bg-blue-600/40 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)] scale-105 z-10' : ''}
             ${passed ? 'bg-slate-800/50 border-slate-700 opacity-60' : 'bg-slate-800/40 border-slate-700'}
         `}>
             {passed && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
-                    <Check className="text-green-400 w-8 h-8 stroke-[3]" />
+                    <Check className="text-green-400 w-6 h-6 stroke-[3]" />
                 </div>
             )}
-            
-            <span className="text-[10px] uppercase font-bold text-slate-400 mb-1">Ngày {day}</span>
-            
-            <div className={`${isBig ? 'w-12 h-12 text-yellow-400' : 'w-8 h-8 text-blue-400'} mb-1 drop-shadow-lg`}>
+
+            <span className="text-[9px] uppercase font-bold text-slate-400 mb-0.5">Ngày {day}</span>
+
+            <div className={`${isBig ? 'w-7 h-7 text-yellow-400' : 'w-6 h-6 text-blue-400'} drop-shadow-lg`}>
                 <Gift className="w-full h-full" />
             </div>
 
-            <span className={`font-bold ${isBig ? 'text-yellow-300 text-sm' : 'text-white text-xs'}`}>
-                +{point}
+            <span className={`font-bold ${isBig ? 'text-yellow-300 text-[10px]' : 'text-white text-[9px]'} mt-0.5`}>
+                +{point.toLocaleString()}
             </span>
         </div>
     )

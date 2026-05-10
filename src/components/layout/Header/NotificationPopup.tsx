@@ -5,10 +5,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { notificationService, NotificationItem } from "@/services/notification.service";
+import { useUserStore } from "@/store/useUserStore";
 
 // #11/#23/#35/#53 (wiki 0044/0045): wire BE.
 // Trước: hardcode 3 mock notification (DH123456, Flash Sale, NEWMEMBER).
 // Sau: fetch /notifications page=1, pageSize=5 (chỉ hiển 5 mới nhất trong popup).
+// Wiki 0048: skip fetch khi guest — popup luôn mount (parent dùng `hidden
+// group-hover:block`) nên useEffect chạy ngay khi guest visit homepage,
+// gây 401 spam + AuthProvider redirect login false-positive.
 
 const formatTime = (iso: string) => {
   try {
@@ -29,15 +33,17 @@ const formatTime = (iso: string) => {
 };
 
 const NotificationPopup = () => {
+  const isAuthenticated = useUserStore(s => s.isAuthenticated);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isAuthenticated) { setLoading(false); return; }
     notificationService.list(1, 5)
       .then((res) => setItems(res.items || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <div className="w-[400px] bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">

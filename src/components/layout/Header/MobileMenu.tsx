@@ -1,12 +1,13 @@
 // src/components/layout/Header/MobileMenu.tsx
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUserStore } from "@/store/useUserStore";
 import { useCartStore } from "@/store/useCartStore";
 import { HeaderIcons as Icons } from "./HeaderIcons";
 import { CloseIcon } from "@/icons";
+import { notificationService } from "@/services/notification.service";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -16,6 +17,15 @@ interface MobileMenuProps {
 const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const { user, logout } = useUserStore();
   const totalItems = useCartStore((state) => state.totalItems);
+
+  // Wiki 0048: badge bell hiển unread count thật, fetch khi menu open + auth.
+  const [unreadNotif, setUnreadNotif] = useState(0);
+  useEffect(() => {
+    if (!isOpen || !user) { setUnreadNotif(0); return; }
+    notificationService.unreadCount()
+      .then(({ count }) => setUnreadNotif(count || 0))
+      .catch(() => {/* ignore */});
+  }, [isOpen, user]);
 
   // Chặn scroll body khi menu mở
   useEffect(() => {
@@ -99,9 +109,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
           <Link href="/user/notifications" onClick={onClose} className="flex flex-col items-center justify-center p-4 hover:bg-gray-50 active:bg-gray-100 relative">
              <div className="relative">
                 <Icons.Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute -top-2 -right-1 bg-brand-orange text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
-                    3
-                </span>
+                {unreadNotif > 0 && (
+                  <span className="absolute -top-2 -right-1 bg-brand-orange text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
+                      {unreadNotif > 99 ? '99+' : unreadNotif}
+                  </span>
+                )}
              </div>
             <span className="text-xs text-gray-600 mt-1 font-medium">Thông báo</span>
           </Link>

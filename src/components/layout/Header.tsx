@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { useUserStore } from "@/store/useUserStore";
+import { notificationService } from "@/services/notification.service";
 
 // Components
 import TopBar from "./Topbar";
@@ -32,6 +33,22 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isHomePage = pathname === "/";
+
+  // Wiki 0048: badge bell hiển unread count thật từ /notifications/unread-count.
+  // Trước hardcode "3". Poll mỗi 60s để gần realtime; chỉ fetch khi authenticated.
+  const [unreadNotif, setUnreadNotif] = useState(0);
+  useEffect(() => {
+    if (!user) { setUnreadNotif(0); return; }
+    let cancelled = false;
+    const refresh = () => {
+      notificationService.unreadCount()
+        .then(({ count }) => { if (!cancelled) setUnreadNotif(count || 0); })
+        .catch(() => {/* ignore */});
+    };
+    refresh();
+    const t = setInterval(refresh, 60_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [user]);
 
   // Sticky Logic — spec [0018]:
   // - Ẩn header khi cuộn XUỐNG (qua threshold 150px) để giảm chiếm diện tích.
@@ -157,9 +174,13 @@ const Header = () => {
             <div className="flex items-center gap-4 lg:gap-6 flex-shrink-0">
               {/* Desktop Icons */}
               <div className="group relative py-2">
-                <Link href="user/notifications" className="relative block p-1.5 hover:bg-gray-50 rounded-full transition-colors">
+                <Link href="/user/notifications" className="relative block p-1.5 hover:bg-gray-50 rounded-full transition-colors">
                   <Icons.Bell className="w-[26px] h-[26px] text-gray-600 group-hover:text-brand-orange transition-colors" />
-                  <span className="absolute top-0 right-0 h-4 min-w-[16px] px-1 bg-brand-orange text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-white shadow-sm">3</span>
+                  {mounted && unreadNotif > 0 && (
+                    <span className="absolute top-0 right-0 h-4 min-w-[16px] px-1 bg-brand-orange text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-white shadow-sm">
+                      {unreadNotif > 99 ? '99+' : unreadNotif}
+                    </span>
+                  )}
                 </Link>
                 <div className="absolute top-[calc(100%-5px)] -right-[100px] sm:right-0 pt-2 hidden group-hover:block z-[100]">
                     <NotificationPopup />
