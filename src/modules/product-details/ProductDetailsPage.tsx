@@ -13,6 +13,8 @@ import PromoCombo from "@/modules/product-details/components/PromoCombo";
 import { LazyProductRow } from "./components/LazyProductRow";
 import { BoughtTogether } from "./components/BoughtTogether";
 import ProductReviews from "@/modules/product-details/components/ProductReviews";
+import ProductDetailBanner from "@/modules/product-details/components/ProductDetailBanner";
+import RelatedBrands from "@/modules/product-details/components/RelatedBrands";
 
 import { ProductService } from "@/services/product.service";
 import { ShopService } from "@/services/shop.service";
@@ -245,15 +247,25 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
           }}
         />
 
+        {/* #21 (wiki 0046): banner ads (admin config qua /admin/content, location='PRODUCT_DETAIL') */}
+        <div className="mb-4">
+          <ProductDetailBanner />
+        </div>
+
+        {/* #22 (wiki 0046): brand chips theo category */}
+        <div className="mb-6">
+          <RelatedBrands categoryId={product.categoryId} />
+        </div>
+
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-8 mb-6 overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-10">
             <div className="w-full lg:w-[45%] flex flex-col gap-8">
-              <ProductGallery 
-                  images={product.images || []} 
-                  activeImage={previewImage} 
+              <ProductGallery
+                  images={product.images || []}
+                  activeImage={previewImage}
               />
               <div className="pt-2">
-                   <PromoCombo products={[]} /> 
+                   <PromoCombo products={[]} />
               </div>
             </div>
 
