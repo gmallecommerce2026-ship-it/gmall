@@ -91,8 +91,13 @@ export const AuthService = {
         useUserStore.getState().setUser(userData);
         return userData;
       }
-    } catch (error) {
-      console.error("Lỗi lấy thông tin user:", error);
+    } catch (error: any) {
+      // Wiki 0048: 401 cho /auth/me là behavior bình thường khi guest — không
+      // log để tránh spam console. Chỉ log network/5xx errors thật sự.
+      const status = error?.response?.status;
+      if (status && status !== 401) {
+        console.error("Lỗi lấy thông tin user:", error);
+      }
     }
     return null;
   },
