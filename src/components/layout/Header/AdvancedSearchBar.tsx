@@ -9,9 +9,10 @@ import { HeaderIcons as Icons } from './HeaderIcons';
 import { HOT_KEYWORDS, SUGGESTED_PRODUCTS, SEARCH_BANNERS } from './constants';
 import { useDebounce } from '@/hooks/useDebounce';
 import { api } from '@/services/api';
-// Giả sử ApiClient export default hoặc export class static. 
+// Giả sử ApiClient export default hoặc export class static.
 // Nếu lỗi import, hãy kiểm tra lại file ApiClient.ts của bạn.
-import { apiClient, ApiClient } from '@/lib/api/ApiClient'; 
+import { apiClient, ApiClient } from '@/lib/api/ApiClient';
+import ImageSearchModal from './ImageSearchModal'; // wiki 0052
 
 const AdvancedSearchBar = () => {
   const router = useRouter();
@@ -22,6 +23,7 @@ const AdvancedSearchBar = () => {
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const [imageSearchOpen, setImageSearchOpen] = useState(false); // wiki 0052
   
   // State cho kết quả tìm kiếm live
   const [suggestedProducts, setSuggestedProducts] = useState<any[]>([]);
@@ -177,9 +179,11 @@ const AdvancedSearchBar = () => {
   const productsToDisplay = isSearching ? suggestedProducts : SUGGESTED_PRODUCTS;
 
   return (
+    <>
+    <ImageSearchModal open={imageSearchOpen} onClose={() => setImageSearchOpen(false)} />
     <div ref={containerRef} className="relative w-full z-[200]">
       <div
-        className={`flex w-full h-[44px] bg-white border rounded-lg overflow-hidden transition-all duration-200 
+        className={`flex w-full h-[44px] bg-white border rounded-lg overflow-hidden transition-all duration-200
         ${
           showSuggestions
             ? "border-brand-orange ring-1 ring-brand-orange shadow-md rounded-b-none"
@@ -201,10 +205,16 @@ const AdvancedSearchBar = () => {
             className="w-full h-full pl-4 pr-10 text-[14px] text-gray-800 outline-none placeholder:text-gray-400 font-inter bg-transparent"
           />
 
-          {/* Camera Icon */}
-          <div className="absolute right-2 p-2 cursor-pointer text-gray-400 hover:text-brand-orange transition-colors">
+          {/* Camera Icon — wiki 0052: mở modal image search */}
+          <button
+            type="button"
+            onClick={() => setImageSearchOpen(true)}
+            aria-label="Tìm sản phẩm bằng hình ảnh"
+            title="Tìm sản phẩm bằng hình ảnh"
+            className="absolute right-2 p-2 cursor-pointer text-gray-400 hover:text-brand-orange transition-colors"
+          >
             <Icons.Camera className="w-5 h-5" />
-          </div>
+          </button>
         </div>
 
         {/* Search Button */}
@@ -367,6 +377,7 @@ const AdvancedSearchBar = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
