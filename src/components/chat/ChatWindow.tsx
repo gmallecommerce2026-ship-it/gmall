@@ -181,10 +181,20 @@ export default function ChatWindow() {
                 >
                     <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                         {conv.partner?.avatar ? (
-                            <img src={conv.partner.avatar} alt="" className="w-full h-full object-cover"/>
+                            <img
+                              src={conv.partner.avatar}
+                              alt={conv.partner?.name || ''}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Wiki 0044: avatar URL có thể 404 (user xóa ảnh hoặc URL stale).
+                                // Hide <img> + show initial fallback (parent div sẽ render initial).
+                                const el = e.target as HTMLImageElement;
+                                el.style.display = 'none';
+                              }}
+                            />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-600 font-bold">
-                                {conv.partner?.name?.charAt(0).toUpperCase()}
+                                {(conv.partner?.name || '?').charAt(0).toUpperCase()}
                             </div>
                         )}
                     </div>
