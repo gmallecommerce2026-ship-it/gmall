@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 export default function MessagesClient() {
   const searchParams = useSearchParams();
   const receiverId = searchParams.get('receiverId');
+  const roleParam = searchParams.get('role'); // audit Buyer #21 wiki 0061
   const { conversations, activeConversationId, messages, sendMessage, selectConversation, loadConversations, openChatWithSeller } = useChatStore();
   // --- STATE CHO TÌM KIẾM ---
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +18,33 @@ export default function MessagesClient() {
   // hooks-fix wiki 0031: thêm loadConversations vào deps. Hàm từ Zustand store
   // ổn định identity nên không gây re-run, an toàn để add.
   useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  // Nếu có `?role=admin` (từ /user/help "Chat với nhân viên") hoặc receiverId,
+  // auto-open conversation. Chạy 1 lần sau khi load conversations.
+  useEffect(() => {
+    if (receiverId) {
+      openChatWithSeller(receiverId);
+      return;
+    }
+    if (roleParam) {
+      const upper = roleParam.toUpperCase();
+      if (upper !== 'ADMIN' && upper !== 'SELLER') return;
+      (async () => {
+        try {
+          const partner: any = await apiClient.get(`/chat/find-partner?role=${upper}`);
+          const id = partner?.id || partner?.data?.id;
+          if (id) {
+            await openChatWithSeller(id);
+          } else {
+            console.warn(`[messages] Không tìm thấy ${upper} để chat`);
+          }
+        } catch (e) {
+          console.error('[messages] find-partner error', e);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [receiverId, roleParam]);
 
   // Hàm xử lý tìm kiếm (nên dùng debounce nếu có thể)
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
