@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { AuthLayout, AuthInput, PrimaryButton, SocialButton } from "@/components/auth/AuthComponents";
 import { OtpInput } from "@/components/auth/OtpInput";
 import { AuthService } from "@/services/AuthService";
+import { API_BASE_URL } from "@/lib/api/config";
 import { toast } from "react-hot-toast"; // Khuyên dùng toast để thông báo đẹp hơn
+
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 // Icon Back
 const ArrowLeftIcon = () => (
@@ -29,6 +32,15 @@ const RegisterClient = () => {
   const [otpCode, setOtpCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
+
+  // Clear dữ liệu cũ khi mount để user mở lại trang luôn thấy form trống
+  // (audit bug Login/Register #5).
+  useEffect(() => {
+    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+    setErrors({});
+    setStep('form');
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -38,15 +50,30 @@ const RegisterClient = () => {
     return () => clearInterval(interval);
   }, [timer]);
 
+  const validate = (): boolean => {
+    const next: typeof errors = {};
+    if (!formData.name.trim()) next.name = 'Vui lòng nhập họ và tên';
+    else if (formData.name.trim().length < 2) next.name = 'Họ tên quá ngắn';
+
+    if (!formData.email.trim()) next.email = 'Vui lòng nhập email';
+    else if (!EMAIL_RE.test(formData.email.trim())) next.email = 'Email không hợp lệ (cần dạng name@domain.com)';
+
+    if (!formData.password) next.password = 'Vui lòng nhập mật khẩu';
+    else if (formData.password.length < 6) next.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    else if (formData.password.length > 64) next.password = 'Mật khẩu không được dài quá 64 ký tự';
+
+    if (formData.password !== formData.confirmPassword) {
+      next.confirmPassword = 'Mật khẩu xác nhận không khớp';
+    }
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
   // --- SỬA 2: Xử lý Đăng Ký đúng luồng ---
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate cơ bản
-    if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!"); // Hoặc dùng toast.error
-      return;
-    }
+    if (!validate()) return;
 
     setIsLoading(true);
     try {
@@ -56,14 +83,15 @@ const RegisterClient = () => {
           email: formData.email,
           password: formData.password
         });
-        
+
         // Thành công -> Chuyển sang bước OTP
-        setStep('otp'); 
+        setStep('otp');
         setTimer(60);
     } catch (error: any) {
-        // Backend trả lỗi (ví dụ: Email đã tồn tại)
-        const msg = error?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.";
-        alert(msg);
+        // Backend trả lỗi (ví dụ: Email đã tồn tại). i18n từ BE (wiki 0055) đã trả tiếng Việt.
+        const raw = error?.response?.data?.message;
+        const msg = Array.isArray(raw) ? raw.join('\n') : (raw || 'Đăng ký thất bại. Vui lòng thử lại.');
+        toast.error(msg);
     } finally {
         setIsLoading(false);
     }
@@ -113,40 +141,51 @@ const RegisterClient = () => {
               Đăng ký
             </h1>
 
-            <form onSubmit={handleRegister} className="flex flex-col gap-4">
-              {/* --- Bind dữ liệu vào Form --- */}
-              <AuthInput 
-                label="Họ và tên" 
-                placeholder="Nhập họ và tên" 
-                type="text" 
-                required 
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-              <AuthInput 
-                label="Email" 
-                placeholder="Nhập email của bạn" 
-                type="email" 
-                required 
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
-              <AuthInput 
-                label="Mật khẩu" 
-                placeholder="Nhập mật khẩu" 
-                type="password" 
-                required 
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-              />
-              <AuthInput 
-                label="Nhập lại mật khẩu" 
-                placeholder="Xác nhận mật khẩu" 
-                type="password" 
-                required 
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-              />
+            <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
+              <div>
+                <AuthInput
+                  label="Họ và tên"
+                  placeholder="Nhập họ và tên"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+              </div>
+              <div>
+                <AuthInput
+                  label="Email"
+                  placeholder="Nhập email của bạn"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+              </div>
+              <div>
+                <AuthInput
+                  label="Mật khẩu"
+                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                />
+                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+              </div>
+              <div>
+                <AuthInput
+                  label="Nhập lại mật khẩu"
+                  placeholder="Xác nhận mật khẩu"
+                  type="password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                />
+                {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
+              </div>
 
               {/* Terms Checkbox */}
               <div className="flex items-start gap-3 my-2">
@@ -182,8 +221,16 @@ const RegisterClient = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
-              <SocialButton iconSrc="/assets/SvgAsset2.svg" label="Google" />
-              <SocialButton iconSrc="/assets/SvgAsset1.svg" label="Facebook" />
+              <SocialButton
+                iconSrc="/assets/SvgAsset2.svg"
+                label="Google"
+                onClick={() => { window.location.href = `${API_BASE_URL}/auth/google`; }}
+              />
+              <SocialButton
+                iconSrc="/assets/SvgAsset1.svg"
+                label="Facebook"
+                onClick={() => { window.location.href = `${API_BASE_URL}/auth/facebook`; }}
+              />
             </div>
 
             <div className="text-center text-base">

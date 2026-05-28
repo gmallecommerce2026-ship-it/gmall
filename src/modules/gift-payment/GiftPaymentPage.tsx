@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { toast, Toaster } from 'react-hot-toast';
 import { apiClient } from '@/lib/api/ApiClient';
 import { useCheckoutStore } from '@/store/useCheckoutStore';
+import { useUserStore } from '@/store/useUserStore';
 import { encodeData, decodeData } from '@/lib/url-helper';
 import OrderSummaryBox from '@/components/common/OrderSummaryBox';
 import { giftWrapData, greetingCardData } from './data';
@@ -26,6 +27,16 @@ const GiftPaymentPage: React.FC = () => {
 
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Auth guard: trang quà yêu cầu login. Đợi rehydrate xong rồi mới redirect.
+  const isAuthenticated = useUserStore(s => s.isAuthenticated);
+  const hasHydrated = useUserStore(s => s._hasHydrated);
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) {
+      const next = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/gift-payment');
+      router.replace(`/login?next=${next}`);
+    }
+  }, [hasHydrated, isAuthenticated, router]);
   
   // Lấy params từ URL an toàn
   const dataParam = searchParams.get('data');

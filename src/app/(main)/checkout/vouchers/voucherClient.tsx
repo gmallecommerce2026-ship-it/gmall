@@ -4,6 +4,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { voucherOptionsData } from "@/modules/gift-payment/data";
+import { useUserStore } from "@/store/useUserStore";
 
 // Định nghĩa kiểu voucher
 type VoucherType = 'SHIPPING' | 'DISCOUNT';
@@ -86,7 +87,18 @@ export default function VoucherPageContent() {
   const searchParams = useSearchParams();
   const backUrl = searchParams.get('backUrl') || '/payment';
   const originalDataParam = searchParams.get('data') || '';
-  
+  const isAuthenticated = useUserStore(s => s.isAuthenticated);
+  const hasHydrated = useUserStore(s => s._hasHydrated);
+
+  // Auth guard — voucher page yêu cầu login. Đợi rehydrate xong rồi mới
+  // redirect, tránh false-negative ở first render.
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) {
+      const next = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : backUrl);
+      router.replace(`/login?next=${next}`);
+    }
+  }, [hasHydrated, isAuthenticated, router, backUrl]);
+
   // Lấy danh sách ID đã chọn từ URL (phân tách bằng dấu phẩy)
   const currentIds = (searchParams.get('selected') || '').split(',').filter(Boolean);
 

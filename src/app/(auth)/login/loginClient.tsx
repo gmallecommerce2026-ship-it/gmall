@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 // Fix BUG-FE-10 (wiki 0030): centralized API_BASE_URL
@@ -25,6 +25,11 @@ type LoginFormType = z.infer<typeof loginSchema>;
 
 export default function LoginClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // `?next=/foo` để page guard (voucher/gift) redirect về trang gốc sau login.
+  // Chỉ chấp nhận path nội bộ (bắt đầu bằng `/`) để chống open-redirect.
+  const nextParam = searchParams?.get('next') || '';
+  const safeNext = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/';
   const { setUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +65,7 @@ export default function LoginClient() {
            }
          } catch { /* storage có thể fail trong incognito */ }
          toast.success("Chào mừng bạn quay trở lại!");
-         router.push("/");
+         router.push(safeNext);
       }
     } catch (error: any) {
       const msg = error.response?.data?.message || "Đăng nhập thất bại.";

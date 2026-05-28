@@ -26,9 +26,14 @@ export interface User {
 interface UserState {
   user: User | null;
   isAuthenticated: boolean;
+  // Cờ rehydrate xong: pages dùng auth guard có thể dựa vào đây thay vì check
+  // `isAuthenticated` ngay first render (lúc đó persist chưa load → false dù
+  // user đã login → redirect /login sai). Set true sau khi `onRehydrateStorage`.
+  _hasHydrated: boolean;
   setUser: (user: User | null) => void;
   updatePoint: (point: number) => void;
   logout: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -36,7 +41,9 @@ export const useUserStore = create<UserState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      _hasHydrated: false,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
       updatePoint: (point) => set((state) => ({
         user: state.user ? { ...state.user, point } : null
       })),
@@ -67,7 +74,10 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: 'user-storage', 
+      name: 'user-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
