@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { keyword, limit = 20, platform = 'tiki' } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { keyword, limit = 20, platform = 'tiki' } = body || {};
+    if (!keyword || typeof keyword !== 'string') {
+      return NextResponse.json({ error: 'Thiếu keyword' }, { status: 400 });
+    }
 
     if (platform === 'tiki') {
       // API Search công khai của Tiki
