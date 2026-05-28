@@ -12,8 +12,11 @@ export function middleware(request: NextRequest) {
   const adminToken = request.cookies.get('adminAccessToken')?.value || 
                      request.cookies.get('admin_access_token')?.value || 
                      token;
-  console.log(`[Middleware] Path: ${pathname}`);
-  console.log('[Middleware] All Cookies:', request.cookies.getAll());
+  // Security review: leak cookie values trong production log → bypass auth nếu
+  // log accessible cho team không trust. Guard NODE_ENV.
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[Middleware] Path: ${pathname}`);
+  }
   // 1. Bảo vệ Seller Dashboard
   if (pathname.startsWith('/seller-dashboard')) {
     if (!token) {
@@ -36,8 +39,9 @@ export function middleware(request: NextRequest) {
   if (isProtectedRoute) {
     if (!token) {
       const loginUrl = new URL('/login', request.url);
-      // Thêm tham số 'from' để redirect lại trang cũ sau khi login xong
-      loginUrl.searchParams.set('from', pathname); 
+      // Đồng bộ với guard FE (wiki 0056): dùng `next=` chứ không phải `from=`,
+      // để login page redirect đúng sau khi đăng nhập.
+      loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
     }
   }

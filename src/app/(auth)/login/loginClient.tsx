@@ -29,7 +29,11 @@ export default function LoginClient() {
   // `?next=/foo` để page guard (voucher/gift) redirect về trang gốc sau login.
   // Chỉ chấp nhận path nội bộ (bắt đầu bằng `/`) để chống open-redirect.
   const nextParam = searchParams?.get('next') || '';
-  const safeNext = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/';
+  // Open-redirect guard: chỉ chấp nhận path nội bộ bắt đầu `/` mà KHÔNG phải
+  // `//` hoặc `/\` (backslash trên Windows IE/Edge cũ có thể parse như authority).
+  const safeNext = nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/\\')
+    ? nextParam
+    : '/';
   const { setUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
