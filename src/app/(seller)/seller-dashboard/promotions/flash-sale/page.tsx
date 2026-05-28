@@ -262,11 +262,26 @@ const RegistrationForm = ({ session, onBack }: { session: FlashSaleSession; onBa
   };
 
   const validateForm = () => {
-    let isValid = true;
-    for (const item of selectedItems) {
-      if (!item.isEnabled) continue;
-      if (!item.promoPrice || Number(item.promoPrice) >= item.originalPrice) return { isValid: false, errorMsg: `Sản phẩm "${item.variantName}" giá chưa hợp lệ.` };
-      if (!item.promoStock || Number(item.promoStock) <= 0 || Number(item.promoStock) > item.currentStock) return { isValid: false, errorMsg: `Sản phẩm "${item.variantName}" số lượng không hợp lệ.` };
+    // audit Seller #21: bỏ trống giá+SL khuyến mại → nhấn xác nhận đứng im.
+    // Root cause: nếu tất cả items disabled, vòng for skip hết → return valid →
+    // submit `items: []`. Check ít nhất 1 item enabled hợp lệ.
+    const enabled = selectedItems.filter(i => i.isEnabled);
+    if (enabled.length === 0) {
+      return { isValid: false, errorMsg: 'Vui lòng bật ít nhất 1 sản phẩm và nhập giá khuyến mại' };
+    }
+    for (const item of enabled) {
+      if (!item.promoPrice || Number(item.promoPrice) <= 0) {
+        return { isValid: false, errorMsg: `Vui lòng nhập giá khuyến mại cho "${item.variantName}"` };
+      }
+      if (Number(item.promoPrice) >= item.originalPrice) {
+        return { isValid: false, errorMsg: `Giá khuyến mại của "${item.variantName}" phải nhỏ hơn giá gốc` };
+      }
+      if (!item.promoStock || Number(item.promoStock) <= 0) {
+        return { isValid: false, errorMsg: `Vui lòng nhập SL khuyến mại cho "${item.variantName}"` };
+      }
+      if (Number(item.promoStock) > item.currentStock) {
+        return { isValid: false, errorMsg: `SL khuyến mại của "${item.variantName}" vượt tồn kho` };
+      }
     }
     return { isValid: true, errorMsg: '' };
   };

@@ -262,7 +262,7 @@ const SellerSidebarContent = () => {
     }
   };
   return (
-    <aside className="fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex flex-col font-sans">
+    <aside className="hidden lg:flex fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex-col font-sans">
       {/* Header */}
       <div className="h-[70px] flex items-center px-5 border-b border-gray-100 gap-3 shrink-0">
         <div className="w-8 h-8 bg-gradient-to-br from-[#E78720] to-[#FFB05C] rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
@@ -350,7 +350,7 @@ const SellerSidebarContent = () => {
 const SellerSidebar = () => {
   return (
     // Fallback UI đơn giản để tránh layout shift quá nhiều khi load
-    <Suspense fallback={<div className="fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 z-50" />}>
+    <Suspense fallback={<div className="hidden lg:block fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 z-50" />}>
       <SellerSidebarContent />
     </Suspense>
   );
