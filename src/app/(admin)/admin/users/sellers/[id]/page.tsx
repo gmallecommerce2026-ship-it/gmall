@@ -33,12 +33,17 @@ const formatDate = (s: string) =>
     year: "numeric",
   });
 
+type Tab = 'overview' | 'products' | 'documents';
+
 export default function AdminSellerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [shop, setShop] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Wiki 0063: thêm tabs theo audit Admin #8 "tab khác mất". 3 tabs đơn giản:
+  // tổng quan / sản phẩm / giấy tờ.
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
 
   useEffect(() => {
     let cancelled = false;
@@ -130,7 +135,75 @@ export default function AdminSellerDetailPage() {
         <Stat icon={<FiPackage />} label="Số sản phẩm" value={String(shop.productCount)} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Tabs */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex border-b border-gray-100">
+          {[
+            { id: 'overview' as Tab, label: 'Tổng quan' },
+            { id: 'products' as Tab, label: `Sản phẩm (${shop.productCount || 0})` },
+            { id: 'documents' as Tab, label: 'Giấy tờ' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === t.id ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'documents' && (
+          <div className="p-6 space-y-4">
+            <h3 className="font-semibold text-gray-800">Giấy phép kinh doanh & chứng nhận</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { label: 'GPKD (mặt trước)', src: shop.businessLicenseFront },
+                { label: 'GPKD (mặt sau)', src: shop.businessLicenseBack },
+                { label: 'Giấy phép bán hàng', src: shop.salesLicense },
+                { label: 'CN Thương hiệu', src: shop.trademarkCert },
+                { label: 'CN Phân phối', src: shop.distributorCert },
+              ].filter(d => d.src).map(d => (
+                <a key={d.label} href={d.src} target="_blank" rel="noopener noreferrer" className="block group">
+                  <div className="aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    <img src={d.src} alt={d.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.png'; }} />
+                  </div>
+                  <p className="mt-2 text-xs text-gray-600 text-center">{d.label}</p>
+                </a>
+              ))}
+              {![shop.businessLicenseFront, shop.businessLicenseBack, shop.salesLicense, shop.trademarkCert, shop.distributorCert].some(Boolean) && (
+                <p className="col-span-full text-center text-sm text-gray-500 py-8">Shop chưa upload giấy tờ.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'products' && (
+          <div className="divide-y divide-gray-100">
+            {shop.recentProducts?.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-sm">Shop chưa có sản phẩm.</div>
+            ) : (
+              (shop.recentProducts || []).map((p: any) => {
+                const img = typeof p.images?.[0] === 'string' ? p.images[0] : p.images?.[0]?.url || '/placeholder.png';
+                return (
+                  <Link key={p.id} href={`/product-details/${p.id}`} className="flex gap-4 p-4 hover:bg-gray-50 transition-colors">
+                    <img src={img} alt={p.name} className="w-14 h-14 rounded-md object-cover bg-gray-100 border border-gray-100" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.png'; }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 line-clamp-1">{p.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">Tạo: {formatDate(p.createdAt)} · Trạng thái: {p.status}</p>
+                    </div>
+                    <div className="text-right whitespace-nowrap font-semibold text-gray-900">{formatCurrency(Number(p.price))}</div>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${activeTab !== 'overview' ? 'hidden' : ''}`}>
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
           <header className="p-4 border-b border-gray-100">
             <h2 className="font-semibold text-gray-800">Sản phẩm gần đây</h2>

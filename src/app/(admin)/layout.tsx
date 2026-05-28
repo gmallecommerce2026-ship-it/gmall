@@ -2,7 +2,8 @@
 import React from 'react';
 import Link from 'next/link';
 import AdminSidebar from '@/layout/admin/AdminSidebar'; // Đảm bảo đường dẫn đúng
-import { FiBell, FiSearch } from 'react-icons/fi'; // Thêm icon cho header
+import { FiBell } from 'react-icons/fi'; // Thêm icon cho header
+import AdminSearchBox from './components/AdminSearchBox';
 
 export default function AdminLayout({
   children,
@@ -22,15 +23,8 @@ export default function AdminLayout({
            <h2 className="text-lg font-semibold text-gray-700">Bảng điều khiển</h2>
            
            <div className="flex items-center gap-6">
-             {/* Search box giả lập */}
-             <div className="hidden md:flex items-center bg-gray-100 rounded-full px-4 py-2 w-64">
-                <FiSearch className="text-gray-400 mr-2" />
-                <input 
-                  type="text" 
-                  placeholder="Tìm kiếm..." 
-                  className="bg-transparent border-none outline-none text-sm w-full text-gray-600 placeholder-gray-400"
-                />
-             </div>
+             {/* Search box — submit redirect tới /admin/orders?search=... */}
+             <AdminSearchBox />
 
              <div className="flex items-center gap-4">
                <Link
