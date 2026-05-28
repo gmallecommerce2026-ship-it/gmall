@@ -441,7 +441,10 @@ const PaymentPage = () => {
         router.push(`/payment/success?orderIds=${orderIds}`);
       }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Đặt hàng thất bại");
+      // BE i18n pipe có thể trả message array; flatten về string cho toast.
+      const raw = error?.response?.data?.message;
+      const msg = Array.isArray(raw) ? raw.join('\n') : (raw || error?.message || 'Đặt hàng thất bại');
+      toast.error(msg);
     } finally {
       setIsProcessing(false);
     }

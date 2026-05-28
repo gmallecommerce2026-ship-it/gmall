@@ -110,7 +110,10 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onSpinSuccess, onClose }) => {
     } catch (error: any) {
       setIsProcessing(false);
       setIsSpinning(false);
-      alert(error?.response?.data?.message || 'Lỗi kết nối server');
+      const msg = error?.code === 'ECONNABORTED'
+        ? 'Quá thời gian chờ, vui lòng thử lại'
+        : (error?.response?.data?.message || error?.message || 'Lỗi kết nối server');
+      setResultMsg(`⚠ ${msg}`);
     }
   };
 

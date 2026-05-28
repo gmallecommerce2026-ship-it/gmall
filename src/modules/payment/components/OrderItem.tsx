@@ -20,8 +20,13 @@ const OrderItem: React.FC<OrderItemProps> = ({ imageUrl, name, price, quantity, 
 
   return (
     <div className="flex gap-3 py-2">
-      <div className="w-16 h-16 flex-shrink-0 border border-gray-100 rounded overflow-hidden">
-        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+      <div className="w-16 h-16 flex-shrink-0 border border-gray-100 rounded overflow-hidden bg-gray-50">
+        <img
+          src={imageUrl || '/placeholder.png'}
+          alt={name}
+          className="w-full h-full object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.png'; }}
+        />
       </div>
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         <h4 className="text-sm text-gray-800 line-clamp-2">{name}</h4>

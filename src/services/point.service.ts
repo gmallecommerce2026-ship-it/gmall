@@ -32,8 +32,11 @@ export const pointService = {
   },
 
   playGacha: async () => {
-    const response = await api.post('/games/gacha/spin');
-    return response; // [ĐÃ SỬA]: Bỏ .data
+    // 15s timeout — BE gacha transaction 15s (gacha.service.ts), thêm buffer
+    // 5s network. Trước đây fetch hang không bao giờ throw → "quay mãi không
+    // trả kết quả" (audit Search/Game #11).
+    const response = await api.post('/games/gacha/spin', undefined, { timeout: 20000 });
+    return response;
   },
 
   // [QUAN TRỌNG] Hàm gây lỗi của bạn
