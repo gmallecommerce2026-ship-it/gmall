@@ -1,5 +1,6 @@
 // src/app/(admin)/layout.tsx
 import React from 'react';
+import Link from 'next/link';
 import AdminSidebar from '@/layout/admin/AdminSidebar'; // Đảm bảo đường dẫn đúng
 import { FiBell, FiSearch } from 'react-icons/fi'; // Thêm icon cho header
 
@@ -32,10 +33,14 @@ export default function AdminLayout({
              </div>
 
              <div className="flex items-center gap-4">
-               <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+               <Link
+                 href="/admin/notifications"
+                 aria-label="Thông báo"
+                 className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+               >
                  <FiBell size={20} />
                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-               </button>
+               </Link>
                <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
                   <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs">
                     AD

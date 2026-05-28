@@ -18,7 +18,7 @@ const FOOTER_LINKS = {
       { label: "Giới thiệu GMall", href: "/terms" },
       { label: "Điều khoản dịch vụ", href: "/terms" },
       { label: "Chính sách bảo mật", href: "/privacy" },
-      { label: "Trung tâm trợ giúp", href: "/seller-dashboard/help/policies" },
+      { label: "Trung tâm trợ giúp", href: "/user/help" },
     ],
   },
   support: {
@@ -42,10 +42,10 @@ const FOOTER_LINKS = {
 };
 
 const SOCIAL_ICONS = [
-  { src: "/assets/ImageAsset132.png", alt: "Facebook", href: "#" },
-  { src: "/assets/ImageAsset131.png", alt: "Instagram", href: "#" },
-  { src: "/assets/ImageAsset130.png", alt: "Youtube", href: "#" },
-  { src: "/assets/ImageAsset129.png", alt: "Tiktok", href: "#" },
+  { src: "/assets/ImageAsset132.png", alt: "Facebook", href: "https://www.facebook.com/gmall.vn" },
+  { src: "/assets/ImageAsset131.png", alt: "Instagram", href: "https://www.instagram.com/gmall.vn" },
+  { src: "/assets/ImageAsset130.png", alt: "Youtube", href: "https://www.youtube.com/@gmall.vn" },
+  { src: "/assets/ImageAsset129.png", alt: "Tiktok", href: "https://www.tiktok.com/@gmall.vn" },
 ];
 
 const PAYMENT_METHODS = [
@@ -147,7 +147,14 @@ const Footer = () => {
             <FooterTitle>KẾT NỐI VỚI CHÚNG TÔI</FooterTitle>
             <div className="flex items-center gap-3 mb-8">
                {SOCIAL_ICONS.map((icon, idx) => (
-                 <a key={idx} href={icon.href} className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:border-brand-orange hover:shadow-sm transition-all bg-white group">
+                 <a
+                   key={idx}
+                   href={icon.href}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   aria-label={icon.alt}
+                   className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:border-brand-orange hover:shadow-sm transition-all bg-white group"
+                 >
                     <img src={icon.src} alt={icon.alt} className="w-5 h-5 object-contain opacity-70 group-hover:opacity-100 transition-opacity" />
                  </a>
                ))}
@@ -177,9 +184,9 @@ const Footer = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-6 text-[12px] text-gray-500">
-                    <Link href="#" className="hover:text-gray-900">Quốc gia: Việt Nam</Link>
+                    <span>Quốc gia: Việt Nam</span>
                     <span className="w-px h-3 bg-gray-300"></span>
-                    <Link href="#" className="hover:text-gray-900">Ngôn ngữ: Tiếng Việt</Link>
+                    <span>Ngôn ngữ: Tiếng Việt</span>
                 </div>
             </div>
          </div>

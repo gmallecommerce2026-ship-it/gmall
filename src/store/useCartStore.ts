@@ -222,13 +222,18 @@ const useCartStoreBase = create<CartState & CartActions>()(
         const prevItems = get().items;
         const newItems = prevItems.filter(item => item.id !== itemId);
         const newSelectedIds = get().selectedIds.filter(id => id !== itemId);
-        
+
         set({ items: newItems, selectedIds: newSelectedIds, ...calculateSummary(newItems, newSelectedIds) });
-        
+
         try {
             const item = prevItems.find(i => i.id === itemId);
             if(item) await apiClient.delete(`/store/cart/${item.productId}`);
-        } catch(e) { console.error(e) }
+            toast.success('Đã xoá sản phẩm khỏi giỏ hàng');
+        } catch(e) {
+            console.error(e);
+            set({ items: prevItems, selectedIds: get().selectedIds, ...calculateSummary(prevItems, get().selectedIds) });
+            toast.error('Xoá thất bại, vui lòng thử lại');
+        }
       },
 
       // [NEW ACTION]
