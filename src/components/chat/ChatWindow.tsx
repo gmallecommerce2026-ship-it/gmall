@@ -53,31 +53,10 @@ export default function ChatWindow() {
     setInputValue((prev) => prev + emojiObject.emoji);
   };
   
-  // Initial Connection
-  useEffect(() => {
-    if (!socket) {
-      console.log("ChatWindow: Initializing socket connection...");
-      connectSocket(null); 
-    }
-  }, [socket, connectSocket]);
-
-  // [2] AUTO RECONNECT ON LOGIN: Fixes the issue where Buyer must refresh to see messages
-  useEffect(() => {
-    if (user?.id) {
-        console.log("User changed/logged in. Reconnecting socket to update identity...");
-        
-        // Disconnect old "Guest" socket
-        disconnectSocket();
-        
-        // Reconnect with new Token (automatically handled by browser cookies)
-        setTimeout(() => {
-            connectSocket(null);
-        }, 100);
-    }
-  }, [user?.id, disconnectSocket, connectSocket]);
-
-  // hooks-fix wiki 0031: include loadConversations dep — Zustand store fn ổn định identity
-  useEffect(() => { loadConversations(); }, [loadConversations]);
+  // Wiki 0067: socket lifecycle giờ do ChatSocketProvider quản lý (component
+  // headless luôn mounted). ChatWindow chỉ lo UI hiển thị. Nếu return null
+  // ở line 126 thì các useEffect ở đây không chạy → tin nhắn không đến cho
+  // tới khi user click mở chat — đó là root cause bug brief.
 
   const currentConv = conversations.find(c => c.id === activeConversationId);
   const displayConversationId = activeConversationId || 'temp_ai_chat';

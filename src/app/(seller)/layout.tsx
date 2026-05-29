@@ -3,6 +3,7 @@ import React from 'react';
 import SellerSidebar from '@/layout/seller/SellerSidebar';
 import SellerRightSidebar from '@/layout/seller/SellerRightSidebar'; // [MỚI]
 import ChatWindow from '@/components/chat/ChatWindow'; // [MỚI] Import ChatWindow
+import ChatSocketProvider from '@/components/chat/ChatSocketProvider'; // wiki 0067 - luôn mounted để nhận realtime ngay cả khi popup đóng
 
 export default function SellerLayout({
   children,
@@ -30,6 +31,7 @@ export default function SellerLayout({
          ChatWindow đã có 'use client' và logic fixed position, 
          nên chỉ cần đặt ở đây là nó sẽ hiển thị đè lên trên khi mở.
       */}
+      <ChatSocketProvider />
       <ChatWindow />
     </div>
   );
