@@ -257,7 +257,7 @@ const AdminSidebar = () => {
   };
 
   return (
-    <aside className="fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex flex-col">
+    <aside className="hidden lg:flex fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex-col">
       <div className="h-[80px] flex items-center px-6 border-b border-gray-100 gap-3">
         <div className="w-9 h-9 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-gray-300">
           <FiShield size={18}/>

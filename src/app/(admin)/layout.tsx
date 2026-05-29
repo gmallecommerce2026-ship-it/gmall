@@ -15,18 +15,17 @@ export default function AdminLayout({
       {/* Sidebar cố định */}
       <AdminSidebar />
 
-      {/* Main Content Area - Thêm margin-left bằng width của sidebar (260px) */}
-      <div className="flex-1 ml-[260px] min-w-0 flex flex-col transition-all duration-300">
-        
-        {/* Top Header cho Admin - Giống phong cách Header của Seller nhưng đơn giản hơn */}
-        <header className="h-[70px] bg-white border-b border-gray-200 sticky top-0 z-40 px-8 flex items-center justify-between shadow-sm">
-           <h2 className="text-lg font-semibold text-gray-700">Bảng điều khiển</h2>
-           
-           <div className="flex items-center gap-6">
-             {/* Search box — submit redirect tới /admin/orders?search=... */}
+      {/* Main Content Area — mobile full-width; desktop (lg≥) margin 260px cho sidebar.
+            Audit Admin #1 wiki 0066: trước ml-[260px] cứng → mobile content tràn / che bởi sidebar. */}
+      <div className="flex-1 lg:ml-[260px] min-w-0 flex flex-col transition-all duration-300 w-full">
+
+        <header className="h-[70px] bg-white border-b border-gray-200 sticky top-0 z-40 px-4 md:px-6 lg:px-8 flex items-center justify-between shadow-sm">
+           <h2 className="text-base md:text-lg font-semibold text-gray-700 truncate">Bảng điều khiển</h2>
+
+           <div className="flex items-center gap-3 md:gap-6">
              <AdminSearchBox />
 
-             <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2 md:gap-4">
                <Link
                  href="/admin/notifications"
                  aria-label="Thông báo"
@@ -36,7 +35,7 @@ export default function AdminLayout({
                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                </Link>
                <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs flex-shrink-0">
                     AD
                   </div>
                   <div className="hidden md:block">
@@ -48,9 +47,8 @@ export default function AdminLayout({
            </div>
         </header>
 
-        {/* Page Content Container */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <div className="max-w-7xl mx-auto space-y-6 w-full min-w-0">
             {children}
           </div>
         </main>
