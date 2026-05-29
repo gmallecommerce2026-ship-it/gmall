@@ -42,10 +42,15 @@ export const PrimaryButton = ({ children, className = '', ...props }: PrimaryBut
 interface SocialButtonProps {
   iconSrc: string;
   label: string;
+  onClick?: () => void;
 }
 
-export const SocialButton = ({ iconSrc, label }: SocialButtonProps) => (
-  <button className="flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors flex-1 min-w-[190px]">
+export const SocialButton = ({ iconSrc, label, onClick }: SocialButtonProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors flex-1 min-w-[190px]"
+  >
     <Image src={iconSrc} alt="icon" width={24} height={24} className="w-6 h-6" />
     <span className="text-gray-700 font-normal text-sm font-[Poppins]">{label}</span>
   </button>

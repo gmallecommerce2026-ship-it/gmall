@@ -38,6 +38,12 @@ const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess 
     setLoading(true);
     try {
       await pointService.checkIn();
+      // Refetch streak từ BE để hiển thị đúng vị trí mới rồi mới transition sang Lucky Wheel.
+      try {
+        const res: any = await pointService.getDailyStatus();
+        const s = res.streak || res.currentStreak || 0;
+        setStreak(s === 0 ? 0 : ((s - 1) % DAYS_PER_CYCLE) + 1);
+      } catch {/* ignore refetch error, BE đã ghi nhận checkin */}
       onSuccess();
     } catch (error: any) {
       alert(error?.response?.data?.message || 'Lỗi điểm danh');

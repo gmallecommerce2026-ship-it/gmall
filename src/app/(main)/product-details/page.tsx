@@ -1,14 +1,7 @@
-import ProductDetailsPage from '@/modules/product-details/ProductDetailsPage';
-import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Chi tiết sản phẩm',
-  description: 'Thông tin chi tiết về sản phẩm.',
-};
-
-// Thêm dòng này để tránh lỗi build prerender nếu có dữ liệu động ngầm
-export const dynamic = "force-dynamic";
-
+// `/product-details` (no id) không có sản phẩm nào để show.
+// Redirect về home thay vì crash render ProductDetailsPage với props rỗng.
 export default function Page() {
-  return <ProductDetailsPage />;
+  redirect('/');
 }

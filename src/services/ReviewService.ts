@@ -1,14 +1,23 @@
 // src/services/ReviewService.ts
 import { apiClient } from '@/lib/api/ApiClient';
 
+export interface SubmitOrderReviewPayload {
+  orderId: string;
+  shopRating: number;
+  shopComment?: string;
+  productReviews: Array<{
+    productId: string;
+    rating: number;
+    comment?: string;
+  }>;
+}
+
 export const ReviewService = {
-  // Lấy danh sách sản phẩm cần đánh giá (thường là từ các đơn hàng đã giao)
   getToReview: () => apiClient.get('/reviews/pending'),
-  
-  // Lấy lịch sử đánh giá của tôi
   getMyReviews: () => apiClient.get('/reviews/me'),
-  
-  // Tạo đánh giá mới
-  create: (data: { productId: string; orderId: string; rating: number; comment: string }) => 
-    apiClient.post('/reviews', data),
+
+  // Submit review cho cả order (1 shop rating + N product ratings).
+  // BE endpoint: POST /orders/review (xem review.controller + order.controller).
+  submitOrderReview: (data: SubmitOrderReviewPayload) =>
+    apiClient.post('/orders/review', data),
 };

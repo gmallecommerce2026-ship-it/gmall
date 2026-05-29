@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
-import { Bell, ShoppingBag, Tag, Info, MessageCircle, Users, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, ShoppingBag, Tag, Info, MessageCircle, Users, CheckCheck, Loader2, X } from 'lucide-react';
 import { notificationService, NotificationItem } from '@/services/notification.service';
 
-// #11/#23/#35/#53 (wiki 0044/0045): wire BE.
-// Trước: hardcode MOCK_NOTIFICATIONS 4 mục.
-// Sau: fetch /notifications, mark-read khi click, mark-all-read button.
+// Wiki 0063: thêm DetailModal khi notification không có link (system notif).
+// Trước đây click chỉ markRead; user không xem được nội dung đầy đủ → audit
+// Buyer Notification #30 "Nhấn vào đọc thông báo >> không xem được".
 
 const ICON_BY_TYPE: Record<string, React.ReactNode> = {
   ORDER: <ShoppingBag size={18} className="text-brand-orange" />,
@@ -35,6 +35,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [detailItem, setDetailItem] = useState<NotificationItem | null>(null);
 
   useEffect(() => {
     notificationService.list(1, 50)
@@ -60,6 +61,8 @@ export default function NotificationsPage() {
       try { await notificationService.markRead(item.id); } catch {}
       setNotifications((prev) => prev.map(n => n.id === item.id ? { ...n, isRead: true } : n));
     }
+    // Nếu không có link → hiển thị modal detail. Có link → để Link component navigate.
+    if (!item.link) setDetailItem({ ...item, isRead: true });
   };
 
   return (
@@ -135,6 +138,36 @@ export default function NotificationsPage() {
             </div>
         )}
       </div>
+
+      {detailItem && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setDetailItem(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                {ICON_BY_TYPE[detailItem.type] || ICON_BY_TYPE.SYSTEM}
+                <h2 className="font-bold text-gray-800">{detailItem.title}</h2>
+              </div>
+              <button onClick={() => setDetailItem(null)} className="p-1 hover:bg-gray-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            {detailItem.image && (
+              <div className="border-b border-gray-100">
+                <img src={detailItem.image} alt="" className="w-full max-h-64 object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.png'; }} />
+              </div>
+            )}
+            <div className="p-5 space-y-3">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{detailItem.content}</p>
+              <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">{formatTime(detailItem.createdAt)}</p>
+            </div>
+            <div className="p-4 border-t border-gray-100 flex justify-end">
+              <button onClick={() => setDetailItem(null)} className="px-5 py-2 text-sm bg-brand-orange text-white rounded-lg hover:bg-orange-600">
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

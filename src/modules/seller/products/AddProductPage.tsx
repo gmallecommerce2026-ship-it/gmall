@@ -644,9 +644,17 @@ const AddProductPage = () => {
   };
 
   // --- SUBMIT ---
-  const handleSubmit = async () => {
-      if (!categoryId) {
+  // Audit Seller #18: trước đây nút "Lưu nháp" UI fake — không có handler.
+  // Bây giờ truyền `asDraft=true` → submit với status='DRAFT' (BE đã hỗ trợ
+  // ProductStatus.DRAFT trong enum). Draft không cần đủ thông tin (không
+  // block submit nếu thiếu categoryId).
+  const handleSubmit = async (asDraft: boolean = false) => {
+      if (!asDraft && !categoryId) {
           alert("Vui lòng chọn Ngành hàng (Danh mục sàn) để hệ thống phân loại.");
+          return;
+      }
+      if (asDraft && !name?.trim()) {
+          toast.error('Vui lòng nhập ít nhất "Tên sản phẩm" để lưu nháp');
           return;
       }
       try {
@@ -706,17 +714,20 @@ const AddProductPage = () => {
               crossSellIds,
               //systemTags: systemTags,
               systemTags: [],
+              // Draft → BE lưu Product.status = 'DRAFT', không trigger admin review.
+              // Default (không draft) → BE để default 'PENDING' chờ admin duyệt.
+              ...(asDraft ? { status: 'DRAFT' } : {}),
           };
-          
+
           if (isEditMode && editId) {
-            // Spec [0018]: edit -> PATCH endpoint, prefill form đã load data cũ.
             await api.patch(`/seller/products/${editId}`, payload);
-            toast.success('Cập nhật sản phẩm thành công!');
+            toast.success(asDraft ? 'Đã lưu bản nháp' : 'Cập nhật sản phẩm thành công!');
           } else {
             await api.post('/seller/products', payload);
-            toast.success('Đăng sản phẩm thành công!');
+            toast.success(asDraft ? 'Đã lưu bản nháp' : 'Đăng sản phẩm thành công!');
           }
-          router.push('/seller-dashboard/products/all');
+          // Draft → ở lại form để user tiếp tục chỉnh; submit thật → chuyển danh sách.
+          if (!asDraft) router.push('/seller-dashboard/products/all');
 
       } catch (error: any) {
           console.error("LỖI KHI SUBMIT:", error);
@@ -1331,11 +1342,18 @@ const AddProductPage = () => {
       {/* FIXED BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 py-4 px-6 md:px-10">
            <div className="max-w-[1440px] mx-auto flex items-center justify-between">
-                <div className="hidden md:flex items-center gap-2 text-sm text-gray-500"><CheckCircle2 size={16} className="text-green-500" />Đã lưu bản nháp lúc 12:30</div>
+                <div className="hidden md:flex items-center gap-2 text-sm text-gray-500"><CheckCircle2 size={16} className="text-green-500" />Lưu nháp để tiếp tục sau</div>
                 <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                     <button onClick={() => router.back()} className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all">Hủy bỏ</button>
                     <button
-                        onClick={handleSubmit}
+                        onClick={() => handleSubmit(true)}
+                        disabled={isLoading || isUploading}
+                        className="px-6 py-2.5 rounded-lg border border-orange-500 text-orange-600 text-sm font-semibold hover:bg-orange-50 transition-all disabled:opacity-50"
+                    >
+                        {isLoading ? 'Đang lưu...' : 'Lưu nháp'}
+                    </button>
+                    <button
+                        onClick={() => handleSubmit(false)}
                         disabled={isLoading || isUploading}
                         className="px-8 py-2.5 rounded-lg bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/30 hover:bg-orange-700 hover:shadow-orange-600/40 hover:-translate-y-0.5 transition-all disabled:opacity-50"
                     >

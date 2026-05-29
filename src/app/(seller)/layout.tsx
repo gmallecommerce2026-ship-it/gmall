@@ -3,6 +3,7 @@ import React from 'react';
 import SellerSidebar from '@/layout/seller/SellerSidebar';
 import SellerRightSidebar from '@/layout/seller/SellerRightSidebar'; // [MỚI]
 import ChatWindow from '@/components/chat/ChatWindow'; // [MỚI] Import ChatWindow
+import ChatSocketProvider from '@/components/chat/ChatSocketProvider'; // wiki 0067 - luôn mounted để nhận realtime ngay cả khi popup đóng
 
 export default function SellerLayout({
   children,
@@ -14,9 +15,11 @@ export default function SellerLayout({
       {/* 1. Sidebar trái (Menu chính) */}
       <SellerSidebar />
 
-      {/* 2. Content chính */}
-      <main className="flex-1 ml-[260px] min-h-screen transition-all duration-300">
-        <div className="p-6 md:p-8">
+      {/* 2. Content chính — mobile: sidebar overlay, content full width;
+             desktop (lg≥): sidebar fixed 260px, content margin-left 260px.
+             Audit Seller #27: trước đây ml-[260px] cứng → mobile overflow.  */}
+      <main className="flex-1 lg:ml-[260px] min-h-screen transition-all duration-300 w-full min-w-0">
+        <div className="p-4 md:p-6 lg:p-8">
             {children}
         </div>
       </main>
@@ -28,6 +31,7 @@ export default function SellerLayout({
          ChatWindow đã có 'use client' và logic fixed position, 
          nên chỉ cần đặt ở đây là nó sẽ hiển thị đè lên trên khi mở.
       */}
+      <ChatSocketProvider />
       <ChatWindow />
     </div>
   );

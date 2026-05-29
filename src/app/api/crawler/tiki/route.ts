@@ -130,9 +130,16 @@ async function fetchListingPage(page: number, info: any, limit: number = 50) {
 export async function POST(req: Request) {
   try {
     // 1. Nhận thêm tham số 'page' từ Client
-    const { url, keyword, page = 1, fetchDetail = false } = await req.json(); 
-    
+    const body = await req.json().catch(() => ({}));
+    const { url, keyword, page = 1, fetchDetail = false } = body || {};
+
     const inputToProcess = url || keyword;
+    // Bug fix wiki 0064: empty body → trả 400 rõ ràng thay vì 500
+    // (surgicalExtract(undefined) crash).
+    if (!inputToProcess || typeof inputToProcess !== 'string') {
+      return NextResponse.json({ error: 'Thiếu url hoặc keyword' }, { status: 400 });
+    }
+
     const info: any = surgicalExtract(inputToProcess);
 
     console.log(`tiki-crawler: Mode ${info.type} | Page: ${page}`);

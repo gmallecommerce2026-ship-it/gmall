@@ -72,10 +72,17 @@ const TabItem = ({ label, count, isActive, onClick }: any) => (
     </div>
 );
   
-const FilterInput = ({ placeholder, icon, value }: any) => (
+const FilterInput = ({ placeholder, icon, value, onChange, onEnter }: any) => (
     <div className="flex items-center border border-gray-300 rounded-md bg-white h-[40px] px-3 w-full hover:border-orange-500 focus-within:border-orange-500 transition-colors">
       {icon && <span className="text-gray-400 mr-2">{icon}</span>}
-      <input type="text" placeholder={placeholder} defaultValue={value} className="flex-1 outline-none text-sm font-light text-gray-900 placeholder:text-gray-400 bg-transparent"/>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value ?? ''}
+        onChange={(e) => onChange?.(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onEnter?.(); }}
+        className="flex-1 outline-none text-sm font-light text-gray-900 placeholder:text-gray-400 bg-transparent"
+      />
     </div>
 );
   
@@ -168,9 +175,17 @@ const ProductManagementPage = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // --- FILTER STATE (controlled) ---
+  // Input draft (gõ liên tục) vs applied (chỉ thay đổi khi click "Tìm kiếm").
+  // Tách 2 layer để không refetch mỗi keystroke.
+  const [searchDraft, setSearchDraft] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'createdAt-desc' | 'createdAt-asc' | 'price-asc' | 'price-desc'>('createdAt-desc');
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+
   // --- PAGINATION STATE ---
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10); 
+  const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [jumpPage, setJumpPage] = useState("");
 
@@ -186,17 +201,22 @@ const ProductManagementPage = () => {
     setIsLoading(true);
     try {
       const statusParam = TAB_MAPPING[activeTab] || 'ALL';
+      const [sortField, sortOrder] = sortBy.split('-');
 
       const res: any = await api.get('/seller/products', {
         params: {
             status: statusParam,
             page: page,
-            limit: limit
+            limit: limit,
+            search: appliedSearch || undefined,
+            sortBy: sortField,
+            sortOrder: sortOrder,
         }
       });
 
       let dataList = [];
       let totalCount = 0;
+      let counts: Record<string, number> | undefined;
 
       if (Array.isArray(res)) {
           totalCount = res.length;
@@ -206,10 +226,12 @@ const ProductManagementPage = () => {
       } else if (res?.data) {
           dataList = res.data;
           totalCount = res.meta?.total || res.total || res.data.length;
+          counts = res.meta?.counts || res.counts;
       }
 
       setProducts(dataList);
       setTotal(totalCount);
+      if (counts) setStatusCounts(counts);
 
     } catch (error) {
       console.error("Lỗi tải sản phẩm:", error);
@@ -218,7 +240,19 @@ const ProductManagementPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, page, limit]);
+  }, [activeTab, page, limit, appliedSearch, sortBy]);
+
+  const handleApplyFilter = () => {
+    setPage(1);
+    setAppliedSearch(searchDraft.trim());
+  };
+
+  const handleResetFilter = () => {
+    setSearchDraft('');
+    setAppliedSearch('');
+    setSortBy('createdAt-desc');
+    setPage(1);
+  };
 
   useEffect(() => {
     setPage(1);
@@ -450,26 +484,65 @@ const ProductManagementPage = () => {
         </div>
 
         <div className="flex border-b border-gray-200 px-6 overflow-x-auto no-scrollbar">
-          {STATUS_TABS.map(tab => <TabItem key={tab.id} {...tab} isActive={activeTab === tab.id} onClick={() => setActiveTab(tab.id)} />)}
+          {STATUS_TABS.map(tab => {
+            // Badge count: lấy từ statusCounts (BE trả meta.counts theo status).
+            // Tab 'all' luôn null (không hiển thị số), các tab khác fallback 0
+            // nếu BE chưa trả counts.
+            const apiKey = TAB_MAPPING[tab.id];
+            const count = tab.id === 'all' ? null : (statusCounts[apiKey] ?? tab.count ?? 0);
+            return (
+              <TabItem
+                key={tab.id}
+                {...tab}
+                count={count}
+                isActive={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+              />
+            );
+          })}
         </div>
         <div className="flex px-6 pt-2 overflow-x-auto no-scrollbar bg-gray-50/50">
           {SUB_TABS.map(tab => <TabItem key={tab.id} {...tab} isActive={activeSubTab === tab.id} onClick={() => setActiveSubTab(tab.id)} />)}
         </div>
       </div>
 
-      {/* FILTER SECTION (Giữ nguyên) */}
+      {/* FILTER SECTION */}
       {isFilterExpanded && (
         <div className="bg-white mx-6 p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-            {/* ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-                <FilterInput placeholder="Tìm kiếm theo tên sản phẩm" icon={<Search size={16} />} />
-                <FilterDropdown placeholder="Danh mục ngành hàng" />
-                <FilterInput placeholder="SKU phân loại" />
-                <FilterInput placeholder="SKU sản phẩm" />
+                <FilterInput
+                  placeholder="Tìm kiếm theo tên sản phẩm"
+                  icon={<Search size={16} />}
+                  value={searchDraft}
+                  onChange={setSearchDraft}
+                  onEnter={handleApplyFilter}
+                />
+                <div className="flex items-center border border-gray-300 rounded-md bg-white h-[40px] px-3 w-full">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="flex-1 outline-none text-sm bg-transparent text-gray-700"
+                  >
+                    <option value="createdAt-desc">Mới nhất</option>
+                    <option value="createdAt-asc">Cũ nhất</option>
+                    <option value="price-asc">Giá tăng dần</option>
+                    <option value="price-desc">Giá giảm dần</option>
+                  </select>
+                </div>
             </div>
             <div className="flex items-center gap-4">
-                <button className="flex items-center gap-2 px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 font-medium min-w-[120px] justify-center"><Search size={16} /> Tìm kiếm</button>
-                <button className="flex items-center gap-2 px-6 py-2 border border-orange-500 text-orange-500 rounded-md hover:bg-orange-50 font-medium min-w-[120px] justify-center"><RotateCcw size={16} /> Đặt lại</button>
+                <button
+                  onClick={handleApplyFilter}
+                  className="flex items-center gap-2 px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 font-medium min-w-[120px] justify-center"
+                >
+                  <Search size={16} /> Tìm kiếm
+                </button>
+                <button
+                  onClick={handleResetFilter}
+                  className="flex items-center gap-2 px-6 py-2 border border-orange-500 text-orange-500 rounded-md hover:bg-orange-50 font-medium min-w-[120px] justify-center"
+                >
+                  <RotateCcw size={16} /> Đặt lại
+                </button>
             </div>
         </div>
       )}

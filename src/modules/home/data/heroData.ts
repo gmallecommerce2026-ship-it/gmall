@@ -9,7 +9,7 @@ export const HERO_SLIDES = [
     title: "Phong Cách Mới 2024",
     description: "Khám phá bộ sưu tập thời trang Thu Đông mới nhất. Đẳng cấp trong từng đường nét.",
     ctaLabel: "Mua Ngay",
-    ctaLink: "/shop/fashion",
+    ctaLink: "/search?category=thoi-trang",
     theme: "dark", 
   },
   {
@@ -20,7 +20,7 @@ export const HERO_SLIDES = [
     title: "Công Nghệ Đỉnh Cao",
     description: "Trải nghiệm những sản phẩm công nghệ mới nhất với ưu đãi lên đến 40%.",
     ctaLabel: "Xem Chi Tiết",
-    ctaLink: "/shop/tech",
+    ctaLink: "/search?category=cong-nghe",
     theme: "light",
   },
   {
@@ -31,7 +31,7 @@ export const HERO_SLIDES = [
     title: "Sale Sập Sàn",
     description: "Cơ hội săn hàng hiệu giá hời. Hàng ngàn voucher đang chờ bạn.",
     ctaLabel: "Săn Deal Ngay",
-    ctaLink: "/shop/sale",
+    ctaLink: "/flash-sale",
     theme: "dark",
   },
   {
@@ -42,7 +42,7 @@ export const HERO_SLIDES = [
     title: "Phong Cách Mới 2024",
     description: "Khám phá bộ sưu tập thời trang Thu Đông mới nhất. Đẳng cấp trong từng đường nét.",
     ctaLabel: "Mua Ngay",
-    ctaLink: "/shop/fashion",
+    ctaLink: "/search?category=thoi-trang",
     theme: "dark", 
   },
   {
@@ -53,7 +53,7 @@ export const HERO_SLIDES = [
     title: "Công Nghệ Đỉnh Cao",
     description: "Trải nghiệm những sản phẩm công nghệ mới nhất với ưu đãi lên đến 40%.",
     ctaLabel: "Xem Chi Tiết",
-    ctaLink: "/shop/tech",
+    ctaLink: "/search?category=cong-nghe",
     theme: "light",
   },
 ];

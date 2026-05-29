@@ -25,6 +25,16 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onSpinSuccess, onClose }) => {
   const [isSpinning, setIsSpinning] = useState(false);     // Trạng thái đang quay animation
   const [rotation, setRotation] = useState(0);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
+  // Cleanup timer khi unmount để không fire `onSpinSuccess` trên parent đã đóng modal.
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   // Tính toán background gradient động dựa trên SEGMENTS
   // Kết quả: conic-gradient(màu1 0% 12.5%, màu2 12.5% 25%, ...)
@@ -90,27 +100,26 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onSpinSuccess, onClose }) => {
 
       setRotation(newRotation);
 
-      // 5. Kết thúc quay (4s sau)
-      setTimeout(() => {
+      // 5. Kết thúc quay (4s sau). Lưu ref để cleanup khi unmount.
+      stopTimerRef.current = setTimeout(() => {
         setIsSpinning(false);
         if (data.won && data.reward > 0) {
             setResultMsg(`🎉 +${data.reward} Xu`);
         } else {
-            // Dùng message từ BE (nếu có) để consistency, fallback hardcode
             setResultMsg(data.message || "😅 Chúc may mắn lần sau");
         }
-        
-        // Đợi thêm 1 chút để người dùng đọc kết quả rồi mới đóng/refresh
-        setTimeout(() => {
+        successTimerRef.current = setTimeout(() => {
              onSpinSuccess();
         }, 1500);
-
-      }, 4000); // Khớp với transition duration
+      }, 4000);
 
     } catch (error: any) {
       setIsProcessing(false);
       setIsSpinning(false);
-      alert(error?.response?.data?.message || 'Lỗi kết nối server');
+      const msg = error?.code === 'ECONNABORTED'
+        ? 'Quá thời gian chờ, vui lòng thử lại'
+        : (error?.response?.data?.message || error?.message || 'Lỗi kết nối server');
+      setResultMsg(`⚠ ${msg}`);
     }
   };
 

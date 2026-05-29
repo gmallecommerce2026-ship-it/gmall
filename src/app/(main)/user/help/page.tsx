@@ -3,23 +3,18 @@ import React from 'react';
 import Link from 'next/link';
 import { ChevronRight, FileQuestion, Truck, CreditCard, RotateCcw, MessageCircle, Phone } from 'lucide-react';
 
-// #51 (wiki 0044/0045): wire Help Center.
-// - Cards topic giờ link tới các trang policy/terms tương ứng (thay vì cursor stub).
-// - Câu hỏi link tới `/seller-dashboard/help/policies` (cùng nguồn knowledge base).
-// - Nút "Chat với nhân viên" -> /messages?role=admin (tận dụng module messages có sẵn).
-// - Thêm card thông tin hotline làm fallback cho user không quen chat.
 export default function HelpCenterPage() {
   const topics = [
-      { icon: <Truck size={24} />, title: 'Vận chuyển & Giao nhận', href: '/seller-dashboard/help/policies#shipping' },
-      { icon: <CreditCard size={24} />, title: 'Thanh toán', href: '/seller-dashboard/help/policies#payment' },
-      { icon: <RotateCcw size={24} />, title: 'Trả hàng & Hoàn tiền', href: '/seller-dashboard/help/policies#refund' },
-      { icon: <FileQuestion size={24} />, title: 'Câu hỏi thường gặp', href: '/seller-dashboard/help/policies#faq' },
+      { icon: <Truck size={24} />, title: 'Vận chuyển & Giao nhận', href: '/terms#shipping' },
+      { icon: <CreditCard size={24} />, title: 'Thanh toán', href: '/terms#payment' },
+      { icon: <RotateCcw size={24} />, title: 'Trả hàng & Hoàn tiền', href: '/terms#refund' },
+      { icon: <FileQuestion size={24} />, title: 'Câu hỏi thường gặp', href: '/terms#faq' },
   ];
 
   const faqs = [
       { q: 'Làm sao để tôi đổi địa chỉ nhận hàng?', href: '/user/address' },
       { q: 'Tôi có thể hủy đơn hàng khi đã thanh toán không?', href: '/user/purchase' },
-      { q: 'Quy trình bảo hành sản phẩm như thế nào?', href: '/seller-dashboard/help/policies#warranty' },
+      { q: 'Quy trình bảo hành sản phẩm như thế nào?', href: '/terms#warranty' },
   ];
 
   return (

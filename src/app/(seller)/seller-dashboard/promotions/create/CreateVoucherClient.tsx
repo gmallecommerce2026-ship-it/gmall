@@ -47,9 +47,17 @@ export default function CreateVoucherClient() {
     setLoading(true);
     
     try {
-      if (new Date(formData.endDate) <= new Date(formData.startDate)) {
-        throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
-      }
+      if (!formData.code?.trim()) throw new Error('Vui lòng nhập mã voucher');
+      if (!formData.startDate) throw new Error('Vui lòng chọn ngày bắt đầu');
+      if (!formData.endDate) throw new Error('Vui lòng chọn ngày kết thúc');
+
+      const now = new Date();
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      // audit Seller #25: ngày kết thúc trong quá khứ vẫn được submit. Check vs now().
+      if (end <= now) throw new Error('Ngày kết thúc phải sau thời điểm hiện tại');
+      if (end <= start) throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
+
       if (formData.scope === 'PRODUCT' && !selectedProducts.length) {
         throw new Error('Vui lòng chọn ít nhất 1 sản phẩm');
       }
@@ -80,7 +88,11 @@ export default function CreateVoucherClient() {
       router.push('/seller-dashboard/promotions');
     } catch (error: any) {
       console.error(error);
-      toast.error(error?.response?.data?.message || error.message || 'Có lỗi xảy ra');
+      // BE i18n pipe (wiki 0055) có thể trả message dạng array khi nhiều lỗi
+      // validation; flatten về string cho toast.
+      const raw = error?.response?.data?.message;
+      const msg = Array.isArray(raw) ? raw.join('\n') : (raw || error.message || 'Có lỗi xảy ra');
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
