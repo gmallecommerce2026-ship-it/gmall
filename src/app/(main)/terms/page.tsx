@@ -1,15 +1,23 @@
 import { Metadata } from 'next';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Điều khoản dịch vụ — GMall',
   description: 'Điều khoản sử dụng nền tảng GMall.',
 };
 
+// Wiki 0068 D9: ngày cập nhật cố định cho trang pháp lý (trước chỉ hiện năm
+// hiện tại qua new Date().getFullYear() — vừa thiếu ngày vừa "tự đổi" mỗi năm).
+const LAST_UPDATED = '15/01/2026';
+
 export default function TermsPage() {
   return (
-    <article className="max-w-3xl mx-auto px-4 py-12 prose prose-sm">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      {/* Wiki 0068 D8: breadcrumb cho trang chính sách */}
+      <Breadcrumbs items={[{ name: 'Trang chủ', href: '/' }, { name: 'Điều khoản dịch vụ', href: '/terms' }]} />
+      <article className="prose prose-sm max-w-none mt-4">
       <h1>Điều khoản dịch vụ GMall</h1>
-      <p className="text-gray-500">Cập nhật lần cuối: {new Date().getFullYear()}</p>
+      <p className="text-gray-500">Cập nhật lần cuối: {LAST_UPDATED}</p>
 
       <h2>1. Chấp nhận điều khoản</h2>
       <p>
@@ -91,6 +99,7 @@ export default function TermsPage() {
         Đây là bản điều khoản khung — nội dung pháp lý chi tiết cần được
         legal team review trước khi go-live production.
       </p>
-    </article>
+      </article>
+    </div>
   );
 }

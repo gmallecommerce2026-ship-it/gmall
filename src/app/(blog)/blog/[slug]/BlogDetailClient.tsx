@@ -11,7 +11,8 @@ import { BlogPost } from '@/types/blog';
 import { BlogSidebar } from '@/modules/blog/components/BlogSidebar';
 import { BlogCard } from '@/modules/blog/components/BlogCard';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
-import { sanitizeHtml } from '@/lib/sanitize';
+// Wiki 0068 D12: render nội dung + xen kẽ quảng cáo (thay cho dangerouslySetInnerHTML 1 khối)
+import BlogContentWithAds from '@/modules/blog/components/BlogContentWithAds';
 
 // --- Components Con: Widget Sản phẩm (Tách ra cho gọn) ---
 const RelatedProductsWidget = ({ products }: { products: any[] }) => {
@@ -173,15 +174,16 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
               </figure>
             )}
 
-            {/* Content Body */}
-            <div 
-              className="prose prose-lg prose-slate max-w-none 
+            {/* Content Body — Wiki 0068 D12: xen kẽ quảng cáo giữa các đoạn.
+                sanitize XSS vẫn giữ (bên trong BlogContentWithAds). */}
+            <BlogContentWithAds
+              content={post.content}
+              proseClassName="prose prose-lg prose-slate max-w-none
               prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight
               prose-p:text-gray-700 prose-p:leading-8
               prose-a:text-blue-600 prose-a:font-semibold prose-a:no-underline hover:prose-a:text-blue-800
               prose-img:rounded-[3px] prose-img:shadow-sm prose-img:my-8
               prose-blockquote:border-l-4 prose-blockquote:border-blue-600 prose-blockquote:bg-gray-50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:font-medium prose-blockquote:not-italic"
-              dangerouslySetInnerHTML={sanitizeHtml(post.content) /* BUG-FE-3 wiki 0030: sanitize chống XSS */}
             />
 
             {/* Footer bài viết: Tags */}

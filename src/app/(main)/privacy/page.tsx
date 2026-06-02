@@ -1,15 +1,22 @@
 import { Metadata } from 'next';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Chính sách bảo mật — GMall',
   description: 'Cách GMall thu thập và sử dụng dữ liệu cá nhân.',
 };
 
+// Wiki 0068 D9: ngày cập nhật cố định cho trang pháp lý.
+const LAST_UPDATED = '15/01/2026';
+
 export default function PrivacyPage() {
   return (
-    <article className="max-w-3xl mx-auto px-4 py-12 prose prose-sm">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      {/* Wiki 0068 D8: breadcrumb cho trang chính sách */}
+      <Breadcrumbs items={[{ name: 'Trang chủ', href: '/' }, { name: 'Chính sách bảo mật', href: '/privacy' }]} />
+      <article className="prose prose-sm max-w-none mt-4">
       <h1>Chính sách bảo mật GMall</h1>
-      <p className="text-gray-500">Cập nhật lần cuối: {new Date().getFullYear()}</p>
+      <p className="text-gray-500">Cập nhật lần cuối: {LAST_UPDATED}</p>
 
       <h2>1. Dữ liệu chúng tôi thu thập</h2>
       <ul>
@@ -59,6 +66,7 @@ export default function PrivacyPage() {
         Bản chính sách khung. Cần review bởi legal team trước khi deploy
         production, đặc biệt nếu có user ngoài Việt Nam (GDPR).
       </p>
-    </article>
+      </article>
+    </div>
   );
 }
