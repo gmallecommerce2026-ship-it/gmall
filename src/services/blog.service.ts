@@ -61,6 +61,11 @@ export const blogService = {
     return apiClient.delete(`/admin/blog-categories/${id}`);
   },
 
+  // Wiki 0068 C10: lưu thứ tự kéo thả danh mục blog
+  reorderCategories: async (items: { id: string; sortOrder: number }[]) => {
+    return apiClient.patch('/admin/blog-categories/reorder', { items });
+  },
+
   // --- PRODUCTS ---
   
   // Tìm kiếm sản phẩm để gắn vào bài viết

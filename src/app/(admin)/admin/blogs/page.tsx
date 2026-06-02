@@ -45,6 +45,46 @@ const flattenCategories = (categories: any[], level = 0, result: any[] = []) => 
     return result;
 };
 
+// --- SUB-COMPONENT: SORTABLE CATEGORY ROW (Wiki 0068 C10) ---
+const SortableCatItem = ({ cat, editingId, onEdit, onDelete }: any) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        marginLeft: `${cat.level * 20}px`,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : 'auto',
+    };
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`flex items-center justify-between p-2 rounded-lg border hover:border-blue-300 transition-colors
+                ${editingId === cat.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
+        >
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 touch-none"
+                    title="Kéo để sắp xếp"
+                >
+                    <FiMove size={14} />
+                </button>
+                {cat.level > 0 && <FiChevronRight size={14} className="text-gray-400" />}
+                <span className={`text-sm ${cat.level === 0 ? 'font-bold text-gray-800' : 'font-medium text-gray-600'}`}>
+                    {cat.name}
+                </span>
+            </div>
+            <div className="flex gap-1">
+                <button type="button" onClick={() => onEdit(cat)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded"><FiEdit2 size={14} /></button>
+                <button type="button" onClick={() => onDelete(cat.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded"><FiTrash2 size={14} /></button>
+            </div>
+        </div>
+    );
+};
+
 // --- SUB-COMPONENT: CATEGORY MANAGER MODAL ---
 interface CategoryModalProps {
     isOpen: boolean;
@@ -71,6 +111,46 @@ const CategoryManagerModal = ({ isOpen, onClose, categories, onRefresh }: Catego
             setEditingId(null);
         }
     }, [isOpen]);
+
+    // Wiki 0068 C10: state + handlers cho kéo thả sắp xếp danh mục
+    const [orderedCats, setOrderedCats] = useState<any[]>([]);
+    const [isOrderChanged, setIsOrderChanged] = useState(false);
+    const [savingOrder, setSavingOrder] = useState(false);
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+    // Đồng bộ danh sách kéo thả từ flatCategories (mỗi khi data refresh)
+    useEffect(() => {
+        setOrderedCats(flatCategories);
+        setIsOrderChanged(false);
+    }, [flatCategories]);
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setOrderedCats((items) => {
+                const oldIndex = items.findIndex((i) => i.id === active.id);
+                const newIndex = items.findIndex((i) => i.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+            setIsOrderChanged(true);
+        }
+    };
+
+    const handleSaveOrder = async () => {
+        setSavingOrder(true);
+        try {
+            await blogService.reorderCategories(orderedCats.map((c, i) => ({ id: c.id, sortOrder: i })));
+            toast.success('Đã lưu thứ tự danh mục');
+            setIsOrderChanged(false);
+            onRefresh();
+        } catch {
+            toast.error('Lưu thứ tự thất bại');
+        } finally {
+            setSavingOrder(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -185,35 +265,48 @@ const CategoryManagerModal = ({ isOpen, onClose, categories, onRefresh }: Catego
                     </form>
                 </div>
 
-                {/* List Area */}
+                {/* List Area — Wiki 0068 C10: kéo thả sắp xếp danh mục */}
                 <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                    {flatCategories.length === 0 ? (
+                    {orderedCats.length === 0 ? (
                         <p className="text-center text-gray-500 py-4 text-sm">Chưa có danh mục nào</p>
                     ) : (
-                        <div className="space-y-1">
-                            {flatCategories.map((cat: any) => (
-                                <div 
-                                    key={cat.id} 
-                                    className={`flex items-center justify-between p-2 rounded-lg border hover:border-blue-300 transition-colors
-                                        ${editingId === cat.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}
-                                    `}
-                                    style={{ marginLeft: `${cat.level * 20}px` }} 
-                                >
-                                    <div className="flex items-center gap-2">
-                                        {cat.level > 0 && <FiChevronRight size={14} className="text-gray-400"/>}
-                                        <span className={`text-sm ${cat.level === 0 ? 'font-bold text-gray-800' : 'font-medium text-gray-600'}`}>
-                                            {cat.name}
-                                        </span>
+                        <>
+                            <p className="text-[11px] text-gray-400 px-1 pb-1 flex items-center gap-1">
+                                <FiMove size={11} /> Kéo biểu tượng để sắp xếp thứ tự hiển thị
+                            </p>
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={orderedCats.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                                    <div className="space-y-1">
+                                        {orderedCats.map((cat: any) => (
+                                            <SortableCatItem
+                                                key={cat.id}
+                                                cat={cat}
+                                                editingId={editingId}
+                                                onEdit={handleEdit}
+                                                onDelete={handleDelete}
+                                            />
+                                        ))}
                                     </div>
-                                    <div className="flex gap-1">
-                                        <button onClick={() => handleEdit(cat)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded"><FiEdit2 size={14}/></button>
-                                        <button onClick={() => handleDelete(cat.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded"><FiTrash2 size={14}/></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                </SortableContext>
+                            </DndContext>
+                        </>
                     )}
                 </div>
+
+                {/* Thanh lưu thứ tự — chỉ hiện khi có thay đổi */}
+                {isOrderChanged && (
+                    <div className="p-3 border-t bg-amber-50 flex items-center justify-between">
+                        <span className="text-xs text-amber-700">Thứ tự đã thay đổi — nhớ lưu lại</span>
+                        <button
+                            type="button"
+                            onClick={handleSaveOrder}
+                            disabled={savingOrder}
+                            className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-1"
+                        >
+                            {savingOrder ? <FiLoader className="animate-spin" /> : <FiSave />} Lưu thứ tự
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

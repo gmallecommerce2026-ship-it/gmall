@@ -227,7 +227,10 @@ const SellerSidebarContent = () => {
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        const pending = data?.todo?.pending ?? 0;
+        // Wiki 0068 A6: "Đơn chờ" = đơn cần seller xử lý = PENDING (chờ xác nhận)
+        // + CONFIRMED (chờ lấy hàng). Trước chỉ đếm pending → thiếu đơn đã xác nhận
+        // chờ giao → số hiển thị không chính xác.
+        const pending = (data?.todo?.pending ?? 0) + (data?.todo?.confirmed ?? 0);
         const revenueToday = data?.chart?.[data.chart.length - 1]?.revenue ?? 0;
         setStats({ pending, revenueToday });
       } catch {

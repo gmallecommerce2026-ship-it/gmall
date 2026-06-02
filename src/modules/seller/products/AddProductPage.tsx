@@ -401,7 +401,9 @@ const AddProductPage = () => {
     let cancelled = false;
     (async () => {
       try {
-        const res: any = await api.get(`/products/${editId}`);
+        // Wiki 0068 A1: endpoint owner-scoped /seller/products/:id (trước gọi
+        // /products/:id không tồn tại -> 404 -> toast "không tải được dữ liệu").
+        const res: any = await api.get(`/seller/products/${editId}`);
         const product = res?.data || res;
         if (!product || cancelled) return;
 
