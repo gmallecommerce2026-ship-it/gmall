@@ -30,6 +30,8 @@ const RegisterClient = () => {
   });
   
   const [otpCode, setOtpCode] = useState("");
+  // Wiki 0068 B2: OTP trả về từ BE khi mail chưa cấu hình (dev/staging) để vẫn verify được.
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
@@ -41,6 +43,24 @@ const RegisterClient = () => {
     setErrors({});
     setStep('form');
   }, []);
+
+  // Wiki 0068 B3: hỏi BE provider OAuth nào đã cấu hình để gate nút (tránh
+  // redirect sang BE rồi dính trang 503 thô khi chưa set credentials).
+  const [oauth, setOauth] = useState<{ google: boolean; facebook: boolean }>({ google: true, facebook: true });
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/auth/oauth-status`)
+      .then((r) => r.json())
+      .then((d) => setOauth({ google: !!d?.google, facebook: !!d?.facebook }))
+      .catch(() => {});
+  }, []);
+
+  const goOAuth = (provider: 'google' | 'facebook') => {
+    if (oauth[provider]) {
+      window.location.href = `${API_BASE_URL}/auth/${provider}`;
+    } else {
+      toast.error(`Đăng nhập ${provider === 'google' ? 'Google' : 'Facebook'} chưa được cấu hình. Vui lòng dùng email & mật khẩu.`);
+    }
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -78,11 +98,14 @@ const RegisterClient = () => {
     setIsLoading(true);
     try {
         // Gọi API REGISTER (Gửi Name + Email + Pass)
-        await AuthService.register({
+        const res: any = await AuthService.register({
           name: formData.name,
           email: formData.email,
           password: formData.password
         });
+        // Wiki 0068 B2: BE trả devOtp khi mail chưa cấu hình (dev/staging) →
+        // hiển ngay để user hoàn tất đăng ký (không nhận được email).
+        setDevOtp(res?.devOtp ?? null);
 
         // Thành công -> Chuyển sang bước OTP
         setStep('otp');
@@ -123,11 +146,12 @@ const RegisterClient = () => {
 
   const handleResendOtp = async () => {
     try {
-      await AuthService.sendOtp(formData.email);
+      const res: any = await AuthService.sendOtp(formData.email);
+      setDevOtp(res?.devOtp ?? null);
       setTimer(60);
-      alert("Đã gửi lại mã OTP!");
+      if (!res?.devOtp) toast.success("Đã gửi lại mã OTP!");
     } catch (error) {
-      alert("Không thể gửi lại mã.");
+      toast.error("Không thể gửi lại mã.");
     }
   };
 
@@ -224,12 +248,12 @@ const RegisterClient = () => {
               <SocialButton
                 iconSrc="/assets/SvgAsset2.svg"
                 label="Google"
-                onClick={() => { window.location.href = `${API_BASE_URL}/auth/google`; }}
+                onClick={() => goOAuth('google')}
               />
               <SocialButton
                 iconSrc="/assets/SvgAsset1.svg"
                 label="Facebook"
-                onClick={() => { window.location.href = `${API_BASE_URL}/auth/facebook`; }}
+                onClick={() => goOAuth('facebook')}
               />
             </div>
 
@@ -252,6 +276,17 @@ const RegisterClient = () => {
                 Mã xác thực 6 số đã được gửi đến email: <br/>
                 <span className="font-semibold text-brand-orange">{formData.email}</span>
               </p>
+              {/* Wiki 0068 B2: chế độ dev/staging — email chưa cấu hình nên hiển OTP
+                  trực tiếp để hoàn tất đăng ký. Prod (có mail) sẽ KHÔNG có devOtp. */}
+              {devOtp && (
+                <div className="mt-4 mx-auto max-w-sm bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                  <p className="text-amber-700 font-semibold">⚠ Chế độ DEV — email chưa cấu hình</p>
+                  <p className="text-amber-600 mt-1">
+                    Mã OTP của bạn:{" "}
+                    <span className="font-mono font-bold text-xl tracking-widest text-amber-900">{devOtp}</span>
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="py-2">

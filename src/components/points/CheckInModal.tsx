@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { pointService } from '@/services/point.service';
 import { X, Check, Loader2, Gift } from 'lucide-react';
 
@@ -21,11 +21,16 @@ const REWARDS = Array.from({ length: DAYS_PER_CYCLE }, (_, i) =>
 const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [streak, setStreak] = useState(0); // 0-based index (current position in cycle)
+  const [justCheckedIn, setJustCheckedIn] = useState(false);
+  // Wiki 0068 B4: cleanup timer chuyển sang Lucky Wheel để tránh fire khi đã đóng modal.
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (successTimerRef.current) clearTimeout(successTimerRef.current); }, []);
 
   useEffect(() => {
     if (isOpen) {
+      setJustCheckedIn(false);
       pointService.getDailyStatus().then((res: any) => {
-         // BE trả `streak` 1-based. Modulo cycle để hiển vị trí trong 10 ngày.
+         // BE trả `currentStreak` 1-based. Modulo cycle để hiển vị trí trong 10 ngày.
          const s = res.streak || res.currentStreak || 0;
          setStreak(s === 0 ? 0 : ((s - 1) % DAYS_PER_CYCLE) + 1);
       });
@@ -38,13 +43,20 @@ const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess 
     setLoading(true);
     try {
       await pointService.checkIn();
-      // Refetch streak từ BE để hiển thị đúng vị trí mới rồi mới transition sang Lucky Wheel.
+      // Refetch streak từ BE (nay /events/status trả currentStreak — wiki 0068 B4)
+      // để hiển ô ngày nhảy sang ngày kế tiếp.
       try {
         const res: any = await pointService.getDailyStatus();
         const s = res.streak || res.currentStreak || 0;
         setStreak(s === 0 ? 0 : ((s - 1) % DAYS_PER_CYCLE) + 1);
       } catch {/* ignore refetch error, BE đã ghi nhận checkin */}
-      onSuccess();
+      // Wiki 0068 B4: chờ 1.2s để user THẤY ngày vừa điểm danh (✓) + ngày kế được
+      // highlight, rồi mới chuyển sang Lucky Wheel (trước đây onSuccess chạy ngay
+      // → modal đóng tức thì, không nhìn thấy "nhảy qua ngày tiếp theo").
+      setJustCheckedIn(true);
+      setLoading(false);
+      successTimerRef.current = setTimeout(() => onSuccess(), 1200);
+      return;
     } catch (error: any) {
       alert(error?.response?.data?.message || 'Lỗi điểm danh');
       onClose();
@@ -89,10 +101,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onSuccess 
         <div className="p-6 pt-0">
           <button
             onClick={handleCheckIn}
-            disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-red-900 font-black text-lg rounded-2xl shadow-lg shadow-orange-500/20 transform transition active:scale-95 flex items-center justify-center gap-2"
+            disabled={loading || justCheckedIn}
+            className="w-full py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-red-900 font-black text-lg rounded-2xl shadow-lg shadow-orange-500/20 transform transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-90"
           >
-            {loading ? <Loader2 className="animate-spin" /> : 'ĐIỂM DANH NGAY'}
+            {loading ? <Loader2 className="animate-spin" /> : justCheckedIn ? <><Check size={20} /> Đã điểm danh!</> : 'ĐIỂM DANH NGAY'}
           </button>
         </div>
       </div>

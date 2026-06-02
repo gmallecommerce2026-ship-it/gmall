@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -41,6 +41,23 @@ export default function LoginClient() {
   // OFF, FE đặt sessionStorage flag và logout khi tab đóng (beforeunload).
   // Mặc định ON match expectation đa số e-commerce site.
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Wiki 0068 B3: hỏi BE provider OAuth nào đã cấu hình → gate nút (chưa set
+  // credentials thì hiện toast thân thiện thay vì redirect dính trang 503 thô).
+  const [oauth, setOauth] = useState<{ google: boolean; facebook: boolean }>({ google: true, facebook: true });
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/auth/oauth-status`)
+      .then((r) => r.json())
+      .then((d) => setOauth({ google: !!d?.google, facebook: !!d?.facebook }))
+      .catch(() => {});
+  }, []);
+  const goOAuth = (provider: 'google' | 'facebook') => {
+    if (oauth[provider]) {
+      window.location.href = `${API_BASE_URL}/auth/${provider}`;
+    } else {
+      toast.error(`Đăng nhập ${provider === 'google' ? 'Google' : 'Facebook'} chưa được cấu hình. Vui lòng dùng email & mật khẩu.`);
+    }
+  };
 
   const {
     register,
@@ -182,10 +199,7 @@ export default function LoginClient() {
                   cookies của mình. */}
               <button
                 type="button"
-                onClick={() => {
-                  const apiUrl = API_BASE_URL;
-                  window.location.href = `${apiUrl}/auth/google`;
-                }}
+                onClick={() => goOAuth('google')}
                 className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
                 <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
@@ -198,10 +212,7 @@ export default function LoginClient() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const apiUrl = API_BASE_URL;
-                  window.location.href = `${apiUrl}/auth/facebook`;
-                }}
+                onClick={() => goOAuth('facebook')}
                 className="flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
                 <div className="w-5 h-5 flex items-center justify-center text-[#1877F2]">
