@@ -19,10 +19,14 @@ export function toSlug(str: string): string {
     
     // Replace spaces with hyphens
     str = str.replace(/(\s+)/g, '-');
-    
+
+    // Wiki 0074: gộp gạch nối liên tiếp (input " - " hoặc nhiều space → "---").
+    // Trước đây thiếu bước này → slug xấu "a---b", lệch với BE generateSlug.
+    str = str.replace(/-+/g, '-');
+
     // Remove leading/trailing hyphens
     str = str.replace(/^-+|-+$/g, '');
-    
+
     return str;
 }
 // Hàm format tiền tệ VNĐ
