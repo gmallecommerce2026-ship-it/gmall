@@ -160,23 +160,26 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onSpinSuccess, onClose }) => {
             >
                 {/* Vẽ các đường kẻ ngăn cách & Text */}
                 {SEGMENTS.map((seg, i) => (
-                    <div 
+                    <div
                         key={i}
                         className="absolute top-0 left-0 w-full h-full"
                         style={{ transform: `rotate(${i * (360 / SEGMENTS.length)}deg)` }}
                     >
-                        {/* Đường kẻ trắng ngăn cách */}
+                        {/* Đường kẻ trắng ngăn cách — ở RANH GIỚI ô (đúng) */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-1/2 bg-white/20 origin-bottom"></div>
-                        
-                        {/* Text (Căn chỉnh vào giữa múi) */}
-                        <div 
-                            className="absolute top-4 left-1/2 -translate-x-1/2 text-center pt-4 font-bold text-white text-sm drop-shadow-md origin-center"
-                            style={{ 
-                                transform: `rotate(${180 / SEGMENTS.length}deg)`, // Xoay nhẹ để text nằm giữa múi
-                                width: '60px'
-                            }}
-                        >
-                            <span className="block transform rotate-180 uppercase tracking-tighter" style={{ writingMode: 'vertical-rl' }}>
+
+                        {/* Wiki 0073 (B5 fix hiển thị): căn chữ vào GIỮA ô màu.
+                            BUG cũ: inline `transform: rotate(22.5)` trên div chữ ĐÈ MẤT
+                            `-translate-x-1/2` (Tailwind) + chỉ tilt quanh tâm chữ → chữ
+                            lệch ~nửa ô so với màu → kim chỉ màu "100 Xu" nhưng chữ "Trượt"
+                            ô kế đè lên → user thấy "quay trượt nhưng nhận 100 xu".
+                            FIX: xoay 1 container full-size thêm nửa ô (quanh TÂM VÒNG) để
+                            chữ trùng tâm ô; chữ chỉ dùng -translate-x-1/2 (không inline transform). */}
+                        <div className="absolute inset-0" style={{ transform: `rotate(${(360 / SEGMENTS.length) / 2}deg)` }}>
+                            <span
+                                className="absolute top-6 left-1/2 -translate-x-1/2 uppercase tracking-tighter font-bold text-white text-sm drop-shadow-md whitespace-nowrap"
+                                style={{ writingMode: 'vertical-rl' }}
+                            >
                                 {seg.label}
                             </span>
                         </div>
