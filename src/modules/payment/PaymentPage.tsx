@@ -639,7 +639,7 @@ const PaymentPage = () => {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   {id:'cod', name:'Thanh toán khi nhận hàng'}, 
-                  {id:'pay2s', name:'Thanh toán Online (PayOS/VNPAY)'},
+                  {id:'pay2s', name:'Thanh toán Pay2S (Chuyển khoản / VietQR)'},
                   {id:'momo', name:'Ví MoMo'}
                 ].map(method => (
                    <div key={method.id} onClick={() => setSelectedPayment(method.id as any)}
