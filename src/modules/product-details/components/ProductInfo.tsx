@@ -160,7 +160,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
         const variantName = getVariantName();
         const payload = {
             productId: product.id,
-            productVariantId: currentVariant?.sku || currentVariant?.id || undefined,
+            // [round15 L2 FIX] BE keys cart/order theo variant.id (UUID), KHÔNG phải sku.
+            // sku là metadata; order.service find(v => v.id === variantId) → dùng sku sẽ 400.
+            productVariantId: currentVariant?.id || undefined,
             name: product.title,
             price: Number(finalPrice),
             imageUrl: currentVariant?.imageUrl || product.imageUrl,
@@ -195,7 +197,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
     const tempItem: CartItem = {
         id: `buynow-${Date.now()}`, // ID tạm
         productId: product.id,
-        productVariantId: currentVariant?.sku || currentVariant?.id,
+        // [round15 L2 FIX] dùng variant.id (khớp BE order.service + handleGiftNow), không dùng sku
+        productVariantId: currentVariant?.id,
         title: product.title,
         imageUrl: currentVariant?.imageUrl || product.imageUrl,
         price: Number(finalPrice),

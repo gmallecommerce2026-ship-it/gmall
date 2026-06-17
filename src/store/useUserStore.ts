@@ -42,7 +42,17 @@ export const useUserStore = create<UserState>()(
       user: null,
       isAuthenticated: false,
       _hasHydrated: false,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      // [round15 FIX point-alias] /auth/me & /auth/login trả `points` (số nhiều, khớp
+      // cột schema) nhưng FE interface dùng `point` (số ít) → setUser raw object để
+      // user.point = undefined → maxCoins=0 → block "Dùng G-Mall Xu" bị ẩn tới khi
+      // TopBar /points/me backfill. Normalize ngay tại store boundary.
+      setUser: (user) =>
+        set({
+          user: user
+            ? { ...user, point: (user as any).point ?? (user as any).points ?? 0 }
+            : null,
+          isAuthenticated: !!user,
+        }),
       setHasHydrated: (state) => set({ _hasHydrated: state }),
       updatePoint: (point) => set((state) => ({
         user: state.user ? { ...state.user, point } : null
@@ -70,12 +80,43 @@ export const useUserStore = create<UserState>()(
             // không chặn logout nếu fetch lỗi
           }
           try {
+            // [round15 FIX no-js-token] App KHÔNG còn GHI raw token vào JS-readable storage (httpOnly
+            // cookie do BE quản lý qua /auth/logout ở trên). Vẫn DỌN defensively token legacy nếu còn
+            // sót (lần cài cũ) — removeItem/clear non-httpOnly cookie là vô hại + dọn sạch.
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('user-storage');
             document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
+            localStorage.removeItem('user-storage');
+            // [round15 FIX clear-cart] Cũng xoá cart-storage để máy dùng chung không lộ giỏ hàng
+            // user cũ sang user mới (Header badge / MiniCart đọc trực tiếp store đã persist).
+            localStorage.removeItem('cart-storage');
+            localStorage.removeItem('gmall-checkout-storage');
           } catch {
             // localStorage có thể fail trong incognito hoặc storage quota — không block logout
           }
+          // [round15 FIX clear-cart] Reset cart store in-memory (badge/MiniCart render từ state này,
+          // không chỉ từ localStorage). Lazy import tránh circular dependency.
+          try {
+            import('./useCartStore')
+              .then((m) => m.useCartStore.getState().clearCart())
+              .catch(() => {});
+          } catch { /* ignore */ }
+          // [round15 FIX clear-chat] Logout phải tear down socket chat + xoá state in-memory,
+          // nếu không socket cũ vẫn nhận tin nhắn riêng tư của user cũ realtime và widget
+          // vẫn hiển thị hội thoại/lịch sử cũ. Lazy import tránh circular dependency.
+          try {
+            import('./useChatStore')
+              .then((m) => {
+                const s = m.useChatStore.getState();
+                s.disconnectSocket();
+                s.clearMessages();
+                m.useChatStore.setState({
+                  conversations: [],
+                  activeConversationId: null,
+                  isOpen: false,
+                });
+              })
+              .catch(() => {});
+          } catch { /* ignore */ }
           const path = window.location.pathname;
           const PROTECTED = ['/user', '/cart', '/checkout', '/payment', '/gift-payment', '/messages', '/seller-dashboard', '/admin'];
           needsRedirect = PROTECTED.some(p => path.startsWith(p)) && !path.endsWith('/login');

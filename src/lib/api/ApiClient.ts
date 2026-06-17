@@ -1,4 +1,6 @@
 // src/lib/api/ApiClient.ts
+// [round15 FIX 401-clear-store] import store để clear auth state khi 401, khớp axios interceptor.
+import { useUserStore } from '@/store/useUserStore';
 
 export class ApiClient {
   private baseUrl: string;
@@ -35,6 +37,43 @@ export class ApiClient {
         // Kiểm tra để tránh lặp vô tận nếu đang ở trang login
         const isLoginPage = pathname.includes('/login');
 
+        // [round15 FIX 401-clear-store] Reconcile client state với server truth (cookie đã hết hạn):
+        // reset persisted store TRƯỚC khi redirect — mirror axios interceptor (api.ts) để Header/MiniCart
+        // không còn hiển thị logged-in. Dùng reset nhẹ (set state + xoá storage) thay vì store.logout()
+        // để tránh redirect side-effect của logout() chọi với redirect có-định-hướng bên dưới.
+        try {
+          useUserStore.setState({ user: null, isAuthenticated: false });
+          localStorage.removeItem('user-storage');
+          // [round15 L2 FIX] Trước đây 401 chỉ xoá user-storage → cart-storage +
+          // gmall-checkout-storage còn nguyên → máy dùng chung rehydrate giỏ hàng
+          // user cũ sang user mới (cross-user leak). Mirror đầy đủ useUserStore.logout()
+          // (trừ redirect, vì block dưới đã có redirect có-định-hướng riêng).
+          localStorage.removeItem('cart-storage');
+          localStorage.removeItem('gmall-checkout-storage');
+        } catch { /* ignore */ }
+        // [round15 L2 FIX] Reset in-memory cart + tear down chat socket (lazy import
+        // tránh circular dependency) — khớp logout() để badge/MiniCart/widget chat
+        // không còn dữ liệu user cũ sau khi session hết hạn qua path 401 này.
+        try {
+          import('@/store/useCartStore')
+            .then((m) => m.useCartStore.getState().clearCart())
+            .catch(() => {});
+        } catch { /* ignore */ }
+        try {
+          import('@/store/useChatStore')
+            .then((m) => {
+              const s = m.useChatStore.getState();
+              s.disconnectSocket();
+              s.clearMessages();
+              m.useChatStore.setState({
+                conversations: [],
+                activeConversationId: null,
+                isOpen: false,
+              });
+            })
+            .catch(() => {});
+        } catch { /* ignore */ }
+
         if (!isLoginPage) {
           // Logic phân luồng redirect thông minh
           if (pathname.startsWith('/admin')) {
@@ -54,14 +93,29 @@ export class ApiClient {
     }
     if (!res.ok) {
       const msg = await res.text();
-      if (path.includes('tracking')) return null; 
-      
+      if (path.includes('tracking')) return null;
+
+      // [round15 FIX error-shape] Throw error mang message đã chuẩn hoá + gắn shape axios-style
+      // (err.response.data.message + err.status) để consumer đọc `error.response.data.message`
+      // hoặc `error.message` đều lấy được lý do thật từ BE, không rơi về toast generic.
+      let normalizedMessage = `API ${res.status}: ${msg}`;
       try {
-          const errorJson = JSON.parse(msg);
-          throw new Error(Array.isArray(errorJson.message) ? errorJson.message.join(', ') : errorJson.message);
-      } catch (e) {
-          throw new Error(`API ${res.status}: ${msg}`);
+        const errorJson = JSON.parse(msg);
+        if (errorJson && errorJson.message) {
+          normalizedMessage = Array.isArray(errorJson.message)
+            ? errorJson.message.join(', ')
+            : errorJson.message;
+        }
+      } catch {
+        // body không phải JSON → giữ normalizedMessage mặc định ở trên
       }
+      const err = new Error(normalizedMessage) as Error & {
+        status?: number;
+        response?: { status: number; data: { message: string } };
+      };
+      err.status = res.status;
+      err.response = { status: res.status, data: { message: normalizedMessage } };
+      throw err;
     }
     try {
       return await res.json() as T;

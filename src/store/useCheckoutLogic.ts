@@ -95,8 +95,12 @@ export const useCheckoutLogic = () => {
         name: receiverInfo.name,
         phone: receiverInfo.phone,
         address: receiverInfo.address,
+        // [round15 L2 FIX] gửi GHN keys để BE lưu order.provinceId/districtId/wardCode
+        provinceId: receiverInfo.provinceId,
+        districtId: receiverInfo.districtId,
+        wardCode: receiverInfo.wardCode,
       },
-      
+
       senderInfo: {
         name: senderInfo.name,
         message: senderInfo.message,

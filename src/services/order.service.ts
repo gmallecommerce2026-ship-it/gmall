@@ -40,25 +40,39 @@ export interface CreateOrderPayload {
   appliedCoins?: number; // Số xu muốn áp dụng
 }
 
+// [round15 FIX preview-shape] BE /orders/preview trả về cấu trúc LỒNG NHAU
+// { breakdown, summary: { ..., discounts: {...}, total }, appliedVouchers }
+// (xem G-Mall-BE order.service.ts previewOrder). Interface phẳng cũ
+// (totalAmount/discountAmount/finalAmount/coinDiscount) KHÔNG tồn tại trên wire →
+// mọi field đọc ra undefined. Khai báo lại đúng shape để FE dùng làm source-of-truth.
 export interface PreviewOrderResponse {
-  totalAmount: number;     // Tổng tiền hàng chưa giảm
-  shippingFee: number;     // Tổng phí ship
-  discountAmount: number;  // Tổng giảm giá (Voucher + Coin)
-  finalAmount: number;     // Số tiền khách phải trả cuối cùng
-  coinDiscount?: number;
-  breakdown: {             // Chi tiết từng shop (cho Multi-shop checkout)
+  summary: {
+    subtotal: number;        // Tổng tiền hàng chưa giảm
+    shippingFee: number;     // Tổng phí ship
+    giftFee: number;         // Phí gói quà/thiệp (nếu có)
+    discounts: {
+      shopVoucher: number;   // Tổng giảm voucher shop (đã quy ra VND, kể cả PERCENTAGE)
+      systemVoucher: number; // Giảm voucher sàn (VND)
+      freeship: number;      // Giảm phí ship (VND, cap ≤ tổng ship)
+      coin: number;          // Xu đã áp dụng (đã cap min(balance,50000,payable))
+    };
+    total: number;           // Số tiền khách thực trả cuối cùng (authoritative)
+  };
+  breakdown: {               // Chi tiết từng shop (cho Multi-shop checkout)
     shopId: string;
     shopName: string;
     items: any[];
     shippingFee: number;
     shopDiscount: number;
-    total: number;
+    totalBeforeSystem: number;
+    [key: string]: any;
   }[];
-  appliedVouchers: {       // Danh sách voucher hợp lệ đã áp dụng
+  appliedVouchers: {         // Danh sách voucher hợp lệ đã áp dụng
     id: string;
     code: string;
     discount: number;
     type: string;
+    [key: string]: any;
   }[];
 }
 

@@ -29,11 +29,13 @@ export const GhnService = {
     return unwrap<GhnProvince>(res);
   },
   getDistricts: async (provinceId: number): Promise<GhnDistrict[]> => {
-    const res = await apiClient.get('/ghn/districts', { params: { provinceId } });
+    // [round15 FIX ghn-param-snakecase] BE reads @Query('province_id') — must match key
+    const res = await apiClient.get('/ghn/districts', { params: { province_id: provinceId } });
     return unwrap<GhnDistrict>(res);
   },
   getWards: async (districtId: number): Promise<GhnWard[]> => {
-    const res = await apiClient.get('/ghn/wards', { params: { districtId } });
+    // [round15 FIX ghn-param-snakecase] BE reads @Query('district_id') — must match key
+    const res = await apiClient.get('/ghn/wards', { params: { district_id: districtId } });
     return unwrap<GhnWard>(res);
   },
 };

@@ -66,17 +66,13 @@ export const AuthService = {
     
     // API backend trả về data nằm trong res.data (nếu dùng axios standard)
     // Tuy nhiên nếu bạn đã có interceptor response trả về data trực tiếp thì giữ nguyên res
-    const data = res.data || res; 
+    const data = res.data || res;
 
-    if (data?.access_token) {
-      if (typeof window !== 'undefined') {
-        // [SỬA 2] Đổi 'token' thành 'accessToken' để khớp với api.ts
-        localStorage.setItem('accessToken', data.access_token);
-        
-        // Cookie cũng đặt tên là accessToken cho đồng bộ
-        document.cookie = `accessToken=${data.access_token}; path=/; max-age=86400;`; 
-      }
-      
+    // [round15 FIX verifyotp-gate] BE giờ set httpOnly cookie + trả { user } (KHÔNG còn access_token).
+    // Gate PHẢI dựa vào `user` — nếu vẫn check access_token sẽ throw "Xác thực thất bại" trên verify
+    // THÀNH CÔNG (OTP đã bị tiêu) → user kẹt vĩnh viễn không đăng ký được. Không persist raw token
+    // JS-readable nữa; auth chạy hoàn toàn bằng httpOnly cookie (api.ts withCredentials) do BE set.
+    if (data?.user) {
       useUserStore.getState().setUser(data.user);
       return data.user;
     }

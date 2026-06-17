@@ -227,7 +227,11 @@ const useCartStoreBase = create<CartState & CartActions>()(
 
         try {
             const item = prevItems.find(i => i.id === itemId);
-            if(item) await apiClient.delete(`/store/cart/${item.productId}`);
+            // [round15 FIX cart-variant] BE Redis hash field giờ là composite
+            // `${productId}:${variantId}` và getCart trả về id = field đó. Phải gửi
+            // item.id (composite) cho DELETE :itemId, KHÔNG gửi productId — gửi productId
+            // sẽ không khớp field nào (xoá hụt) hoặc xoá nhầm toàn bộ variant của SP.
+            if(item) await apiClient.delete(`/store/cart/${encodeURIComponent(item.id)}`);
             toast.success('Đã xoá sản phẩm khỏi giỏ hàng');
         } catch(e) {
             console.error(e);

@@ -42,6 +42,21 @@ export default function LoginClient() {
   // Mặc định ON match expectation đa số e-commerce site.
   const [rememberMe, setRememberMe] = useState(true);
 
+  // [round15 L2 FIX] BE OAuth callback redirect lỗi về `/login?oauth_error=...`
+  // (account_locked|oauth_failed) để FE hiện toast thân thiện thay vì trước đây
+  // user bị bounce về form login không rõ lý do. Đọc param → toast → strip param
+  // bằng router.replace để không re-fire khi re-render / back.
+  useEffect(() => {
+    const oauthError = searchParams?.get('oauth_error');
+    if (!oauthError) return;
+    const message = oauthError === 'account_locked'
+      ? 'Tài khoản đã bị khóa.'
+      : 'Đăng nhập mạng xã hội thất bại, vui lòng thử lại.';
+    toast.error(message);
+    router.replace(safeNext);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Wiki 0068 B3: hỏi BE provider OAuth nào đã cấu hình → gate nút (chưa set
   // credentials thì hiện toast thân thiện thay vì redirect dính trang 503 thô).
   const [oauth, setOauth] = useState<{ google: boolean; facebook: boolean }>({ google: true, facebook: true });

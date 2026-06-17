@@ -4,6 +4,8 @@ import { Coins, CalendarCheck, Gift, History, ArrowDownCircle, ArrowUpCircle, Cl
 import { pointService } from '@/services/point.service';
 import Button from '@/components/ui/Button';
 import LuckyWheel from '@/components/points/LuckyWheel';
+// [round15 FIX reward-stale-header] đồng bộ số dư xu vào global store để Topbar cập nhật
+import { useUserStore } from '@/store/useUserStore';
 
 export default function RewardPointsPage() {
   // Thêm state hasSpunToday vào pointInfo
@@ -24,6 +26,13 @@ export default function RewardPointsPage() {
       // Merge dữ liệu
       setPointInfo({ ...infoRes, ...statusRes });
       setHistory(historyRes);
+
+      // [round15 FIX reward-stale-header] Trước đây check-in/lucky-wheel chỉ cập
+      // nhật state local pointInfo, không đẩy balance mới vào useUserStore → header
+      // (Topbar đọc user.point) hiển thị số xu cũ tới khi reload. Đồng bộ ngay.
+      if (infoRes && typeof (infoRes as any).points === 'number') {
+        useUserStore.getState().updatePoint((infoRes as any).points);
+      }
     } catch (error) {
       console.error(error);
     }

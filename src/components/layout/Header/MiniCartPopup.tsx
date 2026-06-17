@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation"; // [UPDATE] Import router
 import { toast } from "react-hot-toast";     // [UPDATE] Import toast nếu muốn thông báo lỗi
 import { useCartStore } from "@/store/useCartStore";
+import { useCheckoutStore } from "@/store/useCheckoutStore"; // [round15 L3 FIX] báo intent cart-checkout
 
 const MiniCartPopup = () => {
   const router = useRouter();
@@ -32,6 +33,9 @@ const MiniCartPopup = () => {
   const handleBuyNow = () => {
     if (items.length === 0) return;
     try {
+      // [round15 L3 FIX] Báo intent cart-checkout TRƯỚC khi sang /payment để xoá cờ isBuyNowFlow cũ
+      // còn sót (Mua-Ngay bỏ dở) — nếu không PaymentPage sẽ dùng nhầm item buy-now cũ thay vì giỏ hàng.
+      useCheckoutStore.getState().startCartCheckout();
       const checkoutData = generateCheckoutPayload();
       const query = Buffer.from(JSON.stringify(checkoutData)).toString('base64');
       router.push(`/payment?data=${query}`);

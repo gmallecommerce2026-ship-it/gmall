@@ -100,6 +100,27 @@ export default function ChatWindow() {
       sendMessage("Tìm quà khác");
   };
 
+  // [round15 L2 FIX] "Gửi lại" trước đây chỉ gọi sendMessage → append tin optimistic
+  // MỚI (clientTempId mới) nhưng KHÔNG xoá bubble failed cũ → 2 bubble (1 đỏ kẹt vĩnh
+  // viễn + 1 mới). Xoá tin failed cũ (match theo clientTempId/id) khỏi đúng conversation
+  // TRƯỚC khi gửi lại để chỉ còn 1 bubble.
+  const handleResend = (msg: any) => {
+    const failedKey = msg.clientTempId ?? msg.id;
+    useChatStore.setState((state) => {
+      const convMsgs = state.messages[displayConversationId];
+      if (!convMsgs) return state;
+      return {
+        messages: {
+          ...state.messages,
+          [displayConversationId]: convMsgs.filter(
+            (m: any) => (m.clientTempId ?? m.id) !== failedKey,
+          ),
+        },
+      };
+    });
+    sendMessage(msg.content, msg.type);
+  };
+
   const shouldShowInput = !isAiConversation || currentMessages.length > 0;
   
   if (!isOpen) return null;
@@ -278,24 +299,50 @@ export default function ChatWindow() {
 
             {currentMessages.map((msg, idx) => {
                 const isMe = msg.senderId === user?.id || msg.senderId === 'ME';
+                // [round15 FIX chat-failed-bubble] Tin optimistic mang cờ pending/failed
+                // (store set ở message_error). Trước đây bubble chỉ render content nên tin
+                // gửi lỗi trông y hệt tin đã gửi → user tưởng đã gửi (silent failure).
+                // Đọc cờ để style tin failed khác biệt + nút "Gửi lại".
+                const isFailed = (msg as any).failed === true;
+                const isPending = (msg as any).pending === true;
                 return (
                     <div key={idx} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
                         <div className={`flex max-w-[90%] md:max-w-[75%] gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                             {!isMe && (
                                 <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center mt-1 shadow-sm">
-                                    <Bot size={18} className="text-orange-500"/> 
+                                    <Bot size={18} className="text-orange-500"/>
                                 </div>
                             )}
 
                             <div className="flex flex-col min-w-0">
                                 <div className={`
                                     px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm break-words relative
-                                    ${isMe 
-                                        ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-tr-none' 
+                                    ${isFailed
+                                        ? 'bg-red-50 text-red-700 border border-red-300 rounded-tr-none'
+                                        : isMe
+                                        ? `bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-tr-none ${isPending ? 'opacity-60' : ''}`
                                         : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'}
                                 `}>
                                     {msg.content}
                                 </div>
+
+                                {isFailed && (
+                                    <div className={`flex items-center gap-1.5 mt-1 text-[11px] text-red-600 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                        <span className="font-semibold">! Gửi thất bại</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleResend(msg)}
+                                            className="font-bold underline hover:text-red-700"
+                                        >
+                                            Gửi lại
+                                        </button>
+                                    </div>
+                                )}
+                                {isPending && !isFailed && (
+                                    <span className={`mt-1 text-[10px] text-gray-400 ${isMe ? 'text-right' : 'text-left'}`}>
+                                        Đang gửi...
+                                    </span>
+                                )}
 
                                 {!isMe && msg.options && msg.options.length > 0 && (
                                     <div className="mt-3 animate-in fade-in slide-in-from-left-2 duration-500">

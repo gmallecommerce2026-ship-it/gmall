@@ -9,6 +9,7 @@ import CartList from "@/modules/cart/components/CartList";
 import CheckoutSummary from "@/modules/cart/components/CheckoutSummary";
 import { useCartActions, useCartData } from "@/store/useCartStore";
 import { useUserStore } from "@/store/useUserStore";
+import { useCheckoutStore } from "@/store/useCheckoutStore";
 
 const CartPage = () => {
   const router = useRouter();
@@ -53,11 +54,16 @@ const CartPage = () => {
       return toast.error("Vui lòng chọn sản phẩm để mua!");
     }
 
+    // [round15 L2 FIX] báo intent "checkout từ giỏ" NGAY tại đây (nơi biết chắc nguồn),
+    // tắt cờ Mua-Ngay stale trước khi vào /payment thay vì để PaymentPage suy đoán từ selectedIds.
+    useCheckoutStore.getState().startCartCheckout();
     router.push("/payment");
   };
 
   const handleGiftNavigation = () => {
       if (selectedIds.length === 0) return toast.error("Vui lòng chọn sản phẩm!");
+      // [round15 L2 FIX] gift checkout cũng đi từ giỏ → reset cờ Mua-Ngay stale
+      useCheckoutStore.getState().startCartCheckout();
       router.push("/gift-payment");
   };
 

@@ -70,12 +70,44 @@ export default function AuthProvider({
     const onPageHide = () => {
       try {
         if (sessionStorage.getItem('gmall:logout-on-close') === '1') {
-          // Best-effort: clear cookie + storage. Synchronous → chạy kịp trong
-          // pageHide handler (BE logout fetch không kịp commit, OK vì cookie
-          // sẽ expire sau 7 ngày dù sao đi nữa).
+          // [round15 FIX remember-me-off] Cookie session là httpOnly → JS KHÔNG xoá được bằng
+          // document.cookie (line cũ là no-op rác, đã bỏ). PHẢI gọi BE /auth/logout để server
+          // xoá cookie. Dùng sendBeacon (sống sót qua unload) + fallback keepalive fetch.
+          // Lưu ý: đây vẫn là best-effort; fix triệt để cần BE phát hành SESSION cookie
+          // (omit maxAge) khi rememberMe=false — ngoài phạm vi file này.
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+          let beaconSent = false;
+          if (navigator.sendBeacon) {
+            beaconSent = navigator.sendBeacon(`${apiUrl}/auth/logout`);
+          }
+          if (!beaconSent) {
+            fetch(`${apiUrl}/auth/logout`, {
+              method: 'POST',
+              credentials: 'include',
+              keepalive: true,
+            }).catch(() => {});
+          }
           localStorage.removeItem('user-storage');
-          localStorage.removeItem('accessToken');
-          document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
+          // [round15 L2 FIX] remember-me-off ⇒ máy dùng chung: cũng xoá cart-storage +
+          // gmall-checkout-storage để giỏ hàng user cũ không persist sang người dùng kế
+          // tiếp (mirror useUserStore.logout()). removeItem đồng bộ → an toàn trong pagehide.
+          localStorage.removeItem('cart-storage');
+          localStorage.removeItem('gmall-checkout-storage');
+          // [round15 L2 FIX] Tear down chat socket + xoá state in-memory để socket cũ
+          // không nhận tin nhắn riêng tư realtime trên máy dùng chung. Lazy import tránh
+          // circular dependency; best-effort (pagehide có thể chấm dứt trước khi resolve).
+          import('@/store/useChatStore')
+            .then((m) => {
+              const s = m.useChatStore.getState();
+              s.disconnectSocket();
+              s.clearMessages();
+              m.useChatStore.setState({
+                conversations: [],
+                activeConversationId: null,
+                isOpen: false,
+              });
+            })
+            .catch(() => {});
         }
       } catch { /* ignore */ }
     };

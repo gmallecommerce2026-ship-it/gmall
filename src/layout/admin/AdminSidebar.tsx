@@ -21,6 +21,8 @@ import {
 } from 'react-icons/fi';
 import classNames from 'classnames';
 import { AdminService } from '@/services/AdminService';
+// [round15 FIX admin-logout-store] cần clear persisted Zustand "user-storage" khi admin logout
+import { useUserStore } from '@/store/useUserStore';
 
 interface MenuItem {
   id: string;
@@ -246,12 +248,31 @@ const AdminSidebar = () => {
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // [round15 L2 FIX] Light-reset KHÔNG redirect: trước đây gọi useUserStore.logout()
+  // mà trên path /admin/* logout() tự window.location.assign('/'), rồi line kế tiếp set
+  // href='/admin/login' → 2 navigation đồng bộ chọi nhau (race, dựa vào last-write-wins).
+  // Clear store fields + persisted storage trực tiếp (mirror logout() trừ redirect) để
+  // điều hướng có-định-hướng /admin/login bên dưới là navigation DUY NHẤT.
+  const resetUserStoreNoRedirect = () => {
+    try {
+      useUserStore.setState({ user: null, isAuthenticated: false });
+      localStorage.removeItem('user-storage');
+      localStorage.removeItem('cart-storage');
+      localStorage.removeItem('gmall-checkout-storage');
+    } catch { /* ignore */ }
+  };
+
   const handleLogout = async () => {
     try {
       await AdminService.logout();
+      // [round15 L2 FIX] clear store (không redirect) để admin identity không sống sót
+      // sang storefront sau khi cookie đã bị xoá; điều hướng /admin/login là duy nhất.
+      resetUserStoreNoRedirect();
       window.location.href = '/admin/login';
     } catch (error) {
       console.error('Logout error:', error);
+      // [round15 L2 FIX] vẫn clear store (không redirect) kể cả khi BE logout lỗi.
+      resetUserStoreNoRedirect();
       window.location.href = '/admin/login';
     }
   };

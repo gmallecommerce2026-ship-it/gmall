@@ -179,9 +179,15 @@ const PaymentPage = () => {
     setShopMessage,
     setAppliedCoins, // [UPDATE] Hàm set coins
     resetCheckout,
+    // [round15 L2 FIX] startCartCheckout không còn gọi ở PaymentPage (intent báo tại CartPage)
     isBuyNowFlow,
     checkoutItems
   } = useCheckoutStore();
+
+  // [round15 L2 FIX buynow-hijack] BỎ heuristic suy đoán nguồn checkout từ selectedIds.
+  // selectedIds persist qua localStorage nên một Mua-Ngay HỢP LỆ (isBuyNowFlow vừa set)
+  // sẽ bị xoá nhầm. Intent nay được báo tường minh tại CartPage.handleCheckoutNavigation
+  // (gọi startCartCheckout trước khi router.push) → không cần đoán ở đây nữa.
 
   // --- LOCAL STATE ---
   const [selectedPayment, setSelectedPayment] = useState<'cod' | 'pay2s' | 'momo'>('cod');
@@ -257,7 +263,11 @@ const PaymentPage = () => {
       setReceiverInfo({
           name: addr.name,
           phone: addr.phone,
-          address: addr.fullAddress
+          address: addr.fullAddress,
+          // [round15 L2 FIX] propagate GHN keys để BE persist + seller request pickup được
+          provinceId: addr.provinceId,
+          districtId: addr.districtId,
+          wardCode: addr.wardCode,
       });
       setIsAddressModalOpen(false);
   };
@@ -309,39 +319,67 @@ const PaymentPage = () => {
     return groups;
   }, [validPaymentItems]);
 
+  // [round15 FIX shop-voucher-vnd] Quy đổi voucher shop ra VND THỰC theo subtotal shop.
+  // VoucherSelectionModal map discountValue = amount; với PERCENTAGE amount là % (vd 10),
+  // KHÔNG phải VND → phải nhân với subtotal/100 (và cap maxDiscount) thay vì cộng raw 10đ.
+  const computeShopVoucherVnd = (v: any, shopSubtotal: number): number => {
+      if (!v) return 0;
+      const raw = v.amount ?? v.discountValue ?? 0;
+      if (v.type === 'PERCENTAGE') {
+          let d = Math.floor((shopSubtotal * raw) / 100);
+          const cap = v.maxDiscount;
+          if (cap != null && cap > 0) d = Math.min(d, cap);
+          return d;
+      }
+      // FIXED_AMOUNT: raw đã là VND
+      return raw;
+  };
+
   // --- [NEW] FRONTEND CALCULATIONS ---
   const frontendCalculations = useMemo(() => {
+      // [round15 FIX preview-shape] BE preview LỒNG NHAU là source-of-truth. Khi đã có
+      // previewData, lấy thẳng summary.* (đã cap xu, đã quy % ra VND, đã tính freeship)
+      // để hiển thị KHỚP số tiền BE thực thu, KHÔNG tự recompute total từ input thô.
+      const s = previewData?.summary;
+
       let subtotal = 0;
       let totalShipping = 0;
-      let totalShopDiscount = 0;
-      
+      let localShopDiscount = 0;
+
       Object.entries(groupedItems).forEach(([shopId, group]) => {
           const groupSum = group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
           subtotal += groupSum;
           totalShipping += SHIPPING_FEE_PER_SHOP;
 
-          const v = shopVouchers[shopId];
-          if(v?.discountValue) {
-              totalShopDiscount += v.discountValue;
-          }
+          // [round15 FIX shop-voucher-vnd] cộng VND thực (PERCENTAGE → % * subtotal shop)
+          localShopDiscount += computeShopVoucherVnd(shopVouchers[shopId], groupSum);
       });
 
-      const systemDiscount = previewData?.discountAmount || 0; 
-      
-      // [UPDATE] Coin Discount Logic
-      // Lấy từ previewData (chính xác nhất) hoặc fallback về appliedCoins
-      // Giả sử tỷ lệ đổi 1 xu = 1 VNĐ
-      const coinDiscount = previewData?.coinDiscount || appliedCoins || 0;
+      if (s) {
+          // Nguồn chân lý = BE preview.
+          const shopDiscount = s.discounts.shopVoucher || 0;
+          const systemDiscount = s.discounts.systemVoucher || 0;
+          const freeship = s.discounts.freeship || 0;
+          const coinDiscount = s.discounts.coin || 0;
+          return {
+              subtotal: s.subtotal ?? subtotal,
+              shippingFee: (s.shippingFee ?? totalShipping) - freeship, // ship hiển thị đã trừ freeship
+              shopDiscount,
+              systemDiscount,
+              coinDiscount,
+              total: Math.max(0, s.total ?? 0),
+          };
+      }
 
-      const finalTotal = subtotal + totalShipping - totalShopDiscount - systemDiscount - coinDiscount;
-      
+      // Fallback khi preview chưa về: ước lượng client (chỉ để tránh nhấp nháy 0đ).
+      const fallbackTotal = subtotal + totalShipping - localShopDiscount - appliedCoins;
       return {
           subtotal,
           shippingFee: totalShipping,
-          shopDiscount: totalShopDiscount,
-          systemDiscount,
-          coinDiscount, // Trả về để truyền xuống PaymentSummary
-          total: finalTotal > 0 ? finalTotal : 0
+          shopDiscount: localShopDiscount,
+          systemDiscount: 0,
+          coinDiscount: appliedCoins || 0,
+          total: fallbackTotal > 0 ? fallbackTotal : 0
       };
     // hooks-fix wiki 0031: bỏ selectedSystemVoucher (unnecessary dep — không read trong body)
   }, [groupedItems, shopVouchers, previewData, appliedCoins]);
@@ -368,6 +406,10 @@ const PaymentPage = () => {
         name: receiverInfo.name,
         phone: receiverInfo.phone,
         address: receiverInfo.address,
+        // [round15 L2 FIX] gửi GHN keys để BE lưu order.provinceId/districtId/wardCode
+        provinceId: receiverInfo.provinceId,
+        districtId: receiverInfo.districtId,
+        wardCode: receiverInfo.wardCode,
       },
       paymentMethod: selectedPayment,
       note: shopMessages,
@@ -529,7 +571,13 @@ const PaymentPage = () => {
               const currentVoucher = shopVouchers[shopId];
               const displayShippingFee = SHIPPING_FEE_PER_SHOP;
               const shopItemTotal = group.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-              const shopDiscountValue = currentVoucher?.discountValue || 0;
+              // [round15 L2 FIX] Ưu tiên breakdown của BE cho dòng voucher/shop khi đã có preview
+              // (BE tính theo eligibleAmount của scope voucher, không Math.floor) → hiển thị KHỚP
+              // số BE thực trừ. computeShopVoucherVnd chỉ còn là fallback trước khi preview về.
+              const beShopDiscount = previewData?.breakdown?.find(b => b.shopId === shopId)?.shopDiscount;
+              const shopDiscountValue = beShopDiscount != null
+                  ? beShopDiscount
+                  : computeShopVoucherVnd(currentVoucher, shopItemTotal);
               const displayShopTotal = shopItemTotal + displayShippingFee - shopDiscountValue;
 
               return (
@@ -563,7 +611,8 @@ const PaymentPage = () => {
                             <span className="text-sm font-medium">Voucher của Shop</span>
                          </div>
                          <div className="flex items-center gap-2 text-blue-600 text-sm group-hover:text-blue-700">
-                            <span>{currentVoucher ? `Đã chọn: -${currentVoucher.discountValue?.toLocaleString()}đ` : 'Chọn voucher'}</span>
+                            {/* [round15 FIX shop-voucher-vnd] hiển thị VND thực đã quy đổi */}
+                            <span>{currentVoucher ? `Đã chọn: -${shopDiscountValue.toLocaleString()}đ` : 'Chọn voucher'}</span>
                             <Icons.ChevronRight />
                          </div>
                       </div>

@@ -16,8 +16,13 @@ export interface UserInfo {
   phone: string;
   email?: string;
   address: string;
-  relation?: string; 
-  message?: string;  
+  relation?: string;
+  message?: string;
+  // [round15 L2 FIX] GHN address keys — BE persists order.provinceId/districtId/wardCode
+  // từ receiverInfo (bulkRequestPickup đọc districtId/wardCode). Phải mang theo từ IAddress.
+  provinceId?: number;
+  districtId?: number;
+  wardCode?: string;
 }
 
 // TS-fix wiki 0031: thêm `selectedShopVoucher` (single-cart legacy) + `setSelectedVoucher`
@@ -64,6 +69,9 @@ interface CheckoutState {
   // --- [NEW] ACTIONS ---
   setBuyNowItem: (item: CartItem) => void; // Gọi khi ấn "Mua Ngay" ở trang chi tiết
   clearCheckoutSession: () => void;        // Xóa session mua ngay
+  // [round15 FIX buynow-hijack] Gọi khi bắt đầu checkout TỪ GIỎ để 1 phiên Mua-Ngay
+  // bị bỏ dở không chiếm quyền (isBuyNowFlow stale=true) trang /payment.
+  startCartCheckout: () => void;
 }
 
 export const useCheckoutStore = create<CheckoutState>()(
@@ -154,6 +162,13 @@ export const useCheckoutStore = create<CheckoutState>()(
         isBuyNowFlow: false,
         checkoutItems: [],
         appliedCoins: 0 // Reset xu
+      }),
+
+      // [round15 FIX buynow-hijack] Bắt đầu checkout từ giỏ: tắt cờ Mua-Ngay +
+      // xoá item Mua-Ngay tạm để PaymentPage dùng đúng các item giỏ đã chọn.
+      startCartCheckout: () => set({
+        isBuyNowFlow: false,
+        checkoutItems: [],
       }),
       
       // Reset toàn bộ

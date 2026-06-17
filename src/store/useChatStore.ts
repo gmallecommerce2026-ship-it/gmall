@@ -364,6 +364,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
   selectConversation: async (conversationId: string) => {
     set({ activeConversationId: conversationId, isAiTyping: false });
     await get().loadMessages(conversationId);
+
+    // [round15 FIX unread-badge] Trước đây mở hội thoại chỉ load message mà
+    // không bao giờ mark-as-read → badge đỏ (unreadCount) kẹt vĩnh viễn vì BE
+    // cũng không set isRead. Optimistic zero local count + gọi PATCH /chat/read
+    // để persist isRead=true. Bỏ qua id tạm (temp_*) vì chưa có conversation thật.
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === conversationId ? { ...c, unreadCount: 0 } : c,
+      ),
+    }));
+    const isTempId =
+      conversationId.startsWith('temp_shop_') ||
+      conversationId.startsWith('temp_user_') ||
+      conversationId === 'temp_ai_chat';
+    if (!isTempId) {
+      try {
+        await apiClient.patch(`/chat/read/${conversationId}`);
+      } catch (error) {
+        console.error('Failed to mark conversation as read:', error);
+      }
+    }
   },
 
   sendMessage: (content, type = 'TEXT', metadata) => {

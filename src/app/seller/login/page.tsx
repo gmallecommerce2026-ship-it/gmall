@@ -139,7 +139,9 @@ export default function SellerLoginPage() {
             </div>
 
             <div className="flex justify-end">
-               <Link href="/seller/forgot-password" className="text-sm font-semibold text-brand-orange hover:underline">
+               {/* [round15 FIX seller-forgot-404] /seller/forgot-password không tồn tại → 404.
+                   Trỏ về flow recovery account-agnostic /forgot-password (dùng được cho seller email). */}
+               <Link href="/forgot-password" className="text-sm font-semibold text-brand-orange hover:underline">
                   Quên mật khẩu?
                </Link>
             </div>
