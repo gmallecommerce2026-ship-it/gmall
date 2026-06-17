@@ -55,6 +55,20 @@ export const useUserStore = create<UserState>()(
       logout: () => {
         let needsRedirect = false;
         if (typeof window !== 'undefined') {
+          // [FIX logout] Cookie accessToken là httpOnly → JS KHÔNG thể xoá bằng document.cookie.
+          // PHẢI gọi BE /auth/logout để server xoá cookie (Set-Cookie hết hạn). Trước đây store.logout
+          // chỉ xoá state + thử document.cookie (vô hiệu với httpOnly) + KHÔNG gọi BE → cookie còn
+          // nguyên → refresh vẫn đăng nhập. keepalive=true để request sống sót khi trang điều hướng.
+          try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            fetch(`${apiUrl}/auth/logout`, {
+              method: 'POST',
+              credentials: 'include',
+              keepalive: true,
+            }).catch(() => {});
+          } catch {
+            // không chặn logout nếu fetch lỗi
+          }
           try {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('user-storage');
