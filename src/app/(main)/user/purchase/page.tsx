@@ -340,9 +340,13 @@ export default function PurchasePage() {
                             
                             {/* Nút Hủy (PENDING) */}
                             {order.status === 'PENDING' && (
-                                <Button 
-                                  variant="outline" 
-                                  className="text-red-500 border-red-200 hover:bg-red-50 !h-9"
+                                <Button
+                                  variant="outline"
+                                  /* [round15 UI-FIX] Button base có py-3 + text-base (~48px nội dung) nhưng
+                                     trước đây chỉ ép !h-9 (36px) → chữ "Hủy đơn hàng" tràn LỆCH xuống dưới
+                                     khỏi button. Override !py-2 !text-sm !h-10 cho khớp các nút anh-em
+                                     (Đánh giá/Mua lại/Đã nhận) → chữ canh giữa đúng trong button. */
+                                  className="text-red-500 border-red-200 hover:bg-red-50 !px-6 !py-2 !text-sm !h-10"
                                   onClick={() => handleCancelOrder(order.id)}
                                   disabled={cancelingId === order.id}
                                 >
