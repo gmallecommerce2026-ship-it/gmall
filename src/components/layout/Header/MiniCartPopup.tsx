@@ -22,7 +22,8 @@ const MiniCartPopup = () => {
       variantId: item.productVariantId, // Map chính xác ID biến thể
       quantity: item.quantity,
       selectedOptions: [], // Mini cart không lưu chi tiết option text, backend tự resolve hoặc để trống
-      paymentMethod: 'COD',
+      paymentMethod: 'cod', // [FIX P-KEY - wiki 0091] BE so sánh chữ thường; 'COD' HOA không khớp nhánh.
+
       name: item.title,
       price: item.price,
       imageUrl: item.imageUrl

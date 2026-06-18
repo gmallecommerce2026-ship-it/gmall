@@ -58,7 +58,8 @@ export const useCheckoutLogic = () => {
   }, [isBuyNowFlow, checkoutItems, cartTotal]);
 
   // 3. Hàm Mapping: Store -> DTO Backend
-  const buildPayload = (paymentMethod: 'cod' | 'pay2s' | 'momo' | 'banking', isPreview = false): CreateOrderPayload | null => {
+  // [FIX P-KEY - wiki 0091] Bỏ 'banking' — BE KHÔNG có nhánh xử lý 'banking' → tạo đơn kẹt (no paymentUrl).
+  const buildPayload = (paymentMethod: 'cod' | 'pay2s' | 'momo', isPreview = false): CreateOrderPayload | null => {
     
     // [FIX] Sử dụng validPaymentItems đã lọc sẵn ở trên
     if (validPaymentItems.length === 0) {
@@ -151,7 +152,7 @@ export const useCheckoutLogic = () => {
 
 
   // 5. Hàm Checkout
-  const handleCheckout = async (paymentMethod: 'cod' | 'pay2s' | 'momo' | 'banking') => {
+  const handleCheckout = async (paymentMethod: 'cod' | 'pay2s' | 'momo') => {
     setIsLoading(true);
     const payload = buildPayload(paymentMethod);
 
