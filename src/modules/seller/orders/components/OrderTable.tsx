@@ -83,7 +83,7 @@ const OrderTable = ({ status, searchQuery }: { status: string, searchQuery?: str
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-mono text-xs text-gray-500">#{order.id.slice(0, 8).toUpperCase()}</span>
-                    <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 uppercase font-bold">
+                    <span className="inline-flex items-center leading-none text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 uppercase font-bold">
                       {order.paymentMethod}
                     </span>
                   </div>
@@ -189,7 +189,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   };
 
   return (
-    <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${styles[status] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${styles[status] || 'bg-gray-100 text-gray-600'}`}>
       {labels[status] || status}
     </span>
   );

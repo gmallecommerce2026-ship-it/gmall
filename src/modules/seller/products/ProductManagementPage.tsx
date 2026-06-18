@@ -112,7 +112,7 @@ const PriceDisplay = ({ product }: { product: any }) => {
                 </span>
                 {isDiscountActive && (
                    <div className="mt-1">
-                       <span className="inline-flex px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-red-100 rounded border border-red-200 whitespace-nowrap">
+                       <span className="inline-flex items-center leading-none px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-red-100 rounded border border-red-200 whitespace-nowrap">
                            Đang giảm giá
                        </span>
                    </div>
@@ -157,7 +157,7 @@ const PriceDisplay = ({ product }: { product: any }) => {
                             {fmt(originalPrice)}
                         </span>
                     )}
-                    <span className="inline-flex px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-red-100 rounded border border-red-200 whitespace-nowrap">
+                    <span className="inline-flex items-center leading-none px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-red-100 rounded border border-red-200 whitespace-nowrap">
                         -{discountType === 'PERCENT' ? `${Math.round(discountValue)}%` : fmt(discountValue)}
                     </span>
                 </div>

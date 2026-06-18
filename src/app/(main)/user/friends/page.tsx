@@ -276,7 +276,7 @@ export default function FriendsPage() {
                         </Button>
                       )}
                       {user.status === 'PENDING_SENT' && (
-                        <button disabled className="h-8 px-3 text-xs bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed font-medium">
+                        <button disabled className="inline-flex items-center justify-center h-8 px-3 text-xs bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed font-medium">
                           Đã gửi
                         </button>
                       )}

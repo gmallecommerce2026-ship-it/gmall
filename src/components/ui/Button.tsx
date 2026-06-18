@@ -18,7 +18,11 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyle =
-    "relative px-6 py-3 rounded-xl font-sans font-semibold text-base " +
+    // [round15 UI-FIX root] inline-flex + items-center + justify-center: canh nội dung (chữ/icon) vào
+    // GIỮA button BẤT KỂ caller ép chiều cao (!h-8/!h-9...). Trước đây button là inline-block, dựa vào
+    // padding đối xứng để canh giữa → khi ép height nhỏ mà KHÔNG giảm padding (py-3) thì nội dung bị
+    // đẩy lệch xuống/tràn (nút Hủy đơn, nút mắt xem...). flex-center sửa cả LỚP lỗi này tại 1 chỗ.
+    "relative inline-flex items-center justify-center px-6 py-3 rounded-xl font-sans font-semibold text-base " +
     "transition-all duration-200 ease-out " +
     "active:scale-95 disabled:opacity-50 disabled:pointer-events-none " +
     "focus:outline-none focus:ring-4 focus:ring-offset-1 overflow-hidden";
