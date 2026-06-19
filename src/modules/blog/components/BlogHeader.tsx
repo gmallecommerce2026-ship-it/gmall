@@ -18,6 +18,13 @@ export const BlogHeader = ({ categories, onSearch, searchValue, onCategorySelect
     );
   }, []);
 
+  // [FIX wiki 0092] Menu danh mục mobile — trước nút ☰ không có onClick → mobile không mở được danh mục.
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const selectAndClose = (slug: string) => {
+    setMobileOpen(false);
+    onCategorySelect(slug);
+  };
+
   return (
     <header className="w-full bg-white font-sans">
       {/* 1. Top Utility Bar (Black) */}
@@ -53,7 +60,7 @@ export const BlogHeader = ({ categories, onSearch, searchValue, onCategorySelect
       <div className="sticky top-0 z-50 bg-white border-b-2 border-gray-900 shadow-sm">
         <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-12">
-                <button className="md:hidden p-2 text-black"><Menu size={24}/></button>
+                <button className="md:hidden p-2 text-black" onClick={() => setMobileOpen((o) => !o)} aria-label="Mở menu danh mục"><Menu size={24}/></button>
 
                 <nav className="hidden md:flex gap-1 h-full">
                     <button 
@@ -109,6 +116,29 @@ export const BlogHeader = ({ categories, onSearch, searchValue, onCategorySelect
                     <button className="p-2 hover:bg-gray-100 rounded-full"><ShoppingBag size={18} /></button>
                 </div>
             </div>
+
+            {/* [FIX wiki 0092] Mobile drawer danh mục — bấm ☰ mở; hiện đủ danh mục gốc + con (scroll được) */}
+            {mobileOpen && (
+              <div className="md:hidden border-t border-gray-100 py-2 max-h-[70vh] overflow-y-auto">
+                <button onClick={() => selectAndClose('')} className="w-full text-left px-2 py-2.5 text-xs font-bold uppercase hover:bg-gray-100">Trang chủ</button>
+                {categoryTree.map((cat: Category) => (
+                  <div key={cat.id} className="border-t border-gray-50">
+                    <button onClick={() => selectAndClose(cat.slug)} className="w-full text-left px-2 py-2.5 text-xs font-bold uppercase hover:bg-gray-100">
+                      {cat.name}
+                    </button>
+                    {cat.children && cat.children.length > 0 && (
+                      <div className="flex flex-col pb-1">
+                        {cat.children.map((child) => (
+                          <button key={child.id} onClick={() => selectAndClose(child.slug)} className="text-left pl-6 pr-2 py-2 text-[11px] font-medium text-gray-600 hover:bg-gray-50 uppercase">
+                            {child.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
         </div>
       </div>
     </header>
