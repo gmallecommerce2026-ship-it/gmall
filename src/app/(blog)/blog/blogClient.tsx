@@ -29,6 +29,10 @@ export default function BlogClient() {
   // State dữ liệu
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [heroPosts, setHeroPosts] = useState<BlogPost[]>([]);
+  // [FIX wiki 0092] "Bài mới nhất" — list MỌI bài published mới nhất, KHÔNG phụ thuộc category.
+  // Trước đây trang chủ chỉ render hero(5) + section theo root-category (slice 8) → bài ở danh mục
+  // gốc thứ 9+ / hoặc khi /blog-categories lỗi → KHÔNG hiện. Mục này đảm bảo bài mới luôn hiện.
+  const [latestPosts, setLatestPosts] = useState<BlogPost[]>([]);
   const [sectionPostsMap, setSectionPostsMap] = useState<Record<string, BlogPost[]>>({});
   const [filterResult, setFilterResult] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,19 +40,24 @@ export default function BlogClient() {
   // --- INITIAL FETCH ---
   useEffect(() => {
     const initData = async () => {
+      setLoading(true);
+      // [FIX wiki 0092] Tách 2 fetch ĐỘC LẬP: nếu /blog-categories lỗi (vd schema drift) thì
+      // bài viết VẪN hiện (trước đây Promise.all → categories reject → cả trang trống "Chưa có bài").
       try {
-        setLoading(true);
-        const [cats, latestPostsRes] = await Promise.all([
-          blogService.getCategories(), // Vẫn fetch lại ở client để map data cây thư mục, hoặc có thể truyền từ layout xuống nếu muốn tối ưu hơn nữa
-          blogService.getPublicBlogs({ page: 1, limit: 5 })
-        ]);
-        setCategories(cats);
-        setHeroPosts((latestPostsRes as any).data || (latestPostsRes as any).items || []);
+        const res: any = await blogService.getPublicBlogs({ page: 1, limit: 12 });
+        const latest: BlogPost[] = res.data || res.items || [];
+        setHeroPosts(latest.slice(0, 5));
+        setLatestPosts(latest);
       } catch (error) {
-        console.error("Init data error:", error);
-      } finally {
-        setLoading(false);
+        console.error("Latest posts fetch error:", error);
       }
+      try {
+        const cats = await blogService.getCategories();
+        setCategories(cats || []);
+      } catch (error) {
+        console.error("Categories fetch error:", error);
+      }
+      setLoading(false);
     };
     initData();
   }, []);
@@ -169,6 +178,16 @@ export default function BlogClient() {
                 ) : (
                   /* TRƯỜNG HỢP 2: Trang chủ -> Render Sections */
                   <>
+                    {/* [FIX wiki 0092] "Bài mới nhất" — luôn hiện mọi bài published mới nhất, KHÔNG phụ
+                        thuộc category (đảm bảo bài ở danh mục gốc thứ 9+ / khi categories lỗi vẫn hiện) */}
+                    {latestPosts.length > 0 && (
+                      <CategoryBlock
+                        category={{ id: 'latest', name: 'Bài mới nhất', slug: '' }}
+                        posts={latestPosts}
+                        layout="layout-A"
+                        color="bg-slate-700"
+                      />
+                    )}
                     {rootCategories.map((cat, idx) => {
                       const posts = sectionPostsMap[cat.slug];
                       if (!posts || posts.length === 0) return null;
