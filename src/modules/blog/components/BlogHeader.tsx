@@ -1,5 +1,5 @@
 // src/modules/blog/components/BlogHeader.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Menu, ShoppingBag, ChevronDown } from 'lucide-react';
 import { buildCategoryTree } from '@/modules/blog/utils';
@@ -9,12 +9,21 @@ export const BlogHeader = ({ categories, onSearch, searchValue, onCategorySelect
   // Biến đổi flat list thành tree cho menu
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
 
+  // [FIX wiki 0092] Ngày thật thay placeholder cứng "Tuesday, May 12, 2026". Set trong useEffect
+  // (client-only) → tránh hydration mismatch khi TZ server/client khác nhau gần nửa đêm.
+  const [today, setToday] = useState('');
+  useEffect(() => {
+    setToday(
+      new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
+    );
+  }, []);
+
   return (
     <header className="w-full bg-white font-sans">
       {/* 1. Top Utility Bar (Black) */}
       <div className="bg-black text-white text-[10px] py-1.5 px-4">
         <div className="container mx-auto flex justify-between items-center">
-            <span className="opacity-80">Tuesday, May 12, 2026</span>
+            <span className="opacity-80 capitalize">{today}</span>
             <div className="flex gap-4 font-bold uppercase tracking-wider">
                 <Link href="/" className="hover:text-blue-400 transition">Về G-Mall</Link>
                 <Link href="/shop" className="hover:text-blue-400 transition">Cửa hàng</Link>
@@ -54,8 +63,9 @@ export const BlogHeader = ({ categories, onSearch, searchValue, onCategorySelect
                         Trang chủ
                     </button>
                     
-                    {/* Render Category Tree */}
-                    {categoryTree.slice(0, 7).map((cat: Category) => (
+                    {/* Render Category Tree — [FIX wiki 0092] slice(0,8) khớp trang chủ (8 danh mục gốc),
+                        trước slice(0,7) cắt mất danh mục gốc thứ 8 ("HỖ TRỢ KHÁCH HÀNG") khỏi menu */}
+                    {categoryTree.slice(0, 8).map((cat: Category) => (
                         <div key={cat.id} className="group relative h-full flex items-center">
                             <button 
                                 onClick={() => onCategorySelect(cat.slug)}
