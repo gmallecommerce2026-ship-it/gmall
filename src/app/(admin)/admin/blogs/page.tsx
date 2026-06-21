@@ -114,7 +114,7 @@ const CategoryManagerModal = ({ isOpen, onClose, categories, onRefresh }: Catego
     }, [isOpen]);
 
     // Wiki 0068 C10: state + handlers cho kéo thả sắp xếp danh mục
-    const [orderedCats, setOrderedCats] = useState<any[]>([]);
+    // const [orderedCats, setOrderedCats] = useState<any[]>([]);
     const [orderedTree, setOrderedTree] = useState<any[]>([]);
     const [isOrderChanged, setIsOrderChanged] = useState(false);
     const [savingOrder, setSavingOrder] = useState(false);
