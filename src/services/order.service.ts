@@ -35,7 +35,7 @@ export interface CreateOrderPayload {
   giftWrapIndex?: number;  // Index của gói quà (nếu có)
   cardIndex?: number;      // Index của thiệp (nếu có)
   note?: string | Record<string, string>; // Ghi chú: String chung hoặc Object { 'shopId': 'note' }
-  paymentMethod: 'cod' | 'pay2s' | 'momo'; // [FIX P-KEY - wiki 0091] bỏ 'banking' (BE không hỗ trợ → đơn kẹt)
+  paymentMethod: 'cod'; // [wiki 0093] TẮT momo+pay2s → chỉ 'cod' (BE whitelist @IsIn(['cod'])). [wiki 0091] đã bỏ 'banking'.
   useCoins?: boolean; 
   appliedCoins?: number; // Số xu muốn áp dụng
 }

@@ -11,11 +11,10 @@ export interface PaymentMethodType {
   icon: string;
 }
 
-// Dữ liệu PTTT chuẩn
+// Dữ liệu PTTT chuẩn — [wiki 0093] gỡ pay2s + momo (tính năng đã tắt). Component này hiện KHÔNG
+// được import ở đâu (dead), nhưng dọn để tránh tái-bật nhầm. Checkout thật dùng PaymentPage.tsx.
 export const PAYMENT_METHODS_DATA: PaymentMethodType[] = [
   { id: 'bank', name: 'Chuyển khoản ngân hàng', icon: '/assets-payment/ImageAsset6.png' },
-  { id: 'pay2s', name: 'Thanh toán qua Pay2S', icon: '/assets-payment/pay2s-logo.png' },
-  { id: 'momo', name: 'Thanh toán qua MoMo', icon: '/assets-payment/ImageAsset7.png' },
   { id: 'paypal', name: 'Thanh toán qua PayPal', icon: '/assets-payment/ImageAsset8.png' },
   { id: 'cod', name: 'Thanh toán khi nhận hàng', icon: '/assets-payment/ImageAsset9.png' },
 ];

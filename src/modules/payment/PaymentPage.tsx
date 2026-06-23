@@ -190,7 +190,8 @@ const PaymentPage = () => {
   // (gọi startCartCheckout trước khi router.push) → không cần đoán ở đây nữa.
 
   // --- LOCAL STATE ---
-  const [selectedPayment, setSelectedPayment] = useState<'cod' | 'pay2s' | 'momo'>('cod');
+  // [wiki 0093] TẮT momo + pay2s → chỉ còn 'cod'. Cổng chính là DTO @IsIn(['cod']) ở BE; FE ẩn option.
+  const [selectedPayment, setSelectedPayment] = useState<'cod'>('cod');
   // Spec [0018]: user chọn quỹ campaign cho 1% commission. Null = quỹ primary mặc định.
   const [charityFundId, setCharityFundId] = useState<string | null>(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
@@ -686,10 +687,9 @@ const PaymentPage = () => {
            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
              <h3 className="font-bold text-gray-800 mb-4">Phương thức thanh toán</h3>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* [wiki 0093] TẮT Pay2S + MoMo: chỉ còn COD. Bật lại = thêm lại option + whitelist DTO BE. */}
                 {[
-                  {id:'cod', name:'Thanh toán khi nhận hàng'}, 
-                  {id:'pay2s', name:'Thanh toán Pay2S (Chuyển khoản / VietQR)'},
-                  {id:'momo', name:'Ví MoMo'}
+                  {id:'cod', name:'Thanh toán khi nhận hàng'}
                 ].map(method => (
                    <div key={method.id} onClick={() => setSelectedPayment(method.id as any)}
                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${selectedPayment === method.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200'}`}>

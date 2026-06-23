@@ -14,9 +14,10 @@ import GiftWrapCard from './components/GiftWrapCard';
 import VoucherSection from '@/modules/payment/components/VoucherSection';
 import { useCartStore } from '@/store/useCartStore';
 // --- CONSTANTS ---
+// [wiki 0093] Gỡ MoMo khỏi danh sách hiển thị (tính năng đã tắt). Trang gift vốn chỉ cho COD
+// (guard "Đang bảo trì Online" bên dưới chặn mọi method != cod). bank/paypal là placeholder cũ.
 const PAYMENT_METHODS = [
   { id: 'bank', name: 'Chuyển khoản ngân hàng', icon: '/assets-gift-payment/ImageAsset5.png' },
-  { id: 'momo', name: 'Thanh toán qua MoMo', icon: '/assets-gift-payment/ImageAsset6.png' },
   { id: 'paypal', name: 'Thanh toán qua PayPal', icon: '/assets-gift-payment/ImageAsset7.png' },
   { id: 'cod', name: 'Thanh toán khi nhận hàng', icon: '/assets-gift-payment/ImageAsset8.png' },
 ];
