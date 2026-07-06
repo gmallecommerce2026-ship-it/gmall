@@ -11,9 +11,10 @@ import { useCartData, useCartActions } from '@/store/useCartStore';
 
 import { encodeData, decodeData } from '@/lib/url-helper';
 import OrderSummaryBox from '@/components/common/OrderSummaryBox';
-import { giftWrapData, greetingCardData } from './data';
+import { giftWrapData } from './data';
 import GiftWrapCard from './components/GiftWrapCard';
 import VoucherSection from '@/modules/payment/components/VoucherSection';
+import { MapPinIcon, GiftIcon, CreditCardIcon } from 'lucide-react';
 
 // --- CONSTANTS ---
 const PAYMENT_METHODS = [
@@ -35,11 +36,13 @@ const GiftPaymentPage: React.FC = () => {
     senderInfo, setSenderInfo, 
     receiverInfo, setReceiverInfo,
     selectedVoucherId, 
-    setSelectedVoucher
+    setSelectedVoucher,
+    shopMessages, setShopMessage // Lấy state lời nhắn cho từng shop
   } = useCheckoutStore();
 
   const isAuthenticated = useUserStore(s => s.isAuthenticated);
   const hasHydrated = useUserStore(s => s._hasHydrated);
+  
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) {
       const next = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/gift-payment');
@@ -59,52 +62,47 @@ const GiftPaymentPage: React.FC = () => {
   const [voucherId, setVoucherId] = useState<string | undefined>(
     selectedVoucherId || (updatedVoucher ? 'DEMO_COMPLEX' : undefined)
   );
-  const [orderPreview, setOrderPreview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // States Gói quà & Thanh toán
   const [selectedGiftWrap, setSelectedGiftWrap] = useState<number | null>(null);
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>('cod');
 
   useEffect(() => {
-    if (selectedVoucherId) {
-        setVoucherId(selectedVoucherId);
-    }
+    if (selectedVoucherId) setVoucherId(selectedVoucherId);
   }, [selectedVoucherId]);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => { setIsMounted(true); }, []);
 
-  // 1. LOGIC GIẢI MÃ SẢN PHẨM TỪ URL (Phục hồi Mua Ngay)
+  // 1. DATA SẢN PHẨM
   const parsedDataItems = useMemo(() => {
     if (!dataParam) return null;
-    try {
-        return JSON.parse(atob(dataParam));
-    } catch (e) {
-        console.error("Lỗi parse dataParam", e);
-        return null;
-    }
+    try { return JSON.parse(atob(dataParam)); } 
+    catch (e) { return null; }
   }, [dataParam]);
 
-  // Xác định chính xác luồng đang chạy
   const isActuallyBuyNow = isBuyNowFlow || !!parsedDataItems;
 
-  // 2. LOGIC TÌM SẢN PHẨM CHÍNH XÁC (Tránh lỗi giỏ hàng trống)
   const validPaymentItems = useMemo(() => {
-    // Ưu tiên 1: Đọc từ URL (Khi vừa back lại từ trang chọn địa chỉ/voucher)
-    if (parsedDataItems && parsedDataItems.length > 0) {
-        return parsedDataItems;
-    }
-    // Ưu tiên 2: Đọc từ Store (Khi vừa ấn Mua ngay chưa chuyển trang)
-    if (isBuyNowFlow && checkoutItems && checkoutItems.length > 0) {
-        return checkoutItems;
-    }
-    // Ưu tiên 3: Mua từ Giỏ hàng bình thường
+    if (parsedDataItems && parsedDataItems.length > 0) return parsedDataItems;
+    if (isBuyNowFlow && checkoutItems && checkoutItems.length > 0) return checkoutItems;
     return cartItems.filter(item => selectedIds.includes(item.id));
   }, [parsedDataItems, isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
 
-  // --- EFFECT 1: XỬ LÝ URL PARAMS ---
+  // Nhóm sản phẩm theo Shop (Chuẩn UI Đặt hàng)
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, { shopName: string, items: any[] }> = {};
+    validPaymentItems.forEach((item: any) => {
+      const sId = item.shopId || 'unknown';
+      if (!groups[sId]) {
+        groups[sId] = { shopName: item.shopName || 'Shop', items: [] };
+      }
+      groups[sId].items.push(item);
+    });
+    return Object.entries(groups).map(([shopId, data]) => ({ shopId, ...data }));
+  }, [validPaymentItems]);
+
+  // --- EFFECT 1: URL PARAMS ---
   useEffect(() => {
     if (!isMounted) return;
     const currentParams = new URLSearchParams(searchParams.toString());
@@ -125,8 +123,7 @@ const GiftPaymentPage: React.FC = () => {
     }
 
     if (currentParams.has('updated_voucher')) {
-        const vId = currentParams.get('updated_voucher') || '';
-        setSelectedVoucher(vId);
+        setSelectedVoucher(currentParams.get('updated_voucher') || '');
         currentParams.delete('updated_voucher');
         hasChanges = true;
     }
@@ -134,23 +131,16 @@ const GiftPaymentPage: React.FC = () => {
     if (hasChanges) {
         router.replace(`?${currentParams.toString()}`, { scroll: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, searchParams]);
 
-  // --- EFFECT 2: GỌI API TÍNH TIỀN ---
+  // --- EFFECT 2: API TÍNH TIỀN ---
   useEffect(() => {
     if (!isMounted) return;
-
     const fetchPreview = async () => {
       if (validPaymentItems.length === 0) {
-        setLoading(false);
-        return;
+        setLoading(false); return;
       }
-
       try {
-        const isGiftWrapping = selectedGiftWrap !== null;
-        
-        // Hỗ trợ parse cả biến variantId hoặc productVariantId
         const orderItems = validPaymentItems.map((item: any) => ({
           productId: String(item.productId),
           variantId: (item.productVariantId || item.variantId) ? String(item.productVariantId || item.variantId) : undefined,
@@ -162,32 +152,25 @@ const GiftPaymentPage: React.FC = () => {
           items: orderItems,
           voucherId: voucherId,
           useCoins: useCoins,
-          isGift: isGiftWrapping 
+          isGift: selectedGiftWrap !== null
         });
         
-        if (res) {
-            setOrderData(res);
-            setOrderPreview(res);
-        }
+        if (res) setOrderData(res);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     };
-    
     const timeoutId = setTimeout(fetchPreview, 300);
     return () => clearTimeout(timeoutId);
-
   }, [isMounted, validPaymentItems, isActuallyBuyNow, voucherId, useCoins, selectedGiftWrap]); 
 
-  // --- Navigation Handlers (Giữ nguyên dataParam trên URL) ---
+  // --- HANDLERS ---
   const handleEditInfo = (type: 'sender' | 'receiver') => {
     const infoData = type === 'sender' ? senderInfo : receiverInfo;
-    const infoEncoded = encodeData(infoData);
-    // [FIX]: Gắn thêm &data=${dataParam} để không bị mất sản phẩm Mua Ngay khi quay lại
     const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
-    router.push(`/checkout/edit-address?type=${type}&backUrl=/gift-payment${dataQuery}&info=${infoEncoded}`);
+    router.push(`/checkout/edit-address?type=${type}&backUrl=/gift-payment${dataQuery}&info=${encodeData(infoData)}`);
   };
 
   const handleSelectVoucher = () => {
@@ -196,18 +179,9 @@ const GiftPaymentPage: React.FC = () => {
   };
 
   const handleOrder = async () => {
-    if (!senderInfo.name || !senderInfo.phone || !senderInfo.address) {
-        toast.error("Vui lòng điền thông tin người tặng");
-        return;
-    }
-    if (!receiverInfo.name || !receiverInfo.phone || !receiverInfo.address) {
-        toast.error("Vui lòng điền thông tin người nhận");
-        return;
-    }
-    if (selectedPayment !== 'cod') {
-        toast.error("Vui lòng chọn thanh toán COD (Đang bảo trì Online).");
-        return;
-    }
+    if (!senderInfo.name || !senderInfo.phone || !senderInfo.address) return toast.error("Vui lòng điền thông tin người tặng");
+    if (!receiverInfo.name || !receiverInfo.phone || !receiverInfo.address) return toast.error("Vui lòng điền thông tin người nhận");
+    if (selectedPayment !== 'cod') return toast.error("Vui lòng chọn thanh toán COD (Đang bảo trì Online).");
 
     try {
         setLoading(true);
@@ -229,19 +203,15 @@ const GiftPaymentPage: React.FC = () => {
             voucherId: voucherId,
             useCoins: useCoins,
             giftWrapIndex: selectedGiftWrap,
-            cardIndex: selectedCard,
+            note: shopMessages, // Gửi lời nhắn cho từng shop
             totalAmount: orderData.total 
         });
 
-        // Chỉ xóa giỏ hàng nếu ĐẶT TỪ GIỎ
-        if (!isActuallyBuyNow) {
-            await removeMultipleItems(selectedIds);
-        }
-
+        if (!isActuallyBuyNow) await removeMultipleItems(selectedIds);
+        
         toast.dismiss();
         toast.success("Đặt hàng quà tặng thành công!");
         router.push('/payment/success'); 
-
     } catch (err: any) {
         toast.dismiss();
         toast.error(err.message || "Có lỗi xảy ra khi tạo đơn.");
@@ -263,94 +233,113 @@ const GiftPaymentPage: React.FC = () => {
   }
 
   return (
-   <div className="w-full max-w-[1175px] mx-auto py-6 px-4 font-sans bg-gray-50 min-h-screen">
+   <div className="w-full max-w-[1200px] mx-auto py-8 px-4 font-sans bg-gray-50 min-h-screen">
       <Toaster position="top-right" />
 
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-base mb-6">
-         <div className="flex items-center gap-2 text-black/60 cursor-pointer hover:text-brand-orange" onClick={() => router.push('/')}>
-            <span>Trang chủ</span>
-            <img src="/assets-gift-payment/SvgAsset10.svg" alt="arrow" className="transform rotate-90 w-3 h-3" />
-         </div>
-         <div className="flex items-center gap-2 text-black/60 cursor-pointer hover:text-brand-orange" onClick={() => router.push('/cart')}>
-            <span>Giỏ hàng</span>
-            <img src="/assets-gift-payment/SvgAsset9.svg" alt="arrow" className="transform rotate-90 w-3 h-3" />
-         </div>
-         <div className="text-black font-normal font-medium">Thanh toán quà tặng</div>
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+         <span className="cursor-pointer hover:text-brand-orange" onClick={() => router.push('/')}>Trang chủ</span>
+         <span>/</span>
+         <span className="cursor-pointer hover:text-brand-orange" onClick={() => router.push('/cart')}>Giỏ hàng</span>
+         <span>/</span>
+         <span className="text-gray-900 font-medium">Thanh toán quà tặng</span>
       </div>
 
-      <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
          
-         {/* --- CỘT TRÁI --- */}
-         <div className="flex flex-col w-full lg:flex-1 gap-4">
+         {/* --- CỘT TRÁI (THÔNG TIN) --- */}
+         <div className="flex flex-col w-full lg:flex-1 gap-6">
          
-            {/* 1. NGƯỜI TẶNG */}
-            <div 
-                onClick={() => handleEditInfo('sender')}
-                className="bg-white p-6 rounded-[15px] border border-[#e78720] shadow-[0_4px_20px_rgba(231,135,32,0.08)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:shadow-md cursor-pointer group"
-            >
-                <div className="flex flex-col gap-2">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="text-xl text-black font-bold group-hover:text-brand-orange transition-colors">{senderInfo.name || "Chưa có tên"}</span>
-                        <span className="text-base text-[#414141] font-normal">{senderInfo.relation || "(Người tặng)"}</span>
-                        <span className="text-[15px] text-[#7a7b7b] font-normal">{senderInfo.phone || "SĐT"}</span>
-                    </div>
-                    <span className="text-base text-[#414141] font-normal line-clamp-1">{senderInfo.address || "Vui lòng chọn địa chỉ..."}</span>
+            {/* 1. ĐỊA CHỈ NGƯỜI TẶNG & NGƯỜI NHẬN */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-brand-orange/10 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
+                    <MapPinIcon className="text-brand-orange" size={20} />
+                    <h3 className="font-bold text-gray-800 text-lg">Địa chỉ Giao - Nhận Quà</h3>
                 </div>
-                <div className="relative w-8 h-8 flex-shrink-0 self-end sm:self-center">
-                    <img className="w-full h-full" src="/assets-gift-payment/SvgAsset11.svg" alt="Edit" />
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-gray-100">
+                    {/* Người tặng */}
+                    <div onClick={() => handleEditInfo('sender')} className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group">
+                        <div className="flex justify-between items-center mb-3">
+                            <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">1. Người gửi (Bạn)</span>
+                            <span className="text-brand-orange text-sm opacity-0 group-hover:opacity-100 transition-opacity">Thay đổi</span>
+                        </div>
+                        {senderInfo.name ? (
+                            <div>
+                                <p className="font-bold text-gray-900 text-lg">{senderInfo.name} <span className="text-sm font-normal text-gray-500">| {senderInfo.phone}</span></p>
+                                <p className="text-gray-600 mt-2 text-sm">{senderInfo.address}</p>
+                            </div>
+                        ) : (
+                            <p className="text-orange-600 text-sm italic">Vui lòng thiết lập thông tin người gửi</p>
+                        )}
+                    </div>
+
+                    {/* Người nhận */}
+                    <div onClick={() => handleEditInfo('receiver')} className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group">
+                        <div className="flex justify-between items-center mb-3">
+                            <span className="text-sm font-semibold text-brand-orange uppercase tracking-wide">2. Người nhận quà</span>
+                            <span className="text-brand-orange text-sm opacity-0 group-hover:opacity-100 transition-opacity">Thay đổi</span>
+                        </div>
+                        {receiverInfo.name ? (
+                            <div>
+                                <p className="font-bold text-gray-900 text-lg">{receiverInfo.name} <span className="text-sm font-normal text-gray-500">| {receiverInfo.phone}</span></p>
+                                <p className="text-gray-600 mt-2 text-sm">{receiverInfo.address}</p>
+                                {receiverInfo.message && <p className="mt-3 text-sm italic text-gray-500 bg-gray-100 p-2 rounded">"{receiverInfo.message}"</p>}
+                            </div>
+                        ) : (
+                            <p className="text-orange-600 text-sm italic">Vui lòng thiết lập thông tin người nhận</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* 2. SẢN PHẨM */}
-            <div className="bg-white p-6 rounded-[15px] border border-[#f0f0f0] flex flex-col gap-6">
-                {orderPreview?.items?.map((item: any) => (
-                    <div key={item.productId} className="flex gap-4 items-center border-b border-gray-50 pb-4 last:border-0 last:pb-0">
-                        <div className="w-20 h-20 flex-shrink-0 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                            <img src={item.image?.url || '/assets/placeholder.png'} className="w-full h-full object-cover mix-blend-multiply"/>
+            {/* 2. SẢN PHẨM GROUP THEO SHOP (CHUẨN UI MALL) */}
+            <div className="flex flex-col gap-4">
+                {groupedItems.map((group) => (
+                    <div key={group.shopId} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
+                            <span className="bg-brand-orange text-white text-[10px] px-2 py-0.5 rounded font-bold">Mall</span>
+                            <h3 className="font-bold text-gray-800">{group.shopName}</h3>
                         </div>
-                        <div className="flex-1 flex flex-col justify-center">
-                            <h3 className="font-bold text-gray-800 text-lg line-clamp-1">{item.name}</h3>
-                            <p className="text-sm text-gray-500 mt-1">Số lượng: <span className="font-semibold text-gray-700">{item.quantity}</span></p>
+                        
+                        <div className="flex flex-col gap-4">
+                            {group.items.map((item: any, index: number) => (
+                                <div key={index} className="flex items-start gap-4">
+                                    <div className="w-20 h-20 border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                                        <img src={item.imageUrl || item.image || '/assets/placeholder.png'} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{item.title || item.name}</h4>
+                                        <p className="text-xs text-gray-500 mt-1">{item.variantName || 'Mặc định'}</p>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <span className="text-brand-orange font-bold text-sm">{(item.price).toLocaleString('vi-VN')} đ</span>
+                                            <span className="text-sm text-gray-600">x{item.quantity}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="font-bold text-brand-orange text-lg whitespace-nowrap">
-                            {item.subtotal.toLocaleString('vi-VN')} đ
+
+                        {/* Lời nhắn cho Shop */}
+                        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-4">
+                            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Lời nhắn:</span>
+                            <input 
+                                type="text" 
+                                placeholder="Lưu ý cho cửa hàng (Ví dụ: Giao giờ hành chính)"
+                                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-brand-orange"
+                                value={shopMessages[group.shopId] || ''}
+                                onChange={(e) => setShopMessage(group.shopId, e.target.value)}
+                            />
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* 3. NGƯỜI NHẬN & GÓI QUÀ */}
-            <div className="bg-white p-6 rounded-[15px] border border-[#f0f0f0] flex flex-col gap-6">
-                <h3 className="font-['Be_Vietnam_Pro'] text-xl font-bold text-black">Thông tin người nhận</h3>
-                
-                <div 
-                    onClick={() => handleEditInfo('receiver')}
-                    className="border border-[#f0f0f0] border-l-4 border-l-brand-orange bg-gray-50/50 rounded-r-lg p-4 flex justify-between items-start gap-4 hover:bg-gray-100 transition-colors cursor-pointer group"
-                >
-                    <div className="flex flex-col gap-3 w-full">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xl text-black font-bold group-hover:text-brand-orange transition-colors">{receiverInfo.name || "Tên người nhận"}</span>
-                            <span className="text-base text-[#414141]">{receiverInfo.relation}</span>
-                            <span className="text-[13px] text-[#7a7b7b]">{receiverInfo.phone}</span>
-                        </div>
-                        {receiverInfo.message && (
-                            <p className="text-[14px] text-gray-600 italic leading-relaxed bg-white p-3 rounded border border-dashed border-gray-300 w-full">
-                                "{receiverInfo.message}"
-                            </p>
-                        )}
-                        <p className="text-base text-[#414141] font-medium">
-                            <span className="text-brand-orange">Gửi đến:</span> {receiverInfo.address || "Chưa có địa chỉ"}
-                        </p>
-                    </div>
-                    <button className="p-2 bg-white rounded-full shadow-sm">
-                        <img src="/assets-gift-payment/SvgAsset26.svg" alt="edit" className="w-3 h-5" />
-                    </button>
+            {/* 3. MODULE RIÊNG: CHỌN GÓI QUÀ */}
+            <div className="bg-white rounded-xl shadow-sm border border-brand-orange/50 overflow-hidden">
+                <div className="bg-orange-50 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
+                    <GiftIcon className="text-brand-orange" size={20} />
+                    <h3 className="font-bold text-orange-800 text-lg">Dịch vụ Gói Quà</h3>
                 </div>
-
-                {/* Danh sách Gói Quà */}
-                <div className="border border-[#eaeaea] rounded-[15px] p-4 flex flex-col gap-3">
-                    <span className="text-[15px] font-bold text-black">Gói quà tặng</span>
+                <div className="p-6">
                     <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                         {giftWrapData.map((item, index) => (
                             <div 
@@ -358,7 +347,7 @@ const GiftPaymentPage: React.FC = () => {
                                 onClick={() => setSelectedGiftWrap(selectedGiftWrap === index ? null : index)}
                                 className={`
                                     cursor-pointer rounded-[20px] p-[2px] transition-all duration-200 flex-shrink-0
-                                    ${selectedGiftWrap === index ? 'ring-2 ring-brand-orange scale-105 shadow-md' : 'hover:opacity-80'}
+                                    ${selectedGiftWrap === index ? 'ring-2 ring-brand-orange scale-105 shadow-md' : 'hover:opacity-80 opacity-70'}
                                 `}
                             >
                                 <GiftWrapCard {...item} />
@@ -368,43 +357,39 @@ const GiftPaymentPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 4. VOUCHER SECTION */}
+            {/* 4. VOUCHER & XU */}
             <VoucherSection 
                 onSelectVoucher={handleSelectVoucher}
                 selectedVoucherText={voucherId ? "Đã áp dụng mã giảm giá" : "Chọn hoặc nhập mã"}
                 discountAmount={orderData.voucherDiscount}
                 useCoins={useCoins}
                 onToggleCoins={setUseCoins}
-                coinBalance={10000} // Mock số dư
+                coinBalance={10000} 
             />
 
             {/* 5. PHƯƠNG THỨC THANH TOÁN */}
-            <div className="bg-white p-6 rounded-[15px] border border-[#f0f0f0] flex flex-col gap-4 shadow-sm">
-                <h3 className="text-xl font-bold text-black">Phương thức thanh toán</h3>
-                <div className="flex flex-col gap-3">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <CreditCardIcon className="text-brand-orange" size={20} />
+                    <h3 className="text-lg font-bold text-gray-800">Phương thức thanh toán</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {PAYMENT_METHODS.map((method) => (
                         <div 
                             key={method.id}
                             onClick={() => setSelectedPayment(method.id)}
                             className={`
-                                border rounded-[15px] p-4 flex items-center gap-4 cursor-pointer transition-all duration-200 relative
+                                border rounded-lg p-4 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all text-center relative
                                 ${selectedPayment === method.id 
-                                    ? 'border-[#e78720] bg-[#e78720]/10 shadow-inner' 
-                                    : 'border-[#eaeaea] hover:bg-gray-50 hover:border-gray-300' 
+                                    ? 'border-brand-orange bg-orange-50/50 shadow-sm' 
+                                    : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300' 
                                 }
                             `}
                         >
-                            <img src={method.icon} alt={method.name} className="w-[100px] h-[34px] rounded-[4px] object-contain bg-white border border-gray-100" />
-                            <span className={`text-[16px] flex-1 ${selectedPayment === method.id ? 'font-medium text-black' : 'font-light text-black'}`}>
+                            <img src={method.icon} alt={method.name} className="h-8 object-contain mix-blend-multiply" />
+                            <span className={`text-sm ${selectedPayment === method.id ? 'font-semibold text-brand-orange' : 'text-gray-600'}`}>
                                 {method.name}
                             </span>
-                            {selectedPayment === method.id ? (
-                                <div className="w-6 h-6 bg-brand-orange rounded-full flex items-center justify-center shadow-sm">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                </div>
-                            ) : (
-                                <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
-                            )}
                         </div>
                     ))}
                 </div>
@@ -412,8 +397,8 @@ const GiftPaymentPage: React.FC = () => {
 
          </div>
 
-         {/* --- CỘT PHẢI (STICKY) --- */}
-         <div className="w-full lg:w-[392px]">
+         {/* --- CỘT PHẢI (STICKY SUMMARY) --- */}
+         <div className="w-full lg:w-[380px] sticky top-[100px]">
             <OrderSummaryBox 
                 subtotal={orderData.subtotal}
                 shippingFee={orderData.shippingFee}
@@ -423,7 +408,7 @@ const GiftPaymentPage: React.FC = () => {
                 giftWrapFee={orderData.giftWrapFee} 
                 total={orderData.total}
                 onPlaceOrder={handleOrder}
-                buttonText="Thanh toán ngay"
+                buttonText="Thanh toán & Gửi quà"
                 loading={false}
             />
          </div>
