@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { toast, Toaster } from 'react-hot-toast';
 import { apiClient } from '@/lib/api/ApiClient';
 
-// Import các hooks chuẩn từ store (Giống useCheckoutLogic.ts)
 import { useCheckoutStore } from '@/store/useCheckoutStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useCartData, useCartActions } from '@/store/useCartStore'; 
@@ -28,7 +27,6 @@ const GiftPaymentPage: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // 1. LẤY DATA TỪ STORE GIỐNG HỆT NHƯ useCheckoutLogic
   const { items: cartItems, selectedIds } = useCartData();
   const { removeMultipleItems } = useCartActions();
   const { 
@@ -40,7 +38,6 @@ const GiftPaymentPage: React.FC = () => {
     setSelectedVoucher
   } = useCheckoutStore();
 
-  // Auth guard
   const isAuthenticated = useUserStore(s => s.isAuthenticated);
   const hasHydrated = useUserStore(s => s._hasHydrated);
   useEffect(() => {
@@ -65,7 +62,6 @@ const GiftPaymentPage: React.FC = () => {
   const [orderPreview, setOrderPreview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Selection States
   const [selectedGiftWrap, setSelectedGiftWrap] = useState<number | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>('cod');
@@ -80,11 +76,33 @@ const GiftPaymentPage: React.FC = () => {
     setIsMounted(true);
   }, []);
 
+  // 1. LOGIC GIẢI MÃ SẢN PHẨM TỪ URL (Phục hồi Mua Ngay)
+  const parsedDataItems = useMemo(() => {
+    if (!dataParam) return null;
+    try {
+        return JSON.parse(atob(dataParam));
+    } catch (e) {
+        console.error("Lỗi parse dataParam", e);
+        return null;
+    }
+  }, [dataParam]);
+
+  // Xác định chính xác luồng đang chạy
+  const isActuallyBuyNow = isBuyNowFlow || !!parsedDataItems;
+
   // 2. LOGIC TÌM SẢN PHẨM CHÍNH XÁC (Tránh lỗi giỏ hàng trống)
   const validPaymentItems = useMemo(() => {
-    if (isBuyNowFlow) return checkoutItems;
+    // Ưu tiên 1: Đọc từ URL (Khi vừa back lại từ trang chọn địa chỉ/voucher)
+    if (parsedDataItems && parsedDataItems.length > 0) {
+        return parsedDataItems;
+    }
+    // Ưu tiên 2: Đọc từ Store (Khi vừa ấn Mua ngay chưa chuyển trang)
+    if (isBuyNowFlow && checkoutItems && checkoutItems.length > 0) {
+        return checkoutItems;
+    }
+    // Ưu tiên 3: Mua từ Giỏ hàng bình thường
     return cartItems.filter(item => selectedIds.includes(item.id));
-  }, [isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
+  }, [parsedDataItems, isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
 
   // --- EFFECT 1: XỬ LÝ URL PARAMS ---
   useEffect(() => {
@@ -124,7 +142,6 @@ const GiftPaymentPage: React.FC = () => {
     if (!isMounted) return;
 
     const fetchPreview = async () => {
-      // NẾU KHÔNG CÓ ITEM NÀO -> DỪNG LẠI CHỜ RENDER UI GIỎ HÀNG TRỐNG
       if (validPaymentItems.length === 0) {
         setLoading(false);
         return;
@@ -133,15 +150,15 @@ const GiftPaymentPage: React.FC = () => {
       try {
         const isGiftWrapping = selectedGiftWrap !== null;
         
-        // Transform items cho BE giống hệt luồng Checkout
-        const orderItems = validPaymentItems.map(item => ({
+        // Hỗ trợ parse cả biến variantId hoặc productVariantId
+        const orderItems = validPaymentItems.map((item: any) => ({
           productId: String(item.productId),
-          variantId: item.productVariantId ? String(item.productVariantId) : undefined,
+          variantId: (item.productVariantId || item.variantId) ? String(item.productVariantId || item.variantId) : undefined,
           quantity: item.quantity
         }));
 
         const res = await apiClient.post('/orders/preview', {
-          isBuyNow: isBuyNowFlow,
+          isBuyNow: isActuallyBuyNow,
           items: orderItems,
           voucherId: voucherId,
           useCoins: useCoins,
@@ -162,17 +179,20 @@ const GiftPaymentPage: React.FC = () => {
     const timeoutId = setTimeout(fetchPreview, 300);
     return () => clearTimeout(timeoutId);
 
-  }, [isMounted, validPaymentItems, isBuyNowFlow, voucherId, useCoins, selectedGiftWrap]); 
+  }, [isMounted, validPaymentItems, isActuallyBuyNow, voucherId, useCoins, selectedGiftWrap]); 
 
-  // Navigation Handlers
+  // --- Navigation Handlers (Giữ nguyên dataParam trên URL) ---
   const handleEditInfo = (type: 'sender' | 'receiver') => {
     const infoData = type === 'sender' ? senderInfo : receiverInfo;
     const infoEncoded = encodeData(infoData);
-    router.push(`/checkout/edit-address?type=${type}&backUrl=/gift-payment&info=${infoEncoded}`);
+    // [FIX]: Gắn thêm &data=${dataParam} để không bị mất sản phẩm Mua Ngay khi quay lại
+    const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
+    router.push(`/checkout/edit-address?type=${type}&backUrl=/gift-payment${dataQuery}&info=${infoEncoded}`);
   };
 
   const handleSelectVoucher = () => {
-    router.push(`/checkout/vouchers?backUrl=/gift-payment&selected=${voucherId || ''}`);
+    const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
+    router.push(`/checkout/vouchers?backUrl=/gift-payment${dataQuery}&selected=${voucherId || ''}`);
   };
 
   const handleOrder = async () => {
@@ -193,15 +213,15 @@ const GiftPaymentPage: React.FC = () => {
         setLoading(true);
         toast.loading("Đang tạo đơn hàng quà tặng...");
         
-        const orderItems = validPaymentItems.map(item => ({
+        const orderItems = validPaymentItems.map((item: any) => ({
           productId: String(item.productId),
-          variantId: item.productVariantId ? String(item.productVariantId) : undefined,
+          variantId: (item.productVariantId || item.variantId) ? String(item.productVariantId || item.variantId) : undefined,
           quantity: item.quantity
         }));
 
         await apiClient.post('/orders', {
             isGift: true,
-            isBuyNow: isBuyNowFlow,
+            isBuyNow: isActuallyBuyNow,
             senderInfo,
             receiverInfo,
             items: orderItems,
@@ -213,8 +233,8 @@ const GiftPaymentPage: React.FC = () => {
             totalAmount: orderData.total 
         });
 
-        // XÓA ĐÚNG SẢN PHẨM NẾU MUA TỪ GIỎ HÀNG
-        if (!isBuyNowFlow) {
+        // Chỉ xóa giỏ hàng nếu ĐẶT TỪ GIỎ
+        if (!isActuallyBuyNow) {
             await removeMultipleItems(selectedIds);
         }
 
@@ -238,7 +258,6 @@ const GiftPaymentPage: React.FC = () => {
     );
   }
 
-  // SỬ DỤNG validPaymentItems ĐỂ CHECK GIỎ HÀNG TRỐNG
   if (validPaymentItems.length === 0) {
       return <div className="p-8 text-center text-gray-500">Giỏ hàng trống. <span className="text-brand-orange cursor-pointer" onClick={()=>router.push('/')}>Về trang chủ</span></div>;
   }
@@ -349,7 +368,7 @@ const GiftPaymentPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 4. VOUCHER SECTION (GIAO DIỆN MỚI) */}
+            {/* 4. VOUCHER SECTION */}
             <VoucherSection 
                 onSelectVoucher={handleSelectVoucher}
                 selectedVoucherText={voucherId ? "Đã áp dụng mã giảm giá" : "Chọn hoặc nhập mã"}
