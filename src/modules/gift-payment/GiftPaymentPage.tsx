@@ -1,6 +1,7 @@
+// src/modules/payment/GiftPaymentPage.tsx
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast, Toaster } from 'react-hot-toast';
 import { apiClient } from '@/lib/api/ApiClient';
@@ -37,7 +38,8 @@ const GiftPaymentPage: React.FC = () => {
         receiverInfo, setReceiverInfo,
         selectedVoucherId,
         setSelectedVoucher,
-        shopMessages, setShopMessage // Lấy state lời nhắn cho từng shop
+        shopMessages, setShopMessage, // Lấy state lời nhắn cho từng shop
+        shopVouchers // Lấy state voucher của shop để tính toán
     } = useCheckoutStore();
 
     const { isAuthenticated, _hasHydrated } = useUserStore();
@@ -69,6 +71,8 @@ const GiftPaymentPage: React.FC = () => {
     // States Gói quà & Thanh toán
     const [selectedGiftWrap, setSelectedGiftWrap] = useState<number | null>(null);
     const [selectedPayment, setSelectedPayment] = useState<string>('cod');
+
+    const SHIPPING_FEE_PER_SHOP = 30000;
 
     useEffect(() => {
         if (selectedVoucherId) setVoucherId(selectedVoucherId);
@@ -103,6 +107,65 @@ const GiftPaymentPage: React.FC = () => {
         });
         return Object.entries(groups).map(([shopId, data]) => ({ shopId, ...data }));
     }, [validPaymentItems]);
+
+    // [FIX] Hàm quy đổi voucher shop ra VND THỰC
+    const computeShopVoucherVnd = (v: any, shopSubtotal: number): number => {
+        if (!v) return 0;
+        const raw = v.amount ?? v.discountValue ?? 0;
+        if (v.type === 'PERCENTAGE') {
+            let d = Math.floor((shopSubtotal * raw) / 100);
+            const cap = v.maxDiscount;
+            if (cap != null && cap > 0) d = Math.min(d, cap);
+            return d;
+        }
+        return raw;
+    };
+
+    // [FIX] Dựng frontendCalculations tương tự PaymentPage
+    const frontendCalculations = useMemo(() => {
+        const s = orderData?.summary;
+
+        let subtotal = 0;
+        let totalShipping = 0;
+        let localShopDiscount = 0;
+
+        groupedItems.forEach((group) => {
+            const groupSum = group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            subtotal += groupSum;
+            totalShipping += SHIPPING_FEE_PER_SHOP;
+            localShopDiscount += computeShopVoucherVnd(shopVouchers[group.shopId], groupSum);
+        });
+
+        // Tính toán phí gói quà tạm thời
+        const currentGiftWrapFee = selectedGiftWrap !== null ? giftWrapData[selectedGiftWrap].price : 0;
+
+        if (s) {
+            const shopDiscount = s.discounts?.shopVoucher || 0;
+            const systemDiscount = s.discounts?.systemVoucher || 0;
+            const freeship = s.discounts?.freeship || 0;
+            const coinDiscount = s.discounts?.coin || 0;
+            return {
+                subtotal: s.subtotal ?? subtotal,
+                shippingFee: Math.max(0, (s.shippingFee ?? totalShipping) - freeship),
+                shopDiscount,
+                systemDiscount,
+                coinDiscount,
+                giftWrapFee: s.giftFee ?? currentGiftWrapFee,
+                total: Math.max(0, s.total ?? 0),
+            };
+        }
+
+        const fallbackTotal = subtotal + totalShipping + currentGiftWrapFee - localShopDiscount;
+        return {
+            subtotal,
+            shippingFee: totalShipping,
+            shopDiscount: localShopDiscount,
+            systemDiscount: 0,
+            coinDiscount: 0, // Gift payment tạm chưa tích hợp coin (có thể thêm nếu BE support)
+            giftWrapFee: currentGiftWrapFee,
+            total: fallbackTotal > 0 ? fallbackTotal : 0
+        };
+    }, [groupedItems, shopVouchers, orderData, selectedGiftWrap]);
 
     // --- EFFECT 1: URL PARAMS ---
     useEffect(() => {
@@ -206,7 +269,7 @@ const GiftPaymentPage: React.FC = () => {
                 useCoins: useCoins,
                 giftWrapIndex: selectedGiftWrap,
                 note: shopMessages, // Gửi lời nhắn cho từng shop
-                totalAmount: orderData.total
+                totalAmount: frontendCalculations.total // [FIX] Sử dụng total đã tính toán
             });
 
             if (!isActuallyBuyNow) await removeMultipleItems(selectedIds);
@@ -363,7 +426,7 @@ const GiftPaymentPage: React.FC = () => {
                     <VoucherSection
                         onSelectVoucher={handleSelectVoucher}
                         selectedVoucherText={voucherId ? "Đã áp dụng mã giảm giá" : "Chọn hoặc nhập mã"}
-                        discountAmount={orderData.voucherDiscount}
+                        discountAmount={frontendCalculations.systemDiscount + frontendCalculations.shopDiscount}
                         useCoins={useCoins}
                         onToggleCoins={setUseCoins}
                         coinBalance={10000}
@@ -402,13 +465,14 @@ const GiftPaymentPage: React.FC = () => {
                 {/* --- CỘT PHẢI (STICKY SUMMARY) --- */}
                 <div className="w-full lg:w-[380px] sticky top-[100px]">
                     <OrderSummaryBox
-                        subtotal={orderData.subtotal}
-                        shippingFee={orderData.shippingFee}
-                        shippingDiscount={orderData.shippingDiscount}
-                        voucherDiscount={orderData.voucherDiscount}
-                        coinDiscount={orderData.coinDiscount}
-                        giftWrapFee={orderData.giftWrapFee}
-                        total={orderData.total}
+                        // [FIX] Truyền các số liệu từ frontendCalculations
+                        subtotal={frontendCalculations.subtotal}
+                        shippingFee={frontendCalculations.shippingFee}
+                        shippingDiscount={0}
+                        voucherDiscount={frontendCalculations.systemDiscount + frontendCalculations.shopDiscount}
+                        coinDiscount={frontendCalculations.coinDiscount}
+                        giftWrapFee={frontendCalculations.giftWrapFee}
+                        total={frontendCalculations.total}
                         onPlaceOrder={handleOrder}
                         buttonText="Thanh toán & Gửi quà"
                         loading={false}
