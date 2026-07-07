@@ -10,12 +10,13 @@ import { useCheckoutStore } from '@/store/useCheckoutStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useCartData, useCartActions } from '@/store/useCartStore';
 
-import { encodeData, decodeData } from '@/lib/url-helper';
 import OrderSummaryBox from '@/components/common/OrderSummaryBox';
 import { giftWrapData } from './data';
 import GiftWrapCard from './components/GiftWrapCard';
 import VoucherSection from '@/modules/payment/components/VoucherSection';
 import { MapPinIcon, GiftIcon, CreditCardIcon } from 'lucide-react';
+import AddressSelectionModal from './components/AddressSelectionModal';
+import AddressFormModal from './components/AddressFormModal';
 
 // --- CONSTANTS ---
 const PAYMENT_METHODS = [
@@ -38,14 +39,13 @@ const GiftPaymentPage: React.FC = () => {
         receiverInfo, setReceiverInfo,
         selectedVoucherId,
         setSelectedVoucher,
-        shopMessages, setShopMessage, // Lấy state lời nhắn cho từng shop
-        shopVouchers // Lấy state voucher của shop để tính toán
+        shopMessages, setShopMessage, 
+        shopVouchers 
     } = useCheckoutStore();
 
     const { isAuthenticated, _hasHydrated } = useUserStore();
 
     useEffect(() => {
-        // Chỉ kiểm tra khi chắc chắn đã load xong state từ localStorage
         if (_hasHydrated) {
             if (!isAuthenticated) {
                 const next = encodeURIComponent(window.location.pathname + window.location.search);
@@ -68,7 +68,6 @@ const GiftPaymentPage: React.FC = () => {
     );
     const [loading, setLoading] = useState(true);
 
-    // States Gói quà & Thanh toán
     const [selectedGiftWrap, setSelectedGiftWrap] = useState<number | null>(null);
     const [selectedPayment, setSelectedPayment] = useState<string>('cod');
 
@@ -95,7 +94,6 @@ const GiftPaymentPage: React.FC = () => {
         return cartItems.filter(item => selectedIds.includes(item.id));
     }, [parsedDataItems, isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
 
-    // Nhóm sản phẩm theo Shop (Chuẩn UI Đặt hàng)
     const groupedItems = useMemo(() => {
         const groups: Record<string, { shopName: string, items: any[] }> = {};
         validPaymentItems.forEach((item: any) => {
@@ -108,7 +106,6 @@ const GiftPaymentPage: React.FC = () => {
         return Object.entries(groups).map(([shopId, data]) => ({ shopId, ...data }));
     }, [validPaymentItems]);
 
-    // [FIX] Hàm quy đổi voucher shop ra VND THỰC
     const computeShopVoucherVnd = (v: any, shopSubtotal: number): number => {
         if (!v) return 0;
         const raw = v.amount ?? v.discountValue ?? 0;
@@ -121,7 +118,6 @@ const GiftPaymentPage: React.FC = () => {
         return raw;
     };
 
-    // [FIX] Dựng frontendCalculations tương tự PaymentPage
     const frontendCalculations = useMemo(() => {
         const s = orderData?.summary;
 
@@ -136,7 +132,6 @@ const GiftPaymentPage: React.FC = () => {
             localShopDiscount += computeShopVoucherVnd(shopVouchers[group.shopId], groupSum);
         });
 
-        // Tính toán phí gói quà tạm thời
         const currentGiftWrapFee = selectedGiftWrap !== null ? giftWrapData[selectedGiftWrap].price : 0;
 
         if (s) {
@@ -161,44 +156,99 @@ const GiftPaymentPage: React.FC = () => {
             shippingFee: totalShipping,
             shopDiscount: localShopDiscount,
             systemDiscount: 0,
-            coinDiscount: 0, // Gift payment tạm chưa tích hợp coin (có thể thêm nếu BE support)
+            coinDiscount: 0, 
             giftWrapFee: currentGiftWrapFee,
             total: fallbackTotal > 0 ? fallbackTotal : 0
         };
     }, [groupedItems, shopVouchers, orderData, selectedGiftWrap]);
 
-    // --- EFFECT 1: URL PARAMS ---
+    // --- LOGIC 2: ĐỊA CHỈ & MODAL (FIXED) ---
+    const [addressList, setAddressList] = useState<any[]>([]);
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<any | null>(null);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
+    
+    // [FIX] Cờ phân biệt đang sửa thông tin người nhận hay người gửi
+    const [editingType, setEditingType] = useState<'sender' | 'receiver'>('receiver');
+
     useEffect(() => {
-        if (!isMounted) return;
-        const currentParams = new URLSearchParams(searchParams.toString());
-        let hasChanges = false;
+        fetchAddresses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); 
 
-        if (currentParams.has('updated_sender')) {
-            const decoded = decodeData(currentParams.get('updated_sender'));
-            if (decoded) setSenderInfo({ ...senderInfo, ...decoded });
-            currentParams.delete('updated_sender');
-            hasChanges = true;
+    const fetchAddresses = async () => {
+        try {
+            const res = await apiClient.get('/addresses');
+            const addresses: any[] = res || [];
+            setAddressList(addresses);
+
+            const isStoreEmpty = !receiverInfo.address || !receiverInfo.phone || !receiverInfo.name;
+            if (isStoreEmpty && addresses.length > 0) {
+                const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+                handleSelectAddress(defaultAddr);
+            } else if (!isStoreEmpty && !selectedAddressId && addresses.length > 0) {
+                const matchedAddr = addresses.find(a => 
+                    a.fullAddress === receiverInfo.address && a.phone === receiverInfo.phone
+                );
+                if (matchedAddr) setSelectedAddressId(matchedAddr.id);
+            }
+        } catch (error) {
+            console.error("Lỗi tải địa chỉ:", error);
         }
+    };
 
-        if (currentParams.has('updated_receiver')) {
-            const decoded = decodeData(currentParams.get('updated_receiver'));
-            if (decoded) setReceiverInfo({ ...receiverInfo, ...decoded });
-            currentParams.delete('updated_receiver');
-            hasChanges = true;
+    // [FIX] Mở modal chọn địa chỉ trực tiếp mà không chuyển trang
+    const handleEditInfo = (type: 'sender' | 'receiver') => {
+        setEditingType(type);
+        fetchAddresses();
+        setIsAddressModalOpen(true);
+    };
+
+    // [FIX] Gán thông tin đúng vào state của người gửi hoặc nhận
+    const handleSelectAddress = (addr: any) => {
+        if (editingType === 'receiver') {
+            setSelectedAddressId(addr.id);
+            setReceiverInfo({
+                name: addr.name,
+                phone: addr.phone,
+                address: addr.fullAddress,
+                provinceId: addr.provinceId,
+                districtId: addr.districtId,
+                wardCode: addr.wardCode,
+            });
+        } else {
+            setSenderInfo({
+                name: addr.name,
+                phone: addr.phone,
+                address: addr.fullAddress,
+                provinceId: addr.provinceId,
+                districtId: addr.districtId,
+                wardCode: addr.wardCode,
+            });
         }
+        setIsAddressModalOpen(false);
+    };
 
-        if (currentParams.has('updated_voucher')) {
-            setSelectedVoucher(currentParams.get('updated_voucher') || '');
-            currentParams.delete('updated_voucher');
-            hasChanges = true;
-        }
+    const handleAddNewAddress = () => {
+        setEditingAddress(null);
+        setIsAddressModalOpen(false); 
+        setIsAddressFormOpen(true);  
+    };
 
-        if (hasChanges) {
-            router.replace(`?${currentParams.toString()}`, { scroll: false });
-        }
-    }, [isMounted, searchParams]);
+    const handleEditAddress = (addr: any) => {
+        setEditingAddress(addr);
+        setIsAddressModalOpen(false);
+        setIsAddressFormOpen(true);
+    };
 
-    // --- EFFECT 2: API TÍNH TIỀN ---
+    const handleAddressFormSuccess = async () => {
+        setIsAddressFormOpen(false);
+        await fetchAddresses(); 
+        setIsAddressModalOpen(true); 
+    };
+
+    // --- API TÍNH TIỀN ---
     useEffect(() => {
         if (!isMounted) return;
         const fetchPreview = async () => {
@@ -231,13 +281,6 @@ const GiftPaymentPage: React.FC = () => {
         return () => clearTimeout(timeoutId);
     }, [isMounted, validPaymentItems, isActuallyBuyNow, voucherId, useCoins, selectedGiftWrap]);
 
-    // --- HANDLERS ---
-    const handleEditInfo = (type: 'sender' | 'receiver') => {
-        const infoData = type === 'sender' ? senderInfo : receiverInfo;
-        const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
-        router.push(`/checkout/edit-address?type=${type}&backUrl=/gift-payment${dataQuery}&info=${encodeData(infoData)}`);
-    };
-
     const handleSelectVoucher = () => {
         const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
         router.push(`/checkout/vouchers?backUrl=/gift-payment${dataQuery}&selected=${voucherId || ''}`);
@@ -268,8 +311,8 @@ const GiftPaymentPage: React.FC = () => {
                 voucherId: voucherId,
                 useCoins: useCoins,
                 giftWrapIndex: selectedGiftWrap,
-                note: shopMessages, // Gửi lời nhắn cho từng shop
-                totalAmount: frontendCalculations.total // [FIX] Sử dụng total đã tính toán
+                note: shopMessages, 
+                totalAmount: frontendCalculations.total 
             });
 
             if (!isActuallyBuyNow) await removeMultipleItems(selectedIds);
@@ -300,6 +343,27 @@ const GiftPaymentPage: React.FC = () => {
     return (
         <div className="w-full max-w-[1200px] mx-auto py-8 px-4 font-sans bg-gray-50 min-h-screen">
             <Toaster position="top-right" />
+
+            {/* [FIX] Render Modals */}
+            <AddressSelectionModal 
+                isOpen={isAddressModalOpen}
+                onClose={() => setIsAddressModalOpen(false)}
+                addresses={addressList}
+                selectedId={editingType === 'receiver' ? selectedAddressId : addressList.find(a => a.fullAddress === senderInfo.address && a.phone === senderInfo.phone)?.id}
+                onSelect={handleSelectAddress}
+                onAddNew={handleAddNewAddress}
+                onEdit={handleEditAddress}
+            />
+
+            <AddressFormModal 
+                isOpen={isAddressFormOpen}
+                onClose={() => {
+                    setIsAddressFormOpen(false);
+                    setIsAddressModalOpen(true);
+                }}
+                onSuccess={handleAddressFormSuccess}
+                initialData={editingAddress}
+            />
 
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
                 <span className="cursor-pointer hover:text-brand-orange" onClick={() => router.push('/')}>Trang chủ</span>
@@ -465,7 +529,6 @@ const GiftPaymentPage: React.FC = () => {
                 {/* --- CỘT PHẢI (STICKY SUMMARY) --- */}
                 <div className="w-full lg:w-[380px] sticky top-[100px]">
                     <OrderSummaryBox
-                        // [FIX] Truyền các số liệu từ frontendCalculations
                         subtotal={frontendCalculations.subtotal}
                         shippingFee={frontendCalculations.shippingFee}
                         shippingDiscount={0}
