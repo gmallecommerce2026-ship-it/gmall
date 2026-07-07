@@ -3,43 +3,31 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // [UPDATE] Import router
-import { toast } from "react-hot-toast";     // [UPDATE] Import toast nếu muốn thông báo lỗi
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import { useCartStore } from "@/store/useCartStore";
-import { useCheckoutStore } from "@/store/useCheckoutStore"; // [round15 L3 FIX] báo intent cart-checkout
+import { useCheckoutStore } from "@/store/useCheckoutStore";
 
 const MiniCartPopup = () => {
   const router = useRouter();
-  const { items, removeItem, totalPrice, updateQuantity } = useCartStore();
+  // [FIX] Lấy thêm toggleAllSelection từ store
+  const { items, removeItem, totalPrice, updateQuantity, toggleAllSelection } = useCartStore();
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-
-  // --- [FIX] LOGIC TẠO PAYLOAD (Giống CartPage) ---
-  const generateCheckoutPayload = () => {
-    return items.map((item) => ({
-      productId: item.productId,
-      variantId: item.productVariantId, // Map chính xác ID biến thể
-      quantity: item.quantity,
-      selectedOptions: [], // Mini cart không lưu chi tiết option text, backend tự resolve hoặc để trống
-      paymentMethod: 'cod', // [FIX P-KEY - wiki 0091] BE so sánh chữ thường; 'COD' HOA không khớp nhánh.
-
-      name: item.title,
-      price: item.price,
-      imageUrl: item.imageUrl
-    }));
-  };
 
   // --- [FIX] HÀM XỬ LÝ ĐẶT HÀNG ---
   const handleBuyNow = () => {
     if (items.length === 0) return;
     try {
-      // [round15 L3 FIX] Báo intent cart-checkout TRƯỚC khi sang /payment để xoá cờ isBuyNowFlow cũ
-      // còn sót (Mua-Ngay bỏ dở) — nếu không PaymentPage sẽ dùng nhầm item buy-now cũ thay vì giỏ hàng.
+      // 1. Báo intent cart-checkout TRƯỚC khi sang /payment để xoá cờ isBuyNowFlow cũ còn sót
       useCheckoutStore.getState().startCartCheckout();
-      const checkoutData = generateCheckoutPayload();
-      const query = Buffer.from(JSON.stringify(checkoutData)).toString('base64');
-      router.push(`/payment?data=${query}`);
+      
+      // 2. Tự động chọn tất cả các sản phẩm có trong giỏ hàng
+      toggleAllSelection(true);
+      
+      // 3. Chuyển hướng mượt mà, không mang theo payload base64 khổng lồ
+      router.push(`/payment`);
     } catch (error) {
       console.error("Lỗi chuyển trang thanh toán:", error);
       toast.error("Có lỗi xảy ra, vui lòng thử lại");
@@ -50,9 +38,14 @@ const MiniCartPopup = () => {
   const handleGiftNow = () => {
     if (items.length === 0) return;
     try {
-      const checkoutData = generateCheckoutPayload();
-      const query = Buffer.from(JSON.stringify(checkoutData)).toString('base64');
-      router.push(`/gift-payment?data=${query}`);
+      // 1. Reset cờ checkout mua ngay tương tự
+      useCheckoutStore.getState().startCartCheckout();
+      
+      // 2. Chọn tất cả item
+      toggleAllSelection(true);
+      
+      // 3. Chuyển hướng
+      router.push(`/gift-payment`);
     } catch (error) {
       console.error("Lỗi chuyển trang tặng quà:", error);
       toast.error("Có lỗi xảy ra, vui lòng thử lại");
@@ -131,7 +124,6 @@ const MiniCartPopup = () => {
               </Link>
               
               <div className="grid grid-cols-2 gap-3">
-                {/* [FIX] Thay Link bằng Button và gọi hàm handleBuyNow */}
                 <button 
                   onClick={handleBuyNow}
                   className="flex items-center justify-center px-4 py-2 bg-brand-orange text-white rounded font-semibold text-sm hover:bg-orange-600 transition-colors shadow-md"
@@ -139,7 +131,6 @@ const MiniCartPopup = () => {
                   Đặt hàng
                 </button>
                 
-                {/* [FIX] Thay Link bằng Button và gọi hàm handleGiftNow */}
                 <button 
                   onClick={handleGiftNow}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-pink-600 text-white rounded font-semibold text-sm hover:bg-pink-700 transition-colors shadow-md"
