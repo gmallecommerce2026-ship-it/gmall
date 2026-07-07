@@ -15,8 +15,8 @@ import { giftWrapData } from './data';
 import GiftWrapCard from './components/GiftWrapCard';
 import VoucherSection from '@/modules/payment/components/VoucherSection';
 import { MapPinIcon, GiftIcon, CreditCardIcon } from 'lucide-react';
-import AddressSelectionModal from './components/AddressSelectionModal';
-import AddressFormModal from './components/AddressFormModal';
+import AddressFormModal from '@/modules/user/components/AddressFormModal';
+import AddressSelectionModal from '../payment/components/AddressSelectionModal';
 
 // --- CONSTANTS ---
 const PAYMENT_METHODS = [
