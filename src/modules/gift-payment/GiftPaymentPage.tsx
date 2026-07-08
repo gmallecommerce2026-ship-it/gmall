@@ -12,9 +12,9 @@ import { useCartData, useCartActions } from '@/store/useCartStore';
 
 import OrderSummaryBox from '@/components/common/OrderSummaryBox';
 import { giftWrapData } from './data';
+import { greetingCardData } from './data/greetingCardData'; // Import data thiệp mời
 import GiftWrapCard from './components/GiftWrapCard';
-import { MapPinIcon, GiftIcon, CreditCardIcon } from 'lucide-react';
-// SỬA LỖI ĐƯỜNG DẪN: Trỏ đúng về thư mục payment
+import { MapPinIcon, GiftIcon, CreditCardIcon, MailIcon } from 'lucide-react';
 import AddressFormModal from '../payment/components/AddressFormModal'; 
 import AddressSelectionModal from '../payment/components/AddressSelectionModal';
 
@@ -25,14 +25,14 @@ const PAYMENT_METHODS = [
     { id: 'cod', name: 'Thanh toán khi nhận hàng', icon: '/assets-gift-payment/ImageAsset8.png' },
 ];
 
-// --- ICONS (Đồng nhất với PaymentPage) ---
+// --- ICONS ---
 const Icons = {
     Ticket: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>,
     ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>,
     Coin: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-yellow-500"><path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v.816a3.836 3.836 0 00-1.72.756c-.712.566-1.112 1.35-1.112 2.178 0 .829.4 1.612 1.113 2.178.502.4 1.102.647 1.719.756v.166a3.836 3.836 0 01-1.72-.756.75.75 0 00-1.06 1.06c.978.978 2.31 1.469 3.53 1.469a3.836 3.836 0 001.72-.756c.712-.566 1.112-1.35 1.112-2.178 0-.829-.4-1.612-1.113-2.178a4.53 4.53 0 00-1.719-.756v-.166c.569.11 1.153.37 1.72.756a.75.75 0 001.06-1.06c-.978-.978-2.31-1.469-3.53-1.469a3.836 3.836 0 00-1.72.756V6z" clipRule="evenodd" /></svg>
 };
 
-// --- SUB-COMPONENT: Coin Input (Đồng nhất UI) ---
+// --- SUB-COMPONENT: Coin Input ---
 const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange, orderTotal }: any) => {
     const [inputValue, setInputValue] = useState(appliedCoins > 0 ? appliedCoins.toString() : '');
     const [isEnabled, setIsEnabled] = useState(appliedCoins > 0);
@@ -132,10 +132,10 @@ const GiftPaymentPage: React.FC = () => {
         senderInfo, setSenderInfo,
         receiverInfo, setReceiverInfo,
         selectedVoucherId,
-        setSelectedVoucher,
         shopMessages, setShopMessage, 
         shopVouchers,
-        appliedCoins, setAppliedCoins 
+        appliedCoins, setAppliedCoins,
+        resetCheckout // Import hàm reset dọn dẹp state
     } = useCheckoutStore();
 
     useEffect(() => {
@@ -161,6 +161,7 @@ const GiftPaymentPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     const [selectedGiftWrap, setSelectedGiftWrap] = useState<number | null>(null);
+    const [selectedGreetingCard, setSelectedGreetingCard] = useState<number | null>(null);
     const [selectedPayment, setSelectedPayment] = useState<string>('cod');
 
     const SHIPPING_FEE_PER_SHOP = 30000;
@@ -222,6 +223,8 @@ const GiftPaymentPage: React.FC = () => {
         });
 
         const currentGiftWrapFee = selectedGiftWrap !== null ? giftWrapData[selectedGiftWrap].price : 0;
+        const currentGreetingCardFee = selectedGreetingCard !== null ? greetingCardData[selectedGreetingCard].price : 0;
+        const totalExtraServicesFee = currentGiftWrapFee + currentGreetingCardFee;
 
         if (s) {
             const freeship = s.discounts?.freeship || 0;
@@ -231,24 +234,24 @@ const GiftPaymentPage: React.FC = () => {
                 shopDiscount: s.discounts?.shopVoucher || 0,
                 systemDiscount: s.discounts?.systemVoucher || 0,
                 coinDiscount: s.discounts?.coin || 0, 
-                giftWrapFee: s.giftFee ?? currentGiftWrapFee,
+                giftWrapFee: s.giftFee ?? totalExtraServicesFee,
                 total: Math.max(0, s.total ?? 0),
             };
         }
 
-        const fallbackTotal = subtotal + totalShipping + currentGiftWrapFee - localShopDiscount - appliedCoins;
+        const fallbackTotal = subtotal + totalShipping + totalExtraServicesFee - localShopDiscount - appliedCoins;
         return {
             subtotal,
             shippingFee: totalShipping,
             shopDiscount: localShopDiscount,
             systemDiscount: 0,
             coinDiscount: appliedCoins || 0, 
-            giftWrapFee: currentGiftWrapFee,
+            giftWrapFee: totalExtraServicesFee,
             total: fallbackTotal > 0 ? fallbackTotal : 0
         };
-    }, [groupedItems, shopVouchers, orderData, selectedGiftWrap, appliedCoins]);
+    }, [groupedItems, shopVouchers, orderData, selectedGiftWrap, selectedGreetingCard, appliedCoins]);
 
-    // --- LOGIC 2: ĐỊA CHỈ & MODAL (FIXED) ---
+    // --- LOGIC 2: ĐỊA CHỈ & MODAL ---
     const [addressList, setAddressList] = useState<any[]>([]);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
     const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
@@ -267,7 +270,6 @@ const GiftPaymentPage: React.FC = () => {
             const addresses: any[] = res || [];
             setAddressList(addresses);
 
-            // Gán mặc định cho NGƯỜI GỬI (Người mua hàng)
             const isSenderEmpty = !senderInfo.address || !senderInfo.phone || !senderInfo.name;
             if (isSenderEmpty && addresses.length > 0) {
                 const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
@@ -361,7 +363,9 @@ const GiftPaymentPage: React.FC = () => {
                     voucherId: voucherId,
                     useCoins: appliedCoins > 0,
                     appliedCoins: appliedCoins,
-                    isGift: selectedGiftWrap !== null
+                    isGift: selectedGiftWrap !== null || selectedGreetingCard !== null,
+                    giftWrapIndex: selectedGiftWrap,
+                    greetingCardIndex: selectedGreetingCard
                 });
 
                 if (res) setOrderData(res);
@@ -373,13 +377,14 @@ const GiftPaymentPage: React.FC = () => {
         };
         const timeoutId = setTimeout(fetchPreview, 300);
         return () => clearTimeout(timeoutId);
-    }, [isMounted, validPaymentItems, isActuallyBuyNow, voucherId, appliedCoins, selectedGiftWrap]);
+    }, [isMounted, validPaymentItems, isActuallyBuyNow, voucherId, appliedCoins, selectedGiftWrap, selectedGreetingCard]);
 
     const handleSelectVoucher = () => {
         const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
         router.push(`/checkout/vouchers?backUrl=/gift-payment${dataQuery}&selected=${voucherId || ''}`);
     };
 
+    // --- XỬ LÝ THANH TOÁN (Đồng bộ với PaymentPage) ---
     const handleOrder = async () => {
         if (!senderInfo.name || !senderInfo.phone || !senderInfo.address) return toast.error("Vui lòng điền thông tin người tặng");
         if (!receiverInfo.name || !receiverInfo.phone || !receiverInfo.address) return toast.error("Vui lòng điền thông tin người nhận");
@@ -395,7 +400,8 @@ const GiftPaymentPage: React.FC = () => {
                 quantity: item.quantity
             }));
 
-            await apiClient.post('/orders', {
+            // Gọi API
+            const res = await apiClient.post('/orders', {
                 isGift: true,
                 isBuyNow: isActuallyBuyNow,
                 senderInfo,
@@ -406,15 +412,31 @@ const GiftPaymentPage: React.FC = () => {
                 useCoins: appliedCoins > 0,
                 appliedCoins: appliedCoins,
                 giftWrapIndex: selectedGiftWrap,
+                greetingCardIndex: selectedGreetingCard,
                 note: shopMessages, 
                 totalAmount: frontendCalculations.total 
             });
 
-            if (!isActuallyBuyNow) await removeMultipleItems(selectedIds);
+            // Xóa item khỏi cart
+            if (!isActuallyBuyNow) {
+                await removeMultipleItems(selectedIds);
+            }
+
+            // Dọn dẹp Store Checkout (Quan trọng để đồng bộ như PaymentPage)
+            resetCheckout();
 
             toast.dismiss();
             toast.success("Đặt hàng quà tặng thành công!");
-            router.push('/payment/success');
+
+            // Điều hướng giống PaymentPage
+            if (res && res.paymentUrl) {
+                window.location.href = res.paymentUrl;
+            } else if (res && res.orders) {
+                const orderIds = res.orders.map((o: any) => o.id).join(',');
+                router.push(`/payment/success?orderIds=${orderIds}`);
+            } else {
+                router.push('/payment/success'); // Fallback an toàn
+            }
         } catch (err: any) {
             toast.dismiss();
             toast.error(err.message || "Có lỗi xảy ra khi tạo đơn.");
@@ -479,7 +501,6 @@ const GiftPaymentPage: React.FC = () => {
                             <h3 className="font-bold text-gray-800 text-lg">Địa chỉ Giao - Nhận Quà</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-gray-100">
-                            {/* Người tặng */}
                             <div onClick={() => handleEditInfo('sender')} className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group">
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">1. Người gửi (Bạn)</span>
@@ -495,7 +516,6 @@ const GiftPaymentPage: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Người nhận */}
                             <div onClick={() => handleEditInfo('receiver')} className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group">
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-sm font-semibold text-brand-orange uppercase tracking-wide">2. Người nhận quà</span>
@@ -555,7 +575,7 @@ const GiftPaymentPage: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* 3. DỊCH VỤ GÓI QUÀ */}
+                    {/* 3.1 DỊCH VỤ GÓI QUÀ */}
                     <div className="bg-white rounded-xl shadow-sm border border-brand-orange/50 overflow-hidden">
                         <div className="bg-orange-50 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
                             <GiftIcon className="text-brand-orange" size={20} />
@@ -579,7 +599,31 @@ const GiftPaymentPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 4. VOUCHER & XU (Đồng bộ PaymentPage) */}
+                    {/* 3.2 DỊCH VỤ THIỆP MỜI (NEW) */}
+                    <div className="bg-white rounded-xl shadow-sm border border-blue-400/50 overflow-hidden">
+                        <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center gap-2">
+                            <MailIcon className="text-blue-600" size={20} />
+                            <h3 className="font-bold text-blue-800 text-lg">Mẫu Thiệp Gửi Tặng</h3>
+                        </div>
+                        <div className="p-6">
+                            <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                                {greetingCardData.map((item, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => setSelectedGreetingCard(selectedGreetingCard === index ? null : index)}
+                                        className={`
+                                    cursor-pointer rounded-[20px] p-[2px] transition-all duration-200 flex-shrink-0
+                                    ${selectedGreetingCard === index ? 'ring-2 ring-blue-500 scale-105 shadow-md' : 'hover:opacity-80 opacity-70'}
+                                `}
+                                    >
+                                        <GiftWrapCard {...item} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 4. VOUCHER & XU */}
                     <div>
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                             <div className="px-5 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"

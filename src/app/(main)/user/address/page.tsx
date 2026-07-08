@@ -5,7 +5,8 @@ import Button from '@/components/ui/Button';
 import { Plus, MoreVertical } from 'lucide-react';
 import { AddressService, IAddress } from '@/services/address.service';
 import { toast } from 'react-hot-toast';
-import AddressFormModal from '@/modules/user/components/AddressFormModal';
+// CẬP NHẬT IMPORT ĐỂ DÙNG CHUNG FORM VỚI TRANG PAYMENT
+import AddressFormModal from '@/modules/payment/components/AddressFormModal';
 
 export default function AddressPage() {
   const [addresses, setAddresses] = useState<IAddress[]>([]);
@@ -129,11 +130,12 @@ export default function AddressPage() {
       </div>
       )}
 
+      {/* SỬA LẠI PROPS ĐỂ MATCH VỚI PAYMENT ADDRESS MODAL */}
       <AddressFormModal
-        open={modalOpen}
-        initial={editing}
+        isOpen={modalOpen}
+        initialData={editing}
         onClose={() => setModalOpen(false)}
-        onSaved={fetchAddresses}
+        onSuccess={fetchAddresses}
       />
     </div>
   );
