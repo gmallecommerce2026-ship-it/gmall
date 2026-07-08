@@ -15,7 +15,7 @@ import { giftWrapData } from './data';
 import GiftWrapCard from './components/GiftWrapCard';
 import VoucherSection from '@/modules/payment/components/VoucherSection';
 import { MapPinIcon, GiftIcon, CreditCardIcon } from 'lucide-react';
-import AddressFormModal from '@/modules/user/components/AddressFormModal';
+import AddressFormModal from '../payment/components/AddressFormModal'; // ĐÚNG
 import AddressSelectionModal from '../payment/components/AddressSelectionModal';
 
 // --- CONSTANTS ---
@@ -183,11 +183,24 @@ const GiftPaymentPage: React.FC = () => {
             const addresses: any[] = res || [];
             setAddressList(addresses);
 
-            const isStoreEmpty = !receiverInfo.address || !receiverInfo.phone || !receiverInfo.name;
-            if (isStoreEmpty && addresses.length > 0) {
+            // 1. Kiểm tra và gán địa chỉ mặc định cho NGƯỜI GỬI (Bạn/Người mua)
+            const isSenderEmpty = !senderInfo.address || !senderInfo.phone || !senderInfo.name;
+            if (isSenderEmpty && addresses.length > 0) {
                 const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
-                handleSelectAddress(defaultAddr);
-            } else if (!isStoreEmpty && !selectedAddressId && addresses.length > 0) {
+                // Gán trực tiếp vào setSenderInfo thay vì gọi qua handleSelectAddress
+                setSenderInfo({
+                    name: defaultAddr.name,
+                    phone: defaultAddr.phone,
+                    address: defaultAddr.fullAddress,
+                    provinceId: defaultAddr.provinceId,
+                    districtId: defaultAddr.districtId,
+                    wardCode: defaultAddr.wardCode,
+                });
+            } 
+            
+            // 2. Tìm ID mapping cho Người Nhận (nếu trước đó đã có thông tin trong store)
+            const isReceiverEmpty = !receiverInfo.address || !receiverInfo.phone || !receiverInfo.name;
+            if (!isReceiverEmpty && !selectedAddressId && addresses.length > 0) {
                 const matchedAddr = addresses.find(a => 
                     a.fullAddress === receiverInfo.address && a.phone === receiverInfo.phone
                 );
