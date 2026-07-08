@@ -17,7 +17,7 @@ import VoucherSection from '@/modules/payment/components/VoucherSection';
 import { MapPinIcon, GiftIcon, CreditCardIcon } from 'lucide-react';
 import AddressFormModal from '../payment/components/AddressFormModal'; // ĐÚNG
 import AddressSelectionModal from '../payment/components/AddressSelectionModal';
-
+import { Coins } from 'lucide-react';
 // --- CONSTANTS ---
 const PAYMENT_METHODS = [
     { id: 'bank', name: 'Chuyển khoản ngân hàng', icon: '/assets-gift-payment/ImageAsset5.png' },
@@ -39,12 +39,53 @@ const GiftPaymentPage: React.FC = () => {
         receiverInfo, setReceiverInfo,
         selectedVoucherId,
         setSelectedVoucher,
-        shopMessages, setShopMessage, 
-        shopVouchers 
+        shopMessages, setShopMessage,
+        shopVouchers
     } = useCheckoutStore();
 
     const { isAuthenticated, _hasHydrated } = useUserStore();
+    const { user } = useUserStore();
+    const { appliedCoins, setAppliedCoins } = useCheckoutStore();
+    const availableCoins = user?.point || 0;
 
+    const [isUseCoins, setIsUseCoins] = useState(appliedCoins > 0);
+    const [coinInput, setCoinInput] = useState(appliedCoins > 0 ? appliedCoins.toString() : '');
+
+    // Xử lý khi bật/tắt toggle
+    const handleToggleCoins = (checked: boolean) => {
+        setIsUseCoins(checked);
+        if (!checked) {
+            setCoinInput('');
+            setAppliedCoins(0);
+        } else {
+            // Tự động điền mức xu tối đa khi vừa bật để tối ưu UX
+            setCoinInput(availableCoins.toString());
+            setAppliedCoins(availableCoins);
+        }
+    };
+
+    // Xử lý khi nhập số xu vào ô input
+    const handleCoinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Chỉ cho phép nhập số
+        const val = e.target.value.replace(/[^0-9]/g, '');
+        let num = Number(val);
+
+        // Chặn không cho nhập quá số xu đang có
+        if (num > availableCoins) num = availableCoins;
+
+        setCoinInput(val === '' ? '' : num.toString());
+    };
+
+    // Nút "Áp dụng" hoặc khi người dùng click ra ngoài input
+    const handleApplyCoins = () => {
+        setAppliedCoins(Number(coinInput) || 0);
+    };
+
+    // Nút "Tối đa"
+    const handleUseMaxCoins = () => {
+        setCoinInput(availableCoins.toString());
+        setAppliedCoins(availableCoins);
+    };
     useEffect(() => {
         if (_hasHydrated) {
             if (!isAuthenticated) {
@@ -156,7 +197,7 @@ const GiftPaymentPage: React.FC = () => {
             shippingFee: totalShipping,
             shopDiscount: localShopDiscount,
             systemDiscount: 0,
-            coinDiscount: 0, 
+            coinDiscount: 0,
             giftWrapFee: currentGiftWrapFee,
             total: fallbackTotal > 0 ? fallbackTotal : 0
         };
@@ -168,14 +209,14 @@ const GiftPaymentPage: React.FC = () => {
     const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState<any | null>(null);
     const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
-    
+
     // [FIX] Cờ phân biệt đang sửa thông tin người nhận hay người gửi
     const [editingType, setEditingType] = useState<'sender' | 'receiver'>('receiver');
 
     useEffect(() => {
         fetchAddresses();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); 
+    }, []);
 
     const fetchAddresses = async () => {
         try {
@@ -196,12 +237,12 @@ const GiftPaymentPage: React.FC = () => {
                     districtId: defaultAddr.districtId,
                     wardCode: defaultAddr.wardCode,
                 });
-            } 
-            
+            }
+
             // 2. Tìm ID mapping cho Người Nhận (nếu trước đó đã có thông tin trong store)
             const isReceiverEmpty = !receiverInfo.address || !receiverInfo.phone || !receiverInfo.name;
             if (!isReceiverEmpty && !selectedAddressId && addresses.length > 0) {
-                const matchedAddr = addresses.find(a => 
+                const matchedAddr = addresses.find(a =>
                     a.fullAddress === receiverInfo.address && a.phone === receiverInfo.phone
                 );
                 if (matchedAddr) setSelectedAddressId(matchedAddr.id);
@@ -245,8 +286,8 @@ const GiftPaymentPage: React.FC = () => {
 
     const handleAddNewAddress = () => {
         setEditingAddress(null);
-        setIsAddressModalOpen(false); 
-        setIsAddressFormOpen(true);  
+        setIsAddressModalOpen(false);
+        setIsAddressFormOpen(true);
     };
 
     const handleEditAddress = (addr: any) => {
@@ -257,8 +298,8 @@ const GiftPaymentPage: React.FC = () => {
 
     const handleAddressFormSuccess = async () => {
         setIsAddressFormOpen(false);
-        await fetchAddresses(); 
-        setIsAddressModalOpen(true); 
+        await fetchAddresses();
+        setIsAddressModalOpen(true);
     };
 
     // --- API TÍNH TIỀN ---
@@ -324,8 +365,8 @@ const GiftPaymentPage: React.FC = () => {
                 voucherId: voucherId,
                 useCoins: useCoins,
                 giftWrapIndex: selectedGiftWrap,
-                note: shopMessages, 
-                totalAmount: frontendCalculations.total 
+                note: shopMessages,
+                totalAmount: frontendCalculations.total
             });
 
             if (!isActuallyBuyNow) await removeMultipleItems(selectedIds);
@@ -358,7 +399,7 @@ const GiftPaymentPage: React.FC = () => {
             <Toaster position="top-right" />
 
             {/* [FIX] Render Modals */}
-            <AddressSelectionModal 
+            <AddressSelectionModal
                 isOpen={isAddressModalOpen}
                 onClose={() => setIsAddressModalOpen(false)}
                 addresses={addressList}
@@ -368,7 +409,7 @@ const GiftPaymentPage: React.FC = () => {
                 onEdit={handleEditAddress}
             />
 
-            <AddressFormModal 
+            <AddressFormModal
                 isOpen={isAddressFormOpen}
                 onClose={() => {
                     setIsAddressFormOpen(false);
@@ -508,7 +549,61 @@ const GiftPaymentPage: React.FC = () => {
                         onToggleCoins={setUseCoins}
                         coinBalance={10000}
                     />
+                    {/* --- BLOCK G-MALL XU --- */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Coins className="text-brand-orange" size={24} />
+                                <h3 className="font-bold text-gray-800 text-lg">G-Mall Xu</h3>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-gray-500">
+                                    Sẵn có: <span className="font-bold text-brand-orange">{availableCoins.toLocaleString()}</span> Xu
+                                </span>
+                                {/* Toggle Switch */}
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={isUseCoins}
+                                        onChange={(e) => handleToggleCoins(e.target.checked)}
+                                        disabled={availableCoins === 0} // Disable nếu không có xu
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-orange"></div>
+                                </label>
+                            </div>
+                        </div>
 
+                        {/* Form Input hiện ra khi toggle bật */}
+                        {isUseCoins && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        value={coinInput}
+                                        onChange={handleCoinInputChange}
+                                        onBlur={handleApplyCoins}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleApplyCoins()}
+                                        placeholder="Nhập số xu muốn dùng..."
+                                        className="w-full pl-4 pr-20 py-2 border border-gray-300 rounded-lg outline-none focus:border-brand-orange focus:ring-2 focus:ring-orange-100 transition-all text-sm"
+                                    />
+                                    <button
+                                        onClick={handleUseMaxCoins}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-brand-orange bg-orange-50 hover:bg-brand-orange hover:text-white px-3 py-1.5 rounded transition-colors"
+                                    >
+                                        Tối đa
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={handleApplyCoins}
+                                    disabled={Number(coinInput) === appliedCoins} // Disable nếu chưa thay đổi số lượng
+                                    className="px-5 py-2 bg-gray-900 text-white text-sm rounded-lg font-semibold hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                >
+                                    Áp dụng
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     {/* 5. PHƯƠNG THỨC THANH TOÁN */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4">
                         <div className="flex items-center gap-2 mb-2">
