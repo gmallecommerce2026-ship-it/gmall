@@ -41,7 +41,8 @@ interface CheckoutState {
 
   // [LEGACY-COMPAT] Single voucher dùng cho UI gộp giỏ
   selectedShopVoucher: Voucher | null;
-
+giftWrapIndex: number;
+  cardIndex: number;
   // Global
   selectedSystemVoucher: Voucher | null;
   selectedVoucherId: string | null;
@@ -72,6 +73,8 @@ interface CheckoutState {
   // [round15 FIX buynow-hijack] Gọi khi bắt đầu checkout TỪ GIỎ để 1 phiên Mua-Ngay
   // bị bỏ dở không chiếm quyền (isBuyNowFlow stale=true) trang /payment.
   startCartCheckout: () => void;
+  setGiftWrapIndex: (index: number) => void;
+  setCardIndex: (index: number) => void;
 }
 
 export const useCheckoutStore = create<CheckoutState>()(
@@ -89,6 +92,8 @@ export const useCheckoutStore = create<CheckoutState>()(
         phone: "",
         address: "",
       },
+      giftWrapIndex: 0,
+      cardIndex: 0,
       receiverInfo: {
         name: "", 
         relation: "",
@@ -170,7 +175,8 @@ export const useCheckoutStore = create<CheckoutState>()(
         isBuyNowFlow: false,
         checkoutItems: [],
       }),
-      
+      setGiftWrapIndex: (index: any) => set({ giftWrapIndex: index }),
+      setCardIndex: (index: any) => set({ cardIndex: index }),
       // Reset toàn bộ
       resetCheckout: () => set({
         shopVouchers: {},
@@ -182,7 +188,9 @@ export const useCheckoutStore = create<CheckoutState>()(
         // Reset luôn cả state mua ngay
         isBuyNowFlow: false,
         checkoutItems: [],
-        appliedCoins: 0
+        appliedCoins: 0,
+        giftWrapIndex: 0,
+        cardIndex: 0,
       }),
     }),
     {

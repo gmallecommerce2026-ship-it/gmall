@@ -32,7 +32,9 @@ export const useCheckoutLogic = () => {
     // [NEW] State mua ngay
     isBuyNowFlow,
     checkoutItems,
-    appliedCoins
+    appliedCoins,
+     giftWrapIndex, // <-- THÊM VÀO ĐÂY
+     cardIndex
   } = useCheckoutStore();
 
   // 2. Local State cho UI
@@ -111,8 +113,8 @@ export const useCheckoutLogic = () => {
       note: shopMessages, 
       paymentMethod: paymentMethod,
       
-      giftWrapIndex: 0,
-      cardIndex: 0,
+      giftWrapIndex: giftWrapIndex, // <-- SỬA TỪ 0 THÀNH STATE TRONG STORE
+      cardIndex: cardIndex,
       useCoins: appliedCoins > 0,
       appliedCoins: appliedCoins, 
     };
@@ -149,7 +151,7 @@ export const useCheckoutLogic = () => {
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validPaymentItems, shopVouchers, selectedSystemVoucher, isAuthenticated, appliedCoins, shopShipping, senderInfo, receiverInfo]);
+  }, [validPaymentItems, shopVouchers, selectedSystemVoucher, isAuthenticated, appliedCoins, shopShipping, senderInfo, receiverInfo, giftWrapIndex, cardIndex]);
 
 
   // 5. Hàm Checkout
