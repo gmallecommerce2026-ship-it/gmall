@@ -5,7 +5,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast, Toaster } from 'react-hot-toast';
 import { apiClient } from '@/lib/api/ApiClient';
-
+import { OrderService, CreateOrderPayload } from '@/services/order.service';
 import { useCheckoutStore } from '@/store/useCheckoutStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useCartData, useCartActions } from '@/store/useCartStore';
@@ -340,84 +340,122 @@ const GiftPaymentPage: React.FC = () => {
         await fetchAddresses(); 
         setIsAddressModalOpen(true); 
     };
+// --- LOGIC: BUILD PAYLOAD (Giống PaymentPage) ---
+    const buildPayload = useCallback((isPreview = false) => {
+        if (validPaymentItems.length === 0) return null;
 
-    // --- API TÍNH TIỀN ---
+        const voucherIds: string[] = [];
+        if (voucherId) voucherIds.push(voucherId);
+        Object.values(shopVouchers).forEach((v: any) => v?.id && voucherIds.push(v.id));
+
+        // MẸO XỬ LÝ FE: Nhét thông tin gói quà vào lời nhắn để BE không bị lỗi DTO
+        const giftNote = selectedGiftWrap !== null 
+            ? `[QUÀ TẶNG - Gói số ${selectedGiftWrap}] ` 
+            : `[QUÀ TẶNG] `;
+
+        return {
+            isBuyNow: isActuallyBuyNow,
+            items: validPaymentItems.map((i: any) => ({
+                productId: String(i.productId),
+                variantId: (i.productVariantId || i.variantId) ? String(i.productVariantId || i.variantId) : undefined,
+                quantity: i.quantity
+            })),
+            voucherIds,
+            receiverInfo: {
+                name: receiverInfo.name,
+                phone: receiverInfo.phone,
+                address: receiverInfo.address,
+                provinceId: receiverInfo.provinceId,
+                districtId: receiverInfo.districtId,
+                wardCode: receiverInfo.wardCode,
+            },
+            senderInfo: {
+                name: senderInfo.name,
+                message: giftNote + (senderInfo.message || '')
+            },
+            paymentMethod: selectedPayment,
+            note: shopMessages,
+            useCoins: appliedCoins > 0,
+            appliedCoins: appliedCoins,
+            // BE hiện tại chưa cần xử lý 2 field này nên có thể ignore hoặc gửi lên (nếu BE đã hỗ trợ)
+            isGift: true,
+            giftWrapIndex: selectedGiftWrap
+        } as any;
+    }, [
+        validPaymentItems, isActuallyBuyNow, voucherId, shopVouchers, 
+        receiverInfo, senderInfo, selectedPayment, shopMessages, 
+        appliedCoins, selectedGiftWrap
+    ]);
+
+    // --- API PREVIEW TÍNH TIỀN ---
     useEffect(() => {
         if (!isMounted) return;
         const fetchPreview = async () => {
             if (validPaymentItems.length === 0) {
-                setLoading(false); return;
+                setLoading(false); 
+                return;
             }
+
+            const payload = buildPayload(true);
+            if (!payload) return;
+
             try {
-                const orderItems = validPaymentItems.map((item: any) => ({
-                    productId: String(item.productId),
-                    variantId: (item.productVariantId || item.variantId) ? String(item.productVariantId || item.variantId) : undefined,
-                    quantity: item.quantity
-                }));
-
-                const res = await apiClient.post('/orders/preview', {
-                    isBuyNow: isActuallyBuyNow,
-                    items: orderItems,
-                    voucherId: voucherId,
-                    useCoins: appliedCoins > 0,
-                    appliedCoins: appliedCoins,
-                    isGift: selectedGiftWrap !== null
-                });
-
+                // Sử dụng OrderService giống hệt PaymentPage
+                const res = await OrderService.previewOrder(payload);
                 if (res) setOrderData(res);
             } catch (error) {
-                console.error(error);
+                console.error("Preview error", error);
             } finally {
                 setLoading(false);
             }
         };
-        const timeoutId = setTimeout(fetchPreview, 300);
+
+        const timeoutId = setTimeout(fetchPreview, 500);
         return () => clearTimeout(timeoutId);
-    }, [isMounted, validPaymentItems, isActuallyBuyNow, voucherId, appliedCoins, selectedGiftWrap]);
+    }, [isMounted, validPaymentItems, buildPayload]);
 
     const handleSelectVoucher = () => {
         const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
         router.push(`/checkout/vouchers?backUrl=/gift-payment${dataQuery}&selected=${voucherId || ''}`);
     };
 
+    // --- XỬ LÝ ĐẶT HÀNG GẦN GIỐNG PAYMENT PAGE ---
     const handleOrder = async () => {
         if (!senderInfo.name || !senderInfo.phone || !senderInfo.address) return toast.error("Vui lòng điền thông tin người tặng");
         if (!receiverInfo.name || !receiverInfo.phone || !receiverInfo.address) return toast.error("Vui lòng điền thông tin người nhận");
         if (selectedPayment !== 'cod') return toast.error("Vui lòng chọn thanh toán COD (Đang bảo trì Online).");
 
+        const payload = buildPayload(false);
+        if (!payload) return;
+
         try {
             setLoading(true);
             toast.loading("Đang tạo đơn hàng quà tặng...");
 
-            const orderItems = validPaymentItems.map((item: any) => ({
-                productId: String(item.productId),
-                variantId: (item.productVariantId || item.variantId) ? String(item.productVariantId || item.variantId) : undefined,
-                quantity: item.quantity
-            }));
+            // Gọi OrderService thay vì apiClient thuần
+            const res = await OrderService.createOrder(payload);
 
-            await apiClient.post('/orders', {
-                isGift: true,
-                isBuyNow: isActuallyBuyNow,
-                senderInfo,
-                receiverInfo,
-                items: orderItems,
-                paymentMethod: selectedPayment,
-                voucherId: voucherId,
-                useCoins: appliedCoins > 0,
-                appliedCoins: appliedCoins,
-                giftWrapIndex: selectedGiftWrap,
-                note: shopMessages, 
-                totalAmount: frontendCalculations.total 
-            });
-
-            if (!isActuallyBuyNow) await removeMultipleItems(selectedIds);
+            // Xóa item trong giỏ nếu mua từ giỏ hàng
+            if (!isActuallyBuyNow) {
+                await removeMultipleItems(selectedIds);
+            }
 
             toast.dismiss();
             toast.success("Đặt hàng quà tặng thành công!");
-            router.push('/payment/success');
+
+            // ĐIỂM QUAN TRỌNG: Xử lý redirect thành công y hệt PaymentPage
+            if (res.paymentUrl) {
+                window.location.href = res.paymentUrl;
+            } else {
+                const orderIds = res.orders.map((o: any) => o.id).join(',');
+                router.push(`/payment/success?orderIds=${orderIds}`);
+            }
+            
         } catch (err: any) {
             toast.dismiss();
-            toast.error(err.message || "Có lỗi xảy ra khi tạo đơn.");
+            const raw = err?.response?.data?.message;
+            const msg = Array.isArray(raw) ? raw.join('\n') : (raw || err?.message || 'Có lỗi xảy ra khi tạo đơn.');
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
