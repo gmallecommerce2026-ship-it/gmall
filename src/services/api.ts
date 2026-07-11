@@ -28,39 +28,27 @@ _rawApi.interceptors.response.use(
   (res) => res.data,
   async (error) => {
     const originalRequest = error.config;
-
-    // Bỏ qua logic logout nếu URL là check auth (tránh lặp vô tận)
+    // Bỏ qua logic logout nếu URL là check auth
     const isCheckAuthRequest = originalRequest?.url?.includes('/auth/me') || originalRequest?.url?.includes('/users/me');
-
+    
     if (error.response?.status === 401 && !isCheckAuthRequest) {
         if (typeof window !== 'undefined') {
-             // 1. Gọi API Logout để xóa Cookie HttpOnly
-             await _rawApi.post('/auth/logout').catch(() => {});
-
-             // 2. Clear State Zustand (Quan trọng: để UI không còn lưu trạng thái đã login)
-             useUserStore.getState().logout();
-
-             // 3. Logic điều hướng thông minh dựa trên URL hiện tại
+             // [THÊM MỚI] Đảm bảo không redirect nếu đang đứng ở trang nhận callback từ Google
              const pathname = window.location.pathname;
+             if (pathname.includes('/auth/callback') || pathname.includes('/auth/google')) {
+                 return Promise.reject(error);
+             }
 
-             // Nếu đang ở trang Admin -> Về Login Admin
+             // Các logic logout cũ giữ nguyên
+             await _rawApi.post('/auth/logout').catch(() => {});
+             useUserStore.getState().logout();
+             
              if (pathname.startsWith('/admin')) {
-                 if (!pathname.includes('/admin/login')) {
-                     window.location.href = '/admin/login';
-                 }
-             }
-             // Nếu đang ở trang Seller -> Về Login Seller
-             // (Check cả 2 case: đường dẫn dashboard và đường dẫn seller portal)
-             else if (pathname.startsWith('/seller') || pathname.includes('/seller-dashboard')) {
-                 if (!pathname.includes('/seller/login')) {
-                     window.location.href = '/seller/login';
-                 }
-             }
-             // Còn lại -> Về Login Khách hàng (Buyer)
-             else {
-                 if (!pathname.includes('/login') && !pathname.includes('/register')) {
-                     window.location.href = '/login';
-                 }
+                 if (!pathname.includes('/admin/login')) window.location.href = '/admin/login';
+             } else if (pathname.startsWith('/seller') || pathname.includes('/seller-dashboard')) {
+                 if (!pathname.includes('/seller/login')) window.location.href = '/seller/login';
+             } else {
+                 if (!pathname.includes('/login') && !pathname.includes('/register')) window.location.href = '/login';
              }
         }
     }
