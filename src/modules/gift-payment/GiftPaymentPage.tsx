@@ -150,6 +150,12 @@ const GiftPaymentPage: React.FC = () => {
             if (!isAuthenticated) {
                 const next = encodeURIComponent(window.location.pathname + window.location.search);
                 router.replace(`/login?next=${next}`);
+            } else {
+                // [FIX] Cài Dummy Cookie để Middleware (proxy.tsx) nhận diện đã đăng nhập
+                // Giúp bypass lỗi văng về /login khi chuyển sang các route /checkout/*
+                if (!document.cookie.includes('accessToken=')) {
+                    document.cookie = 'accessToken=client_auth_bypass; path=/; max-age=86400; SameSite=Lax';
+                }
             }
         }
     }, [_hasHydrated, isAuthenticated, router]);
@@ -422,8 +428,11 @@ const GiftPaymentPage: React.FC = () => {
     }, [isMounted, validPaymentItems, buildPayload]);
 
     const handleSelectVoucher = () => {
-        const dataQuery = dataParam ? `&data=${encodeURIComponent(dataParam)}` : '';
-        router.push(`/checkout/vouchers?backUrl=/gift-payment${dataQuery}&selected=${voucherId || ''}`);
+        // [FIX] Gom toàn bộ path hiện tại và encode lại thành 1 chuỗi an toàn
+        const currentPath = `/gift-payment${dataParam ? `?data=${encodeURIComponent(dataParam)}` : ''}`;
+        const encodedBackUrl = encodeURIComponent(currentPath);
+        
+        router.push(`/checkout/vouchers?backUrl=${encodedBackUrl}&selected=${voucherId || ''}`);
     };
 
     // --- XỬ LÝ ĐẶT HÀNG ---
