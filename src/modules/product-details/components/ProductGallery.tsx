@@ -1,80 +1,109 @@
+// src/modules/product-details/components/ProductGallery.tsx
 "use client";
 import React, { useEffect, useState } from "react";
+import { Play } from "lucide-react"; // Import icon nút Play để hiển thị ở thumbnail
 
 interface ProductGalleryProps {
   images: string[];
+  videos?: string[]; // MỚI: Thêm mảng videos
   activeImage?: string | null;
 }
 
-const ProductGallery: React.FC<ProductGalleryProps> = ({ images, activeImage }) => {
-  const [selectedImage, setSelectedImage] = useState(images[0]);
-  // hooks-fix wiki 0031: sync selectedImage từ prop activeImage — derived state pattern.
+const ProductGallery: React.FC<ProductGalleryProps> = ({ images = [], videos = [], activeImage }) => {
+  // Gộp videos lên trước images (Tối ưu UX: user thường xem video trước)
+  const allMedia = [...videos, ...images];
+  const [selectedMedia, setSelectedMedia] = useState(allMedia[0]);
+
   useEffect(() => {
     if (activeImage) {
-      setSelectedImage(activeImage);
+      setSelectedMedia(activeImage);
     }
   }, [activeImage]);
 
-  // Reset về ảnh đầu tiên nếu danh sách ảnh thay đổi hoàn toàn (ví dụ đổi sản phẩm)
   useEffect(() => {
-      if (images.length > 0 && !activeImage) {
-          setSelectedImage(images[0]);
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images]);
+    if (allMedia.length > 0 && !activeImage) {
+      setSelectedMedia(allMedia[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images, videos]);
+
+  // Hàm kiểm tra xem media hiện tại có phải là video không
+  const isVideo = (url: string) => videos.includes(url);
+  const isSelectedVideo = isVideo(selectedMedia);
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Ảnh chính - Thêm bo tròn lớn và hiệu ứng shadow nhẹ */}
-      <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative group cursor-zoom-in">
-        <img
-          src={selectedImage}
-          alt="Product details"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          onError={(e) => {
-            // Wiki 0041: fallback khi src 404 (ảnh seed Tiki CDN nhiều url đã chết).
-            // Set src lần đầu để tránh infinite loop khi placeholder cũng 404.
-            const el = e.target as HTMLImageElement;
-            if (!el.dataset.fallback) {
-              el.dataset.fallback = "1";
-              el.src = "/assets/placeholder.png";
-            }
-          }}
-        />
-        {/* Badge giả lập (ví dụ) */}
-        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-            Hot
-        </div>
+      {/* Khung hiển thị Media chính */}
+      <div className="w-full aspect-square bg-black rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative group flex items-center justify-center">
+        {isSelectedVideo ? (
+          <video
+            src={selectedMedia}
+            controls
+            autoPlay
+            muted // Nên để muted nếu autoPlay để trình duyệt không block
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <img
+            src={selectedMedia}
+            alt="Product details"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-zoom-in bg-white"
+            onError={(e) => {
+              const el = e.target as HTMLImageElement;
+              if (!el.dataset.fallback) {
+                el.dataset.fallback = "1";
+                el.src = "/assets/placeholder.png";
+              }
+            }}
+          />
+        )}
       </div>
 
-      {/* Danh sách thumbnails - Style hiện đại hơn */}
+      {/* Danh sách Thumbnails */}
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
-        {images.map((img, index) => (
-          <button
-            key={index}
-            onClick={() => setSelectedImage(img)}
-            onMouseEnter={() => setSelectedImage(img)}
-            className={`
+        {allMedia.map((media, index) => {
+          const mediaIsVideo = isVideo(media);
+          return (
+            <button
+              key={index}
+              onClick={() => setSelectedMedia(media)}
+              onMouseEnter={() => setSelectedMedia(media)}
+              className={`
                 relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all duration-200
-                ${selectedImage === img 
-                    ? "border-brand-orange shadow-md ring-2 ring-orange-100 ring-offset-1" 
+                ${
+                  selectedMedia === media
+                    ? "border-brand-orange shadow-md ring-2 ring-orange-100 ring-offset-1"
                     : "border-transparent opacity-70 hover:opacity-100 hover:border-gray-300"
                 }
-            `}
-          >
-            <img
-              src={img}
-              alt={`Thumbnail ${index + 1}`}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const el = e.target as HTMLImageElement;
-                if (!el.dataset.fallback) {
-                  el.dataset.fallback = "1";
-                  el.src = "/assets/placeholder.png";
-                }
-              }}
-            />
-          </button>
-        ))}
+              `}
+            >
+              {mediaIsVideo ? (
+                <div className="w-full h-full bg-black relative flex items-center justify-center">
+                  {/* Thumbnail mờ cho video */}
+                  <video src={media} className="w-full h-full object-cover opacity-50" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-black/60 p-1.5 rounded-full">
+                      <Play size={16} className="text-white fill-white" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={media}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const el = e.target as HTMLImageElement;
+                    if (!el.dataset.fallback) {
+                      el.dataset.fallback = "1";
+                      el.src = "/assets/placeholder.png";
+                    }
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
