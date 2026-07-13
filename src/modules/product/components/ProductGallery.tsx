@@ -1,62 +1,53 @@
-// File: src/modules/product-details/components/ProductGallery.tsx
+// src/modules/product-details/components/ProductGallery.tsx
 "use client";
 import React, { useEffect, useState } from "react";
-import { Play } from "lucide-react"; // Bổ sung icon Play cho thumbnail video
+import { Play } from "lucide-react"; // Import icon nút Play để hiển thị ở thumbnail
 
 interface ProductGalleryProps {
   images: string[];
-  videos?: string[]; // Thêm prop videos
+  videos?: string[]; // MỚI: Thêm mảng videos
   activeImage?: string | null;
 }
 
-// Định nghĩa kiểu chung cho gallery
-type MediaItem = {
-  type: 'image' | 'video';
-  url: string;
-};
-
-const ProductGallery: React.FC<ProductGalleryProps> = ({ images, videos = [], activeImage }) => {
-  // Gộp chung videos (hiển thị trước) và images vào một mảng media chung
-  const mediaList: MediaItem[] = [
-    ...videos.map(v => ({ type: 'video' as const, url: v })),
-    ...images.map(i => ({ type: 'image' as const, url: i }))
-  ];
-
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem>(
-    mediaList[0] || { type: 'image', url: '/assets/placeholder.png' }
-  );
+const ProductGallery: React.FC<ProductGalleryProps> = ({ images = [], videos = [], activeImage }) => {
+  // Gộp videos lên trước images (Tối ưu UX: user thường xem video trước)
+  const allMedia = [...videos, ...images];
+  const [selectedMedia, setSelectedMedia] = useState(allMedia[0]);
 
   useEffect(() => {
     if (activeImage) {
-      const found = mediaList.find(m => m.url === activeImage);
-      setSelectedMedia(found || { type: 'image', url: activeImage });
+      setSelectedMedia(activeImage);
     }
   }, [activeImage]);
 
   useEffect(() => {
-    if (mediaList.length > 0 && !activeImage) {
-      setSelectedMedia(mediaList[0]);
+    if (allMedia.length > 0 && !activeImage) {
+      setSelectedMedia(allMedia[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images, videos]);
 
+  // Hàm kiểm tra xem media hiện tại có phải là video không
+  const isVideo = (url: string) => videos.includes(url);
+  const isSelectedVideo = isVideo(selectedMedia);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Khung hiển thị Media chính */}
-      <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative group cursor-zoom-in flex items-center justify-center">
-        {selectedMedia.type === 'video' ? (
+      <div className="w-full aspect-square bg-black rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative group flex items-center justify-center">
+        {isSelectedVideo ? (
           <video
-            src={selectedMedia.url}
+            src={selectedMedia}
             controls
             autoPlay
-            muted
-            className="w-full h-full object-cover"
+            muted // Nên để muted nếu autoPlay để trình duyệt không block
+            className="w-full h-full object-contain"
           />
         ) : (
           <img
-            src={selectedMedia.url}
+            src={selectedMedia}
             alt="Product details"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-zoom-in bg-white"
             onError={(e) => {
               const el = e.target as HTMLImageElement;
               if (!el.dataset.fallback) {
@@ -66,47 +57,53 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, videos = [], ac
             }}
           />
         )}
-        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-            Hot
-        </div>
       </div>
 
       {/* Danh sách Thumbnails */}
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
-        {mediaList.map((item, index) => (
-          <button
-            key={index}
-            onClick={() => setSelectedMedia(item)}
-            onMouseEnter={() => setSelectedMedia(item)}
-            className={`
+        {allMedia.map((media, index) => {
+          const mediaIsVideo = isVideo(media);
+          return (
+            <button
+              key={index}
+              onClick={() => setSelectedMedia(media)}
+              onMouseEnter={() => setSelectedMedia(media)}
+              className={`
                 relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all duration-200
-                ${selectedMedia.url === item.url 
-                    ? "border-brand-orange shadow-md ring-2 ring-orange-100 ring-offset-1" 
+                ${
+                  selectedMedia === media
+                    ? "border-brand-orange shadow-md ring-2 ring-orange-100 ring-offset-1"
                     : "border-transparent opacity-70 hover:opacity-100 hover:border-gray-300"
                 }
-            `}
-          >
-            {item.type === 'video' ? (
-              <div className="w-full h-full relative bg-black flex items-center justify-center">
-                <video src={item.url} className="w-full h-full object-cover opacity-60" />
-                <Play className="absolute text-white/90 drop-shadow-md" size={24} fill="currentColor" />
-              </div>
-            ) : (
-              <img
-                src={item.url}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const el = e.target as HTMLImageElement;
-                  if (!el.dataset.fallback) {
-                    el.dataset.fallback = "1";
-                    el.src = "/assets/placeholder.png";
-                  }
-                }}
-              />
-            )}
-          </button>
-        ))}
+              `}
+            >
+              {mediaIsVideo ? (
+                <div className="w-full h-full bg-black relative flex items-center justify-center">
+                  {/* Thumbnail mờ cho video */}
+                  <video src={media} className="w-full h-full object-cover opacity-50" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-black/60 p-1.5 rounded-full">
+                      <Play size={16} className="text-white fill-white" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={media}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const el = e.target as HTMLImageElement;
+                    if (!el.dataset.fallback) {
+                      el.dataset.fallback = "1";
+                      el.src = "/assets/placeholder.png";
+                    }
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

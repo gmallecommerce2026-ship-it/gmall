@@ -76,10 +76,30 @@ const normalizeProductData = (raw: any): Product => {
   }
 
   const allImages = Array.from(new Set([...baseImages, ...tierImages]));
+  
+  // --- BẮT ĐẦU ĐOẠN SỬA LỖI LẤY VIDEO ---
   let videos: string[] = [];
+  
+  // Trường hợp 1: API trả về mảng videos ở cấp ngoài cùng
   if (Array.isArray(raw.videos)) {
     videos = raw.videos.map((vid: any) => typeof vid === 'string' ? vid : vid.url).filter(Boolean);
+  } 
+  // Trường hợp 2: Lấy videos từ chuỗi JSON attributes (Fix lỗi không hiện video)
+  else if (raw.attributes) {
+    try {
+      const parsedAttributes = typeof raw.attributes === 'string' 
+        ? JSON.parse(raw.attributes) 
+        : raw.attributes;
+        
+      if (Array.isArray(parsedAttributes.videos)) {
+        videos = parsedAttributes.videos.filter(Boolean);
+      }
+    } catch (error) {
+      console.error("Lỗi parse attributes để lấy videos:", error);
+    }
   }
+  // --- KẾT THÚC ĐOẠN SỬA LỖI ---
+
   // 3. Xử lý Variations
   let variations: ProductVariant[] = raw.variations || [];
   if (variations.length > 0 && tiers.length > 0 && (!variations[0].tierIndex)) {
