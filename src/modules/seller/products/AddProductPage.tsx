@@ -1107,9 +1107,28 @@ const AddProductPage = () => {
                         />
 
                         <SectionCard title="Thông tin chi tiết" id="details" className="relative z-40">
+                            <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3 items-start">
+                                <Info className="text-blue-500 shrink-0 mt-0.5" size={18} />
+                                <div>
+                                    <p className="text-sm text-blue-800 font-medium">Cải thiện mức độ hiển thị</p>
+                                    <p className="text-xs text-blue-600 mt-1">Điền thêm các thuộc tính giúp sản phẩm dễ dàng được tìm thấy hơn.</p>
+                                </div>
+                            </div>
+
+                            {/* Crawl data (nếu có) */}
+                            <CrawlFromUrlBlock
+                                onApply={(data) => {
+                                    if (data.brand) setBrand(data.brand);
+                                    if (data.name && !name) setName(data.name);
+                                    if (data.image && images.length === 0) setImages([data.image]);
+                                    if (data.description && !desc) setDesc(data.description);
+                                    toast.success(`Đã lấy dữ liệu từ ${data.source}`);
+                                }}
+                            />
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
 
-                                {/* CỘT 1: Thương hiệu -> Buộc phải cho z-50 (cao nhất) */}
+                                {/* CỘT 1: Thương hiệu -> z-50 để không bị che dropdown */}
                                 <div className="relative z-50">
                                     <FormLabel required>Thương hiệu</FormLabel>
                                     <SearchableSelectField
@@ -1120,7 +1139,7 @@ const AddProductPage = () => {
                                     />
                                 </div>
 
-                                {/* CỘT 2: Xuất xứ -> Cho z-40 (thấp hơn cột 1) */}
+                                {/* CỘT 2: Xuất xứ -> z-40 */}
                                 <div className="relative z-40">
                                     <FormLabel required>Xuất xứ</FormLabel>
                                     <SelectField value={origin} onChange={setOrigin} options={['Việt Nam', 'Trung Quốc', 'Hàn Quốc']} placeholder="Chọn xuất xứ" />
@@ -1137,6 +1156,7 @@ const AddProductPage = () => {
                                     <FormLabel>Kiểu dáng</FormLabel>
                                     <InputField value={style} onChange={(e: any) => setStyle(e.target.value)} />
                                 </div>
+
                                 {isShowMoreAttributes && EXTENDED_ATTRIBUTES.map((attr) => (
                                     <div key={attr.key} className="animate-in fade-in slide-in-from-top-2 duration-300">
                                         <FormLabel>{attr.label}</FormLabel>
@@ -1151,296 +1171,297 @@ const AddProductPage = () => {
                                 </div>
                             </div>
                         </SectionCard>
+                    </SectionCard>
 
-                        {/* Spec [0018]: Mô tả ngắn — 6 fields hiển thị nhanh trên trang SP.
+                    {/* Spec [0018]: Mô tả ngắn — 6 fields hiển thị nhanh trên trang SP.
               Khác mô tả dài bên dưới: dùng để khoe nhanh "tặng cho ai - dịp gì - điểm nổi bật".
               Lưu vào Product.shortDesc Json. Tất cả optional. */}
-                        <SectionCard title="Mô tả ngắn (Giới thiệu nhanh)" id="short-desc">
-                            <div className="mb-5 bg-amber-50 border border-amber-100 rounded-lg p-4 flex gap-3 items-start">
-                                <Info className="text-amber-500 shrink-0 mt-0.5" size={18} />
-                                <div>
-                                    <p className="text-sm text-amber-800 font-medium">Hiển thị ngay đầu trang sản phẩm</p>
-                                    <p className="text-xs text-amber-700 mt-1">Khách lướt qua đọc ngay phần này. Điền ngắn, đủ ý, có cảm xúc — đặc biệt là <strong>tặng ai</strong> và <strong>dịp nào</strong>.</p>
-                                </div>
+                    <SectionCard title="Mô tả ngắn (Giới thiệu nhanh)" id="short-desc">
+                        <div className="mb-5 bg-amber-50 border border-amber-100 rounded-lg p-4 flex gap-3 items-start">
+                            <Info className="text-amber-500 shrink-0 mt-0.5" size={18} />
+                            <div>
+                                <p className="text-sm text-amber-800 font-medium">Hiển thị ngay đầu trang sản phẩm</p>
+                                <p className="text-xs text-amber-700 mt-1">Khách lướt qua đọc ngay phần này. Điền ngắn, đủ ý, có cảm xúc — đặc biệt là <strong>tặng ai</strong> và <strong>dịp nào</strong>.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                            <div className="md:col-span-2">
+                                <FormLabel>Câu chuyện thương hiệu</FormLabel>
+                                <textarea
+                                    value={shortDescBrand}
+                                    onChange={(e) => setShortDescBrand(e.target.value)}
+                                    maxLength={200}
+                                    rows={2}
+                                    placeholder="VD: Thương hiệu thủ công Việt với 10 năm kinh nghiệm làm gốm Bát Tràng..."
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                                />
+                                <div className="text-right text-xs text-gray-400 mt-1">{shortDescBrand.length}/200</div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                                <div className="md:col-span-2">
-                                    <FormLabel>Câu chuyện thương hiệu</FormLabel>
-                                    <textarea
-                                        value={shortDescBrand}
-                                        onChange={(e) => setShortDescBrand(e.target.value)}
-                                        maxLength={200}
-                                        rows={2}
-                                        placeholder="VD: Thương hiệu thủ công Việt với 10 năm kinh nghiệm làm gốm Bát Tràng..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
-                                    />
-                                    <div className="text-right text-xs text-gray-400 mt-1">{shortDescBrand.length}/200</div>
-                                </div>
-
-                                <div>
-                                    <FormLabel>Đặc điểm nổi bật</FormLabel>
-                                    <textarea
-                                        value={shortDescFeatures}
-                                        onChange={(e) => setShortDescFeatures(e.target.value)}
-                                        maxLength={300}
-                                        rows={3}
-                                        placeholder="VD: Hộp gỗ óc chó nguyên khối, lót nhung đỏ, khắc tên miễn phí..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
-                                    />
-                                    <div className="text-right text-xs text-gray-400 mt-1">{shortDescFeatures.length}/300</div>
-                                </div>
-
-                                <div>
-                                    <FormLabel>Lợi ích cho người nhận</FormLabel>
-                                    <textarea
-                                        value={shortDescBenefits}
-                                        onChange={(e) => setShortDescBenefits(e.target.value)}
-                                        maxLength={300}
-                                        rows={3}
-                                        placeholder="VD: Lưu giữ kỷ niệm, sang trọng, dùng được nhiều năm..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
-                                    />
-                                    <div className="text-right text-xs text-gray-400 mt-1">{shortDescBenefits.length}/300</div>
-                                </div>
-
-                                <div>
-                                    <FormLabel>Phù hợp tặng cho</FormLabel>
-                                    <input
-                                        type="text"
-                                        value={shortDescRecipient}
-                                        onChange={(e) => setShortDescRecipient(e.target.value)}
-                                        maxLength={150}
-                                        placeholder="VD: Bố, sếp, đối tác, người thân U50..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <FormLabel>Dịp tặng phù hợp</FormLabel>
-                                    <input
-                                        type="text"
-                                        value={shortDescOccasion}
-                                        onChange={(e) => setShortDescOccasion(e.target.value)}
-                                        maxLength={150}
-                                        placeholder="VD: Sinh nhật, kỷ niệm, Tết, khai trương, tân gia..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <FormLabel>Ghi chú thêm</FormLabel>
-                                    <textarea
-                                        value={shortDescNote}
-                                        onChange={(e) => setShortDescNote(e.target.value)}
-                                        maxLength={200}
-                                        rows={2}
-                                        placeholder="VD: Có hộp quà miễn phí, tặng kèm thiệp, gói trong 24h..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
-                                    />
-                                    <div className="text-right text-xs text-gray-400 mt-1">{shortDescNote.length}/200</div>
-                                </div>
+                            <div>
+                                <FormLabel>Đặc điểm nổi bật</FormLabel>
+                                <textarea
+                                    value={shortDescFeatures}
+                                    onChange={(e) => setShortDescFeatures(e.target.value)}
+                                    maxLength={300}
+                                    rows={3}
+                                    placeholder="VD: Hộp gỗ óc chó nguyên khối, lót nhung đỏ, khắc tên miễn phí..."
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                                />
+                                <div className="text-right text-xs text-gray-400 mt-1">{shortDescFeatures.length}/300</div>
                             </div>
-                        </SectionCard>
 
-                        <SectionCard title="Mô tả sản phẩm" id="desc">
-                            {/* Giữ nguyên */}
-                            <div className="space-y-4">
-                                <DescriptionEditor value={desc} onChange={(val) => setDesc(val)} />
-                                <div className="text-right text-xs text-gray-400">Độ dài hiện tại: {desc.length} ký tự</div>
+                            <div>
+                                <FormLabel>Lợi ích cho người nhận</FormLabel>
+                                <textarea
+                                    value={shortDescBenefits}
+                                    onChange={(e) => setShortDescBenefits(e.target.value)}
+                                    maxLength={300}
+                                    rows={3}
+                                    placeholder="VD: Lưu giữ kỷ niệm, sang trọng, dùng được nhiều năm..."
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                                />
+                                <div className="text-right text-xs text-gray-400 mt-1">{shortDescBenefits.length}/300</div>
                             </div>
-                        </SectionCard>
 
-                        <SectionCard title="Thông tin bán hàng" id="sales">
-                            {/* Giữ nguyên Logic SKU Matrix */}
-                            <div className="mb-8">
-                                <FormLabel>Phân loại hàng</FormLabel>
-                                <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4">
-                                    {tiers.map((tier, tIdx) => (
-                                        <div key={tIdx} className="bg-white p-4 rounded-lg border border-gray-200 relative shadow-sm">
-                                            <button onClick={() => removeTier(tIdx)} className="absolute top-3 right-3 text-gray-400 hover:text-red-500"><X size={18} /></button>
-                                            <div className="mb-4">
-                                                <label className="text-xs font-bold text-gray-500 uppercase">Nhóm phân loại {tIdx + 1}</label>
-                                                <input className="block w-full border-b border-gray-200 py-1.5 text-sm font-semibold outline-none focus:border-orange-500 bg-transparent" placeholder="VD: Màu sắc, Kích thước" value={tier.name} onChange={e => updateTierName(tIdx, e.target.value)} />
-                                            </div>
-                                            <div className="space-y-3">
-                                                {tier.options.map((opt, oIdx) => (
-                                                    <div key={oIdx} className="flex items-start gap-3 animate-in fade-in slide-in-from-left-2">
-                                                        <div className="flex-1 flex items-center border border-gray-300 rounded-lg bg-white px-3 h-10 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
-                                                            <input className="flex-1 outline-none text-sm" value={opt} onChange={(e) => { const n = [...tiers]; n[tIdx].options[oIdx] = e.target.value; setTiers(n); }} />
-                                                            <button onClick={() => removeOptionFromTier(tIdx, oIdx)} className="text-gray-400 hover:text-red-500 ml-2"><X size={14} /></button>
+                            <div>
+                                <FormLabel>Phù hợp tặng cho</FormLabel>
+                                <input
+                                    type="text"
+                                    value={shortDescRecipient}
+                                    onChange={(e) => setShortDescRecipient(e.target.value)}
+                                    maxLength={150}
+                                    placeholder="VD: Bố, sếp, đối tác, người thân U50..."
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <FormLabel>Dịp tặng phù hợp</FormLabel>
+                                <input
+                                    type="text"
+                                    value={shortDescOccasion}
+                                    onChange={(e) => setShortDescOccasion(e.target.value)}
+                                    maxLength={150}
+                                    placeholder="VD: Sinh nhật, kỷ niệm, Tết, khai trương, tân gia..."
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <FormLabel>Ghi chú thêm</FormLabel>
+                                <textarea
+                                    value={shortDescNote}
+                                    onChange={(e) => setShortDescNote(e.target.value)}
+                                    maxLength={200}
+                                    rows={2}
+                                    placeholder="VD: Có hộp quà miễn phí, tặng kèm thiệp, gói trong 24h..."
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
+                                />
+                                <div className="text-right text-xs text-gray-400 mt-1">{shortDescNote.length}/200</div>
+                            </div>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Mô tả sản phẩm" id="desc">
+                        {/* Giữ nguyên */}
+                        <div className="space-y-4">
+                            <DescriptionEditor value={desc} onChange={(val) => setDesc(val)} />
+                            <div className="text-right text-xs text-gray-400">Độ dài hiện tại: {desc.length} ký tự</div>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Thông tin bán hàng" id="sales">
+                        {/* Giữ nguyên Logic SKU Matrix */}
+                        <div className="mb-8">
+                            <FormLabel>Phân loại hàng</FormLabel>
+                            <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4">
+                                {tiers.map((tier, tIdx) => (
+                                    <div key={tIdx} className="bg-white p-4 rounded-lg border border-gray-200 relative shadow-sm">
+                                        <button onClick={() => removeTier(tIdx)} className="absolute top-3 right-3 text-gray-400 hover:text-red-500"><X size={18} /></button>
+                                        <div className="mb-4">
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Nhóm phân loại {tIdx + 1}</label>
+                                            <input className="block w-full border-b border-gray-200 py-1.5 text-sm font-semibold outline-none focus:border-orange-500 bg-transparent" placeholder="VD: Màu sắc, Kích thước" value={tier.name} onChange={e => updateTierName(tIdx, e.target.value)} />
+                                        </div>
+                                        <div className="space-y-3">
+                                            {tier.options.map((opt, oIdx) => (
+                                                <div key={oIdx} className="flex items-start gap-3 animate-in fade-in slide-in-from-left-2">
+                                                    <div className="flex-1 flex items-center border border-gray-300 rounded-lg bg-white px-3 h-10 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
+                                                        <input className="flex-1 outline-none text-sm" value={opt} onChange={(e) => { const n = [...tiers]; n[tIdx].options[oIdx] = e.target.value; setTiers(n); }} />
+                                                        <button onClick={() => removeOptionFromTier(tIdx, oIdx)} className="text-gray-400 hover:text-red-500 ml-2"><X size={14} /></button>
+                                                    </div>
+                                                    {tIdx === 0 && (
+                                                        <div className="shrink-0 w-10 h-10">
+                                                            {tier.images[oIdx] ? (
+                                                                <div className="w-full h-full rounded border border-gray-200 relative group overflow-hidden">
+                                                                    <img src={tier.images[oIdx]} className="w-full h-full object-cover" />
+                                                                    <button onClick={() => removeTierImage(tIdx, oIdx)} className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all"><X size={14} /></button>
+                                                                </div>
+                                                            ) : (
+                                                                <label className="w-full h-full border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 cursor-pointer hover:border-orange-500 hover:text-orange-500 hover:bg-orange-50 transition-all" title="Tải ảnh phân loại">
+                                                                    <ImagePlus size={16} />
+                                                                    <input type="file" hidden accept="image/*" onChange={(e) => e.target.files?.[0] && handleTierImageUpload(tIdx, oIdx, e.target.files[0])} />
+                                                                </label>
+                                                            )}
                                                         </div>
-                                                        {tIdx === 0 && (
-                                                            <div className="shrink-0 w-10 h-10">
-                                                                {tier.images[oIdx] ? (
-                                                                    <div className="w-full h-full rounded border border-gray-200 relative group overflow-hidden">
-                                                                        <img src={tier.images[oIdx]} className="w-full h-full object-cover" />
-                                                                        <button onClick={() => removeTierImage(tIdx, oIdx)} className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all"><X size={14} /></button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <label className="w-full h-full border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 cursor-pointer hover:border-orange-500 hover:text-orange-500 hover:bg-orange-50 transition-all" title="Tải ảnh phân loại">
-                                                                        <ImagePlus size={16} />
-                                                                        <input type="file" hidden accept="image/*" onChange={(e) => e.target.files?.[0] && handleTierImageUpload(tIdx, oIdx, e.target.files[0])} />
-                                                                    </label>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex-1 max-w-[200px]">
-                                                        <input className="w-full text-sm border border-dashed border-orange-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-100 placeholder:text-orange-400 text-orange-700 bg-orange-50/30" placeholder="+ Thêm phân loại (Enter)" onKeyDown={(e) => { if (e.key === 'Enter') { addOptionToTier(tIdx, e.currentTarget.value); e.currentTarget.value = ''; } }} />
-                                                    </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1 max-w-[200px]">
+                                                    <input className="w-full text-sm border border-dashed border-orange-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-100 placeholder:text-orange-400 text-orange-700 bg-orange-50/30" placeholder="+ Thêm phân loại (Enter)" onKeyDown={(e) => { if (e.key === 'Enter') { addOptionToTier(tIdx, e.currentTarget.value); e.currentTarget.value = ''; } }} />
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
-                                    {tiers.length < MAX_TIERS && (
-                                        <button onClick={addTier} className="flex items-center gap-2 text-orange-600 border border-orange-200 bg-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-50 transition-colors w-full justify-center border-dashed"><Plus size={16} /> Thêm nhóm phân loại {tiers.length + 1} <span className="text-xs text-orange-400">(tối đa {MAX_TIERS})</span></button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="mb-8">
-                                <FormLabel required>Giá bán & Kho hàng</FormLabel>
-                                {tiers.length === 0 ? (
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div><FormLabel>Giá bán (₫)</FormLabel><InputField type="number" value={singlePrice} onChange={(e: any) => setSinglePrice(e.target.value)} /></div>
-                                        <div><FormLabel>Kho hàng</FormLabel><InputField type="number" value={singleStock} onChange={(e: any) => setSingleStock(e.target.value)} /></div>
                                     </div>
-                                ) : (
-                                    <div className="border border-gray-200 rounded-xl overflow-hidden">
-                                        {/* ... Bulk Edit UI ... */}
-                                        {skuRows.length > 0 && (
-                                            <div className="bg-orange-50 p-3 flex flex-wrap gap-2 items-center text-xs border-b border-orange-100">
-                                                <span className="font-bold text-orange-700 mr-2">Áp dụng nhanh:</span>
-                                                <input id="bulk-price" type="number" placeholder="Giá bán" className="w-24 border border-orange-200 rounded px-2 py-1 focus:border-orange-500 outline-none" />
-                                                <input id="bulk-stock" type="number" placeholder="Kho" className="w-20 border border-orange-200 rounded px-2 py-1 focus:border-orange-500 outline-none" />
-                                                <input id="bulk-sku" placeholder="Mã SKU" className="w-24 border border-orange-200 rounded px-2 py-1 focus:border-orange-500 outline-none" />
-                                                <button onClick={() => { const p = Number((document.getElementById('bulk-price') as HTMLInputElement).value); const s = Number((document.getElementById('bulk-stock') as HTMLInputElement).value); const k = (document.getElementById('bulk-sku') as HTMLInputElement).value; handleBulkApply(p, s, k); }} className="bg-orange-600 text-white px-3 py-1 rounded font-bold hover:bg-orange-700 transition-colors">Áp dụng</button>
-                                            </div>
-                                        )}
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
-                                                <tr><th className="px-4 py-3 font-medium">Phân loại</th><th className="px-4 py-3 font-medium">Giá bán (₫)</th><th className="px-4 py-3 font-medium">Kho hàng</th><th className="px-4 py-3 font-medium">SKU</th></tr>
-                                            </thead>
-                                            <tbody>
-                                                {skuRows.length === 0 ? (<tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 italic bg-white">Vui lòng thiết lập phân loại hàng trước</td></tr>) : (
-                                                    skuRows.map((r, i) => (
-                                                        <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
-                                                            <td className="px-4 py-2 font-medium text-gray-800">{r.key}</td>
-                                                            <td className="px-4 py-2"><input type="number" className="border border-gray-300 rounded w-full px-2 py-1.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all" value={r.price} onChange={e => updateSkuRow(i, 'price', e.target.value)} /></td>
-                                                            <td className="px-4 py-2"><input type="number" className="border border-gray-300 rounded w-full px-2 py-1.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all" value={r.stock} onChange={e => updateSkuRow(i, 'stock', e.target.value)} /></td>
-                                                            <td className="px-4 py-2"><input className="border border-gray-300 rounded w-full px-2 py-1.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all" value={r.sku} onChange={e => updateSkuRow(i, 'sku', e.target.value)} /></td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                ))}
+                                {tiers.length < MAX_TIERS && (
+                                    <button onClick={addTier} className="flex items-center gap-2 text-orange-600 border border-orange-200 bg-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-50 transition-colors w-full justify-center border-dashed"><Plus size={16} /> Thêm nhóm phân loại {tiers.length + 1} <span className="text-xs text-orange-400">(tối đa {MAX_TIERS})</span></button>
                                 )}
                             </div>
+                        </div>
 
-                            <div className="mb-8">
-                                <div className="flex items-center justify-between mb-3">
-                                    <FormLabel helpText="Giúp khách hàng chọn đúng size, giảm tỷ lệ trả hàng.">Bảng quy đổi kích cỡ</FormLabel>
-                                    <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                                        <button onClick={() => setSizeChartMode('template')} className={classNames("text-xs font-semibold px-3 py-1.5 rounded-md transition-all", sizeChartMode === 'template' ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-700")}>Chọn Template</button>
-                                        <button onClick={() => setSizeChartMode('image')} className={classNames("text-xs font-semibold px-3 py-1.5 rounded-md transition-all", sizeChartMode === 'image' ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-700")}>Tải ảnh lên</button>
-                                    </div>
+                        <div className="mb-8">
+                            <FormLabel required>Giá bán & Kho hàng</FormLabel>
+                            {tiers.length === 0 ? (
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div><FormLabel>Giá bán (₫)</FormLabel><InputField type="number" value={singlePrice} onChange={(e: any) => setSinglePrice(e.target.value)} /></div>
+                                    <div><FormLabel>Kho hàng</FormLabel><InputField type="number" value={singleStock} onChange={(e: any) => setSingleStock(e.target.value)} /></div>
                                 </div>
-                                {sizeChartMode === 'template' ? (
-                                    <div className="bg-gray-50/50 border border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all">
-                                        {/* ... Logic template giữ nguyên ... */}
-                                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-orange-100 border border-orange-50"><Ruler size={28} className="text-orange-500" /></div>
-                                        {sizeChartImage ? (
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-sm font-semibold text-green-600 mb-1 flex items-center gap-1"><CheckCircle2 size={16} /> Đã tạo bảng quy đổi</p>
-                                                <div className="w-[120px] aspect-[3/4] rounded border border-gray-200 overflow-hidden mb-3 relative group cursor-pointer" onClick={() => setShowSizeChartGenerator(true)}>
-                                                    <img src={sizeChartImage} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-white text-xs font-bold">Chỉnh sửa</span></div>
-                                                </div>
-                                                <button onClick={() => setShowSizeChartGenerator(true)} className="text-sm text-orange-600 font-medium hover:underline">Tạo lại bảng khác</button>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <h4 className="text-sm font-semibold text-gray-800 mb-1">Chưa có bảng quy đổi nào</h4>
-                                                <p className="text-xs text-gray-500 mb-4 max-w-xs">Tạo bảng quy đổi chuẩn giúp khách hàng dễ dàng lựa chọn sản phẩm hơn.</p>
-                                                <button onClick={() => setShowSizeChartGenerator(true)} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-orange-200 text-orange-600 text-sm font-bold rounded-lg hover:bg-orange-50 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"><Plus size={16} strokeWidth={2.5} /> Thiết lập bảng quy đổi</button>
-                                            </>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-3 transition-all">
-                                        <div className="w-[140px]">
-                                            {sizeChartImage ? (
-                                                <MediaItem type="image" index={0} url={sizeChartImage} onRemove={() => setSizeChartImage(null)} ratio="3:4" />
-                                            ) : (
-                                                <label>
-                                                    <UploadBox label="Tải ảnh bảng size" ratio="3:4" icon={<TableProperties size={24} />} />
-                                                    <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'sizeChart')} />
-                                                </label>
+                            ) : (
+                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                    {/* ... Bulk Edit UI ... */}
+                                    {skuRows.length > 0 && (
+                                        <div className="bg-orange-50 p-3 flex flex-wrap gap-2 items-center text-xs border-b border-orange-100">
+                                            <span className="font-bold text-orange-700 mr-2">Áp dụng nhanh:</span>
+                                            <input id="bulk-price" type="number" placeholder="Giá bán" className="w-24 border border-orange-200 rounded px-2 py-1 focus:border-orange-500 outline-none" />
+                                            <input id="bulk-stock" type="number" placeholder="Kho" className="w-20 border border-orange-200 rounded px-2 py-1 focus:border-orange-500 outline-none" />
+                                            <input id="bulk-sku" placeholder="Mã SKU" className="w-24 border border-orange-200 rounded px-2 py-1 focus:border-orange-500 outline-none" />
+                                            <button onClick={() => { const p = Number((document.getElementById('bulk-price') as HTMLInputElement).value); const s = Number((document.getElementById('bulk-stock') as HTMLInputElement).value); const k = (document.getElementById('bulk-sku') as HTMLInputElement).value; handleBulkApply(p, s, k); }} className="bg-orange-600 text-white px-3 py-1 rounded font-bold hover:bg-orange-700 transition-colors">Áp dụng</button>
+                                        </div>
+                                    )}
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+                                            <tr><th className="px-4 py-3 font-medium">Phân loại</th><th className="px-4 py-3 font-medium">Giá bán (₫)</th><th className="px-4 py-3 font-medium">Kho hàng</th><th className="px-4 py-3 font-medium">SKU</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {skuRows.length === 0 ? (<tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 italic bg-white">Vui lòng thiết lập phân loại hàng trước</td></tr>) : (
+                                                skuRows.map((r, i) => (
+                                                    <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
+                                                        <td className="px-4 py-2 font-medium text-gray-800">{r.key}</td>
+                                                        <td className="px-4 py-2"><input type="number" className="border border-gray-300 rounded w-full px-2 py-1.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all" value={r.price} onChange={e => updateSkuRow(i, 'price', e.target.value)} /></td>
+                                                        <td className="px-4 py-2"><input type="number" className="border border-gray-300 rounded w-full px-2 py-1.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all" value={r.stock} onChange={e => updateSkuRow(i, 'stock', e.target.value)} /></td>
+                                                        <td className="px-4 py-2"><input className="border border-gray-300 rounded w-full px-2 py-1.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all" value={r.sku} onChange={e => updateSkuRow(i, 'sku', e.target.value)} /></td>
+                                                    </tr>
+                                                ))
                                             )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mb-8">
+                            <div className="flex items-center justify-between mb-3">
+                                <FormLabel helpText="Giúp khách hàng chọn đúng size, giảm tỷ lệ trả hàng.">Bảng quy đổi kích cỡ</FormLabel>
+                                <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                                    <button onClick={() => setSizeChartMode('template')} className={classNames("text-xs font-semibold px-3 py-1.5 rounded-md transition-all", sizeChartMode === 'template' ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-700")}>Chọn Template</button>
+                                    <button onClick={() => setSizeChartMode('image')} className={classNames("text-xs font-semibold px-3 py-1.5 rounded-md transition-all", sizeChartMode === 'image' ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-700")}>Tải ảnh lên</button>
+                                </div>
+                            </div>
+                            {sizeChartMode === 'template' ? (
+                                <div className="bg-gray-50/50 border border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all">
+                                    {/* ... Logic template giữ nguyên ... */}
+                                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-orange-100 border border-orange-50"><Ruler size={28} className="text-orange-500" /></div>
+                                    {sizeChartImage ? (
+                                        <div className="flex flex-col items-center">
+                                            <p className="text-sm font-semibold text-green-600 mb-1 flex items-center gap-1"><CheckCircle2 size={16} /> Đã tạo bảng quy đổi</p>
+                                            <div className="w-[120px] aspect-[3/4] rounded border border-gray-200 overflow-hidden mb-3 relative group cursor-pointer" onClick={() => setShowSizeChartGenerator(true)}>
+                                                <img src={sizeChartImage} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-white text-xs font-bold">Chỉnh sửa</span></div>
+                                            </div>
+                                            <button onClick={() => setShowSizeChartGenerator(true)} className="text-sm text-orange-600 font-medium hover:underline">Tạo lại bảng khác</button>
                                         </div>
-                                        <p className="text-xs text-gray-500 italic">* Khuyến khích sử dụng ảnh tỉ lệ 3:4 để hiển thị tốt nhất trên điện thoại.</p>
+                                    ) : (
+                                        <>
+                                            <h4 className="text-sm font-semibold text-gray-800 mb-1">Chưa có bảng quy đổi nào</h4>
+                                            <p className="text-xs text-gray-500 mb-4 max-w-xs">Tạo bảng quy đổi chuẩn giúp khách hàng dễ dàng lựa chọn sản phẩm hơn.</p>
+                                            <button onClick={() => setShowSizeChartGenerator(true)} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-orange-200 text-orange-600 text-sm font-bold rounded-lg hover:bg-orange-50 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"><Plus size={16} strokeWidth={2.5} /> Thiết lập bảng quy đổi</button>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-3 transition-all">
+                                    <div className="w-[140px]">
+                                        {sizeChartImage ? (
+                                            <MediaItem type="image" index={0} url={sizeChartImage} onRemove={() => setSizeChartImage(null)} ratio="3:4" />
+                                        ) : (
+                                            <label>
+                                                <UploadBox label="Tải ảnh bảng size" ratio="3:4" icon={<TableProperties size={24} />} />
+                                                <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'sizeChart')} />
+                                            </label>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 italic">* Khuyến khích sử dụng ảnh tỉ lệ 3:4 để hiển thị tốt nhất trên điện thoại.</p>
+                                </div>
+                            )}
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Vận chuyển" id="shipping">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div><FormLabel required subText="Trọng lượng sau đóng gói">Cân nặng (Gram)</FormLabel><InputField type="number" suffix="gr" value={weight} onChange={(e: any) => setWeight(Number(e.target.value))} /></div>
+                            <div>
+                                <FormLabel required subText="Kích thước sau đóng gói (D x R x C)">Kích thước (cm)</FormLabel>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="relative"><input className="w-full h-11 border border-gray-300 rounded-lg px-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 outline-none" placeholder="Dài" type="number" value={length} onChange={(e) => setLength(Number(e.target.value))} /><span className="absolute right-2 top-3.5 text-xs text-gray-400 pointer-events-none">cm</span></div>
+                                    <div className="relative"><input className="w-full h-11 border border-gray-300 rounded-lg px-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 outline-none" placeholder="Rộng" type="number" value={width} onChange={(e) => setWidth(Number(e.target.value))} /><span className="absolute right-2 top-3.5 text-xs text-gray-400 pointer-events-none">cm</span></div>
+                                    <div className="relative"><input className="w-full h-11 border border-gray-300 rounded-lg px-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 outline-none" placeholder="Cao" type="number" value={height} onChange={(e) => setHeight(Number(e.target.value))} /><span className="absolute right-2 top-3.5 text-xs text-gray-400 pointer-events-none">cm</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Cài đặt Mua kèm / Combo" id="cross-sell">
+                        <div className="mb-4">
+                            <div className="bg-blue-50 text-blue-700 px-4 py-3 rounded-lg text-sm mb-4 flex items-start gap-2"><Info size={16} className="mt-0.5 shrink-0" /><div><strong>Mẹo tăng doanh số:</strong> Chọn các sản phẩm thường được mua cùng nhau (Ví dụ: Giày + Tất, Điện thoại + Ốp lưng) để hiển thị trong mục "Thường được mua cùng" trên trang chi tiết.</div></div>
+                            <FormLabel>Chọn sản phẩm mua kèm</FormLabel>
+                            <CrossSellSelector selectedIds={crossSellIds} onChange={setCrossSellIds} />
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Thông tin khác" id="others">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                            <div>
+                                {/* [UPGRADE] Logic Tình trạng Mới/Cũ */}
+                                <FormLabel>Tình trạng</FormLabel>
+                                <SelectField
+                                    value={condition}
+                                    onChange={setCondition}
+                                    options={[
+                                        { label: 'Mới', value: 'new' },
+                                        { label: 'Đã qua sử dụng', value: 'used' }
+                                    ]}
+                                    placeholder="Chọn tình trạng"
+                                />
+
+                                {/* Dropdown % hiển thị khi chọn Đã qua sử dụng */}
+                                {condition === 'used' && (
+                                    <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                        <FormLabel subText="Đánh giá mức độ mới của sản phẩm">Độ mới (%)</FormLabel>
+                                        <SelectField
+                                            value={conditionPercent}
+                                            onChange={setConditionPercent}
+                                            options={CONDITION_PERCENTS}
+                                            placeholder="Chọn độ mới"
+                                        />
                                     </div>
                                 )}
                             </div>
-                        </SectionCard>
-
-                        <SectionCard title="Vận chuyển" id="shipping">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div><FormLabel required subText="Trọng lượng sau đóng gói">Cân nặng (Gram)</FormLabel><InputField type="number" suffix="gr" value={weight} onChange={(e: any) => setWeight(Number(e.target.value))} /></div>
-                                <div>
-                                    <FormLabel required subText="Kích thước sau đóng gói (D x R x C)">Kích thước (cm)</FormLabel>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div className="relative"><input className="w-full h-11 border border-gray-300 rounded-lg px-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 outline-none" placeholder="Dài" type="number" value={length} onChange={(e) => setLength(Number(e.target.value))} /><span className="absolute right-2 top-3.5 text-xs text-gray-400 pointer-events-none">cm</span></div>
-                                        <div className="relative"><input className="w-full h-11 border border-gray-300 rounded-lg px-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 outline-none" placeholder="Rộng" type="number" value={width} onChange={(e) => setWidth(Number(e.target.value))} /><span className="absolute right-2 top-3.5 text-xs text-gray-400 pointer-events-none">cm</span></div>
-                                        <div className="relative"><input className="w-full h-11 border border-gray-300 rounded-lg px-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 outline-none" placeholder="Cao" type="number" value={height} onChange={(e) => setHeight(Number(e.target.value))} /><span className="absolute right-2 top-3.5 text-xs text-gray-400 pointer-events-none">cm</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </SectionCard>
-
-                        <SectionCard title="Cài đặt Mua kèm / Combo" id="cross-sell">
-                            <div className="mb-4">
-                                <div className="bg-blue-50 text-blue-700 px-4 py-3 rounded-lg text-sm mb-4 flex items-start gap-2"><Info size={16} className="mt-0.5 shrink-0" /><div><strong>Mẹo tăng doanh số:</strong> Chọn các sản phẩm thường được mua cùng nhau (Ví dụ: Giày + Tất, Điện thoại + Ốp lưng) để hiển thị trong mục "Thường được mua cùng" trên trang chi tiết.</div></div>
-                                <FormLabel>Chọn sản phẩm mua kèm</FormLabel>
-                                <CrossSellSelector selectedIds={crossSellIds} onChange={setCrossSellIds} />
-                            </div>
-                        </SectionCard>
-
-                        <SectionCard title="Thông tin khác" id="others">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                                <div>
-                                    {/* [UPGRADE] Logic Tình trạng Mới/Cũ */}
-                                    <FormLabel>Tình trạng</FormLabel>
-                                    <SelectField
-                                        value={condition}
-                                        onChange={setCondition}
-                                        options={[
-                                            { label: 'Mới', value: 'new' },
-                                            { label: 'Đã qua sử dụng', value: 'used' }
-                                        ]}
-                                        placeholder="Chọn tình trạng"
-                                    />
-
-                                    {/* Dropdown % hiển thị khi chọn Đã qua sử dụng */}
-                                    {condition === 'used' && (
-                                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                                            <FormLabel subText="Đánh giá mức độ mới của sản phẩm">Độ mới (%)</FormLabel>
-                                            <SelectField
-                                                value={conditionPercent}
-                                                onChange={setConditionPercent}
-                                                options={CONDITION_PERCENTS}
-                                                placeholder="Chọn độ mới"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                                <div><FormLabel>SKU sản phẩm</FormLabel><InputField placeholder="Mã SKU (nếu có)" /></div>
-                            </div>
-                        </SectionCard>
+                            <div><FormLabel>SKU sản phẩm</FormLabel><InputField placeholder="Mã SKU (nếu có)" /></div>
+                        </div>
+                    </SectionCard>
 
                 </div>
 
