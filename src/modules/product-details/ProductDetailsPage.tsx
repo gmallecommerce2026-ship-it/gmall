@@ -80,12 +80,13 @@ const normalizeProductData = (raw: any): Product => {
   // --- BẮT ĐẦU ĐOẠN SỬA LỖI LẤY VIDEO ---
   let videos: string[] = [];
   
-  // Trường hợp 1: API trả về mảng videos ở cấp ngoài cùng
-  if (Array.isArray(raw.videos)) {
+  // Ưu tiên 1: Lấy từ mảng raw.videos (nếu có và không rỗng)
+  if (Array.isArray(raw.videos) && raw.videos.length > 0) {
     videos = raw.videos.map((vid: any) => typeof vid === 'string' ? vid : vid.url).filter(Boolean);
   } 
-  // Trường hợp 2: Lấy videos từ chuỗi JSON attributes (Fix lỗi không hiện video)
-  else if (raw.attributes) {
+  
+  // Ưu tiên 2: Nếu videos vẫn rỗng, đào tiếp vào attributes
+  if (videos.length === 0 && raw.attributes) {
     try {
       const parsedAttributes = typeof raw.attributes === 'string' 
         ? JSON.parse(raw.attributes) 
@@ -98,6 +99,9 @@ const normalizeProductData = (raw: any): Product => {
       console.error("Lỗi parse attributes để lấy videos:", error);
     }
   }
+
+  // ĐẶT LOG Ở ĐÂY ĐỂ DEBUG TRÊN TERMINAL NODE.JS HOẶC BROWSER CONSOLE
+  console.log("🚨 [DEBUG] Dữ liệu Video sau khi bóc tách:", videos);
   // --- KẾT THÚC ĐOẠN SỬA LỖI ---
 
   // 3. Xử lý Variations
