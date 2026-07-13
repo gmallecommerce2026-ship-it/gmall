@@ -1,13 +1,13 @@
 // src/modules/seller/products/AddProductPage.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     CheckCircle2, AlertCircle, Image as ImageIcon, Video,
     Plus, ChevronDown, ChevronUp, Info, Truck, Box, Flame,
     Edit2, Smartphone, Eye, HelpCircle, X,
     Star, Play, Film, ImagePlus, Ruler, TableProperties,
-    Check, Link as LinkIcon // [UPGRADE] Thêm icon Link
+    Check, Link as LinkIcon, Search // [UPGRADE] Thêm icon Link
 } from 'lucide-react';
 import classNames from 'classnames';
 import { api } from '@/services/api';
@@ -215,7 +215,106 @@ const SelectField = ({ placeholder, value, onChange, options = [] }: any) => (
         <ChevronDown className="text-gray-400 group-hover:text-orange-500 transition-colors" size={18} />
     </div>
 );
+const SearchableSelectField = ({ placeholder, value, onChange, options = [] }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
+    // Đóng dropdown khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Lọc danh sách theo từ khóa tìm kiếm
+    const filteredOptions = options.filter((opt: any) => {
+        const label = typeof opt === 'object' ? opt.label : opt;
+        return label.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    // Lấy label của item đang được chọn để hiển thị
+    const selectedLabel = useMemo(() => {
+        if (!value) return placeholder || "Vui lòng chọn";
+        const selected = options.find((o: any) => (typeof o === 'object' ? o.value === value : o === value));
+        return selected ? (typeof selected === 'object' ? selected.label : selected) : value;
+    }, [value, options, placeholder]);
+
+    return (
+        <div ref={dropdownRef} className="relative w-full">
+            {/* Box hiển thị (Nút bấm mở dropdown) */}
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                className={classNames(
+                    "flex items-center justify-between border rounded-lg bg-white h-11 px-3 w-full cursor-pointer transition-all duration-200 group",
+                    isOpen ? "border-orange-500 ring-2 ring-orange-100" : "border-gray-300 hover:border-orange-500"
+                )}
+            >
+                <span className={classNames("text-sm truncate", value ? "text-gray-900 font-medium" : "text-gray-400")}>
+                    {selectedLabel}
+                </span>
+                <ChevronDown className={classNames("text-gray-400 transition-transform", isOpen && "rotate-180")} size={18} />
+            </div>
+
+            {/* Dropdown List */}
+            {isOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    {/* Thanh Search dính chặt ở trên (Sticky) */}
+                    <div className="p-2 border-b border-gray-100 shrink-0 bg-gray-50 z-10">
+                        <div className="flex items-center px-2 py-1.5 bg-white border border-gray-300 rounded-md focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
+                            <Search size={14} className="text-gray-400 mr-2 shrink-0" />
+                            <input
+                                type="text"
+                                className="w-full bg-transparent outline-none text-sm text-gray-700"
+                                placeholder="Tìm kiếm thương hiệu..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onClick={(e) => e.stopPropagation()} // Ngăn chặn việc click vào input làm đóng dropdown
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+
+                    {/* Danh sách options */}
+                    <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map((opt: any) => {
+                                const val = typeof opt === 'object' ? opt.value : opt;
+                                const label = typeof opt === 'object' ? opt.label : opt;
+                                const isSelected = val === value;
+                                return (
+                                    <div
+                                        key={val}
+                                        onClick={() => {
+                                            onChange(val);
+                                            setIsOpen(false);
+                                            setSearchTerm(''); // Reset search khi chọn xong
+                                        }}
+                                        className={classNames(
+                                            "px-3 py-2 text-sm rounded-md cursor-pointer transition-colors flex items-center justify-between",
+                                            isSelected ? "bg-orange-50 text-orange-600 font-medium" : "text-gray-700 hover:bg-gray-50"
+                                        )}
+                                    >
+                                        {label}
+                                        {isSelected && <Check size={16} className="text-orange-500" />}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="px-3 py-6 text-sm text-gray-500 text-center italic">
+                                Không tìm thấy thương hiệu "{searchTerm}"
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 // --- Main Page Component ---
 
 // Spec [0018]: block paste link Shopee/Tiki -> BE crawl -> trả brand/name/image
@@ -1008,9 +1107,9 @@ const AddProductPage = () => {
                         />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                            <div>
+                            <div className="relative z-[60]"> {/* Thêm z-index để dropdown đè lên các input bên dưới */}
                                 <FormLabel required>Thương hiệu</FormLabel>
-                                <SelectField
+                                <SearchableSelectField
                                     value={brand}
                                     onChange={setBrand}
                                     options={brandsList.length > 0 ? brandsList : [{ label: 'No Brand', value: 'No Brand' }]}
