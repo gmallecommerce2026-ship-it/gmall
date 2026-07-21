@@ -31,20 +31,23 @@ export const CategoryService = {
     });
     return response.data;
   },
-  
+  getBySlug: async (slug: string): Promise<any> => {
+    const response = await apiClient.get(`/categories/slug/${slug}`);
+    return Array.isArray(response) ? response : (response?.data || response);
+  },
   // Lấy full tree (breadcrumbs) bằng ID danh mục lá (dùng cho edit product hoặc SEO)
   getBreadcrumbs: async (leafId: string): Promise<Category[]> => {
     console.log(`[CategoryService] Đang gọi API lấy breadcrumb cho ID:`, leafId);
-    
+
     try {
       const response = await apiClient.get(`/categories/${leafId}/breadcrumbs`);
-      
+
       console.log(`[CategoryService] API Response Raw:`, response);
 
       // Xử lý linh hoạt cả 2 trường hợp response bọc data hoặc không
       // Nhiều axios interceptor sẽ trả về data trực tiếp, số khác trả về object { data: ... }
       const data = Array.isArray(response) ? response : (response?.data || []);
-      
+
       console.log(`[CategoryService] Dữ liệu sau khi xử lý:`, data);
       return data;
     } catch (error) {
@@ -55,11 +58,11 @@ export const CategoryService = {
 
   getTree: async (): Promise<CategoryTreeItem[]> => {
     const response = await apiClient.get('/categories/tree');
-    
+
     // [QUAN TRỌNG] Kiểm tra cấu trúc response của ApiClient
     // Nếu ApiClient trả về mảng trực tiếp -> dùng response
     if (Array.isArray(response)) return response;
-    
+
     // Nếu trả về object { data: [...] } -> dùng response.data
     return response?.data || [];
   },

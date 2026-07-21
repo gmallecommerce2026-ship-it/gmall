@@ -150,7 +150,7 @@ const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({
         <div className="flex justify-between items-center pb-4 border-b border-gray-200">
           <h2 className="font-sans text-lg font-bold flex items-center gap-2 uppercase">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 10.6667H9.5V9.33333H6.5V10.6667ZM2.5 5.33333V6.66667H13.5V5.33333H2.5ZM4.5 9.66667V8.33333H11.5V9.66667H4.5Z" fill="black"/></svg>
-            Bộ lọc tìm kiếm 1
+            Bộ lọc tìm kiếm
           </h2>
         </div>
 
