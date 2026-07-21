@@ -24,6 +24,7 @@ const ProductPageContent = () => {
   const [childCategories, setChildCategories] = useState<any[]>([]);
 
   // Khi URL có categorySlug, gọi API lấy info Category đó + list Children
+  // Nếu không có, hiển thị danh sách tất cả Danh mục gốc
   useEffect(() => {
     if (categorySlug) {
       CategoryService.getBySlug(categorySlug)
@@ -39,8 +40,19 @@ const ProductPageContent = () => {
           setChildCategories([]);
         });
     } else {
-      setCurrentCategory(null);
-      setChildCategories([]);
+      // SỬA LỖI TẠI ĐÂY: Khi không có categorySlug, tải toàn bộ danh mục gốc
+      CategoryService.getTree()
+        .then((data) => {
+          // Tạo một danh mục ảo đại diện cho Root
+          setCurrentCategory({ id: 'root', name: 'Tất cả danh mục', slug: '' });
+          // getTree trả về list level 1, ta đưa vào childCategories để render
+          setChildCategories(data || []);
+        })
+        .catch((err) => {
+          console.error("Lỗi fetch root categories:", err);
+          setCurrentCategory(null);
+          setChildCategories([]);
+        });
     }
   }, [categorySlug]);
 
@@ -48,8 +60,7 @@ const ProductPageContent = () => {
   const handleCategoryChange = (categoryId: string) => {
     const selectedCat = childCategories.find((c) => c.id === categoryId);
     if (selectedCat && selectedCat.slug) {
-      // Cast 'as any' vì interface FilterState của useProductFilters định nghĩa là { category?: string }
-      // nhưng helper getSearchUrl lại map qua 'categorySlug'
+      // Ép kiểu as any vì hook updateFilter nhận key linh động map xuống URL
       updateFilter({ categorySlug: selectedCat.slug } as any);
     }
   };
