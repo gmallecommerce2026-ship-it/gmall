@@ -26,31 +26,26 @@ const ProductPageContent = () => {
   // Khi URL có categorySlug, gọi API lấy info Category đó + list Children
   // Nếu không có, hiển thị danh sách tất cả Danh mục gốc
   useEffect(() => {
-    console.log("1. categorySlug hiện tại trên URL:", categorySlug);
-
     if (categorySlug) {
       CategoryService.getBySlug(categorySlug)
         .then((data) => {
-          console.log("2a. Dữ liệu từ getBySlug:", data);
           if (data) {
             setCurrentCategory({ id: data.id, name: data.name, slug: data.slug });
             setChildCategories(data.children || []);
           }
         })
         .catch((err) => {
-          console.error("Lỗi fetch category by slug:", err);
+          console.error("Lỗi fetch category:", err);
           setCurrentCategory(null);
           setChildCategories([]);
         });
     } else {
-      console.log("2b. Không có categorySlug, đang gọi getTree()...");
-      // Load toàn bộ danh mục cấp 1 khi chưa chọn gì
+      // ✅ SỬA LẠI NHÁNH NÀY: Gọi getTree() thay vì set null
       CategoryService.getTree()
         .then((data) => {
-          console.log("3. Dữ liệu từ getTree:", data);
-          // Tạo Root ảo để sidebar hiển thị
+          // Tạo một danh mục ảo đại diện cho Root
           setCurrentCategory({ id: 'root', name: 'TẤT CẢ DANH MỤC', slug: '' });
-          // Đảm bảo data là một mảng, nếu không sidebar sẽ không render được list
+          // getTree trả về list level 1, đưa vào childCategories để render
           setChildCategories(Array.isArray(data) ? data : []);
         })
         .catch((err) => {
