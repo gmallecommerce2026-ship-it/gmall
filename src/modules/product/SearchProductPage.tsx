@@ -13,6 +13,7 @@ import PromoBanner from "@/modules/product/components/PromoBanner";
 import Pagination from "@/components/ui/Pagination";
 import { CategoryService } from "@/services/category.service";
 import { humanizeTag } from "@/lib/tag-data";
+import { useProductFilters } from "@/hooks/useProductFilters"; // Đã thêm import hook này
 
 interface SearchProductPageProps {
   initialCategorySlug?: string;
@@ -30,6 +31,7 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { updateFilter } = useProductFilters(); // Khởi tạo hook
   
   const categorySlug = initialCategorySlug || searchParams.get('categorySlug') || '';
   const tag = initialTag || searchParams.get('tag') || '';
@@ -45,19 +47,29 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  
+  // States cho Sidebar & Title
   const [categoryDisplayName, setCategoryDisplayName] = useState("");
-  // Spec [0018]: filterKeys per category — đọc từ Category.filterKeys, truyền xuống sidebar
   const [categoryFilterKeys, setCategoryFilterKeys] = useState<any[]>([]);
+  const [currentCategory, setCurrentCategory] = useState<any>(null);
+  const [childCategories, setChildCategories] = useState<any[]>([]);
 
-  // Logic lấy tên danh mục hiển thị + filterKeys
+  // Logic lấy dữ liệu Category (Title, FilterKeys, Sidebar List)
   useEffect(() => {
-    const fetchCategoryName = async () => {
-        if (!categorySlug) {
-            setCategoryFilterKeys([]);
-            return;
-        }
+    const fetchCategoryData = async () => {
         try {
             const tree = await CategoryService.getTree();
+
+            // Nếu không có categorySlug trên URL -> Root level
+            if (!categorySlug) {
+                setCurrentCategory({ id: 'root', name: 'TẤT CẢ DANH MỤC', slug: '' });
+                setChildCategories(Array.isArray(tree) ? tree : []);
+                setCategoryDisplayName("");
+                setCategoryFilterKeys([]);
+                return;
+            }
+
+            // Nếu có categorySlug -> Tìm trong Tree
             const findCategoryBySlug = (items: any[], slug: string): any => {
                 for (const item of items) {
                     if (item.slug === slug) return item;
@@ -68,40 +80,52 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
                 }
                 return null;
             };
+
             const cat = findCategoryBySlug(tree, categorySlug);
+            
             if (cat) {
                 setCategoryDisplayName(cat.name);
-                // Parse filterKeys (Json column có thể là string hoặc array)
+                setCurrentCategory({ id: cat.id, name: cat.name, slug: cat.slug });
+                setChildCategories(cat.children || []);
+                
+                // Parse filterKeys
                 let fk: any[] = [];
                 try {
                     fk = typeof cat.filterKeys === 'string' ? JSON.parse(cat.filterKeys) : (Array.isArray(cat.filterKeys) ? cat.filterKeys : []);
                 } catch { fk = []; }
                 setCategoryFilterKeys(fk);
             } else {
+                // Fallback nếu không tìm thấy
                 const fallbackName = categorySlug.split('-')
                     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                     .join(' ');
                 setCategoryDisplayName(fallbackName);
+                setCurrentCategory(null);
+                setChildCategories([]);
                 setCategoryFilterKeys([]);
             }
         } catch (e) {
-            console.error(e);
+            console.error("Lỗi fetch categories:", e);
         }
     };
-    fetchCategoryName();
+    fetchCategoryData();
   }, [categorySlug]);
+
+  // Xử lý khi user chọn một category con trong Sidebar
+  const handleCategoryChange = useCallback((categoryId: string) => {
+    const selectedCat = childCategories.find((c) => c.id === categoryId);
+    if (selectedCat && selectedCat.slug) {
+      updateFilter({ categorySlug: selectedCat.slug } as any);
+    }
+  }, [childCategories, updateFilter]);
 
   // Breadcrumbs logic
   const breadcrumbItems = useMemo(() => {
     const items = [{ name: "Trang chủ", href: "/" }];
     if (categorySlug) {
-        // Khi categoryDisplayName chưa fetch xong, fallback NHẸ: human-ize slug
-        // (thay '-' bằng space + capitalize) thay vì hiện UUID/slug raw — fix #44.
         const fallback = (categorySlug || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         items.push({ name: categoryDisplayName || fallback, href: "#" });
     } else {
-        // #28: dùng humanizeTag để map tag slug → tên tiếng Việt thay vì hiện
-        // chuỗi raw kiểu "Tag: occasion_14_2_valentine".
         if (tag) items.push({ name: humanizeTag(tag), href: "#" });
         if (query) items.push({ name: `Tìm: "${query}"`, href: "#" });
     }
@@ -117,10 +141,6 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
 
   // Fetch Products Logic
   useEffect(() => {
-    console.log("🚀 [SearchPage] URL Params Check:");
-    console.log("   - Raw Search Param (q):", searchParams.get('q'));
-    console.log("   - Decoded Query variable:", query);
-    console.log("   - Tag:", tag);
     const fetchProducts = async () => {
       setLoading(true);
       try {
@@ -133,26 +153,16 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
         if (query) params.search = query;
         if (tag) params.tag = tag;
         if (categorySlug) params.categorySlug = categorySlug;
-
         if (minPrice) params.minPrice = minPrice;
         if (maxPrice) params.maxPrice = maxPrice;
         if (rating) params.rating = rating;
         if (locations) params.locations = locations; 
 
-        // Gọi API
         const res: any = await apiClient.get('/store/products', { params });
 
-        // [FIXED] Sửa lại logic xử lý response
         if (res) {
-          // 1. Lấy danh sách sản phẩm
-          // API trả về { data: [...], meta: {...} }
-          // Nên ta lấy res.data trực tiếp
           const productList = Array.isArray(res.data) ? res.data : [];
           setProducts(productList);
-
-          // 2. Lấy Total
-          // Total nằm ngang hàng với data trong object res (res.total hoặc res.meta.total)
-          // KHÔNG dùng biến trung gian để unwrap nữa
           const totalCount = res.meta?.total || res.total || 0;
           setTotal(Number(totalCount));
         }
@@ -166,8 +176,6 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
     };
 
     fetchProducts();
-    // hooks-fix wiki 0031: searchParams chỉ dùng cho log debug; thêm vào deps sẽ
-    // gây refetch khi URL params chuyển dạng (vd hash) — disable rule.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, sort, page, tag, minPrice, maxPrice, rating, locations, categorySlug]);
 
@@ -176,7 +184,6 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
     : (tag 
         ? `TAG: ${tag.toUpperCase()}` 
         : (query 
-            // [FIX] Nếu query có dấu phẩy, hiển thị dấu cộng cho đẹp
             ? `TÌM KIẾM: "${query.split(',').join(' + ').toUpperCase()}"` 
             : "TẤT CẢ SẢN PHẨM"
           )
@@ -191,7 +198,14 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
 
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           <div className="w-full lg:w-[250px] flex-shrink-0 hidden lg:block">
-            <ProductFilterSidebar dynamicFilters={categoryFilterKeys} />
+            {/* ĐÃ CẬP NHẬT: Truyền đầy đủ props cho Sidebar */}
+            <ProductFilterSidebar 
+              dynamicFilters={categoryFilterKeys} 
+              currentCategory={currentCategory}
+              childCategories={childCategories}
+              selectedCategoryId={null} 
+              onCategoryChange={handleCategoryChange}
+            />
           </div>
 
           <div className="flex-1 min-w-0">
