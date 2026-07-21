@@ -1,17 +1,13 @@
 // src/components/layout/Footer.tsx
 import React from "react";
-import Link from "next/link"; // Dùng Link của Next.js để tối ưu
-import { FaFacebookF, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa"; // [Gợi ý] Nên dùng icon vector (react-icons) thay vì ảnh png để nét hơn.
+import Link from "next/link";
 import NewsletterForm from "./NewsletterForm";
-// Nếu bạn chưa cài react-icons, có thể giữ lại logic ảnh cũ, nhưng ở đây mình sẽ code theo hướng ảnh cũ của bạn cho an toàn, nhưng style lại.
+import { ContentService } from "@/services/ContentService";
 
 // --- DATA DEFINITION ---
 
-// #46: chỉ giữ link tới page đang tồn tại trong app (avoid 404). Các page
-// "coming soon" như /about /careers /shipping... được wrap chung bằng route
-// /terms (Điều khoản dịch vụ) và /privacy (Chính sách bảo mật) — sau khi
-// admin CMS triển khai page riêng, đổi href ở đây.
-const FOOTER_LINKS = {
+// Cấu hình mặc định phòng trường hợp API lỗi hoặc chưa có data
+const DEFAULT_FOOTER_LINKS = {
   about: {
     title: "Về chúng tôi",
     links: [
@@ -66,7 +62,7 @@ const FooterTitle = ({ children }: { children: React.ReactNode }) => (
 const FooterLinkItem = ({ label, href }: { label: string; href: string }) => (
   <li>
     <Link 
-      href={href} 
+      href={href || "#"} 
       className="text-[13px] text-gray-500 hover:text-brand-orange hover:pl-1 transition-all duration-200 block py-1"
     >
       {label}
@@ -74,11 +70,28 @@ const FooterLinkItem = ({ label, href }: { label: string; href: string }) => (
   </li>
 );
 
-const Footer = () => {
+// Chuyển Footer thành một Async Server Component để Fetch dữ liệu trực tiếp
+const Footer = async () => {
+  let footerLinks = DEFAULT_FOOTER_LINKS;
+
+  // Lấy dữ liệu cấu hình Footer từ hệ thống CMS Backend
+  try {
+    const data = await ContentService.getConfig('FOOTER_DATA');
+    if (data && Object.keys(data).length > 0) {
+      footerLinks = {
+        about: data.about || footerLinks.about,
+        support: data.support || footerLinks.support,
+        policy: data.policy || footerLinks.policy,
+      };
+    }
+  } catch (error) {
+    console.error("Lỗi lấy dữ liệu Footer từ Backend:", error);
+  }
+
   return (
     <footer className="w-full bg-white border-t border-gray-100 font-roboto pt-10">
       
-      {/* 1. NEWSLETTER SECTION (MỚI - Tăng độ chuyên nghiệp) */}
+      {/* 1. NEWSLETTER SECTION */}
       <div className="w-full max-w-[1340px] mx-auto px-4 lg:px-6 mb-12">
         <div className="bg-gray-50 rounded-lg p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="md:w-1/2">
@@ -122,22 +135,22 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Cột 2: Về chúng tôi (Chiếm 2/12) */}
+          {/* Cột 2: Cột động - Về chúng tôi (Chiếm 2/12) */}
           <div className="lg:col-span-2">
-            <FooterTitle>{FOOTER_LINKS.about.title}</FooterTitle>
+            <FooterTitle>{footerLinks.about.title}</FooterTitle>
             <ul className="flex flex-col gap-2">
-              {FOOTER_LINKS.about.links.map((link, idx) => (
-                <FooterLinkItem key={idx} {...link} />
+              {(footerLinks.about.links || []).map((link: any, idx: number) => (
+                <FooterLinkItem key={`about-${idx}`} {...link} />
               ))}
             </ul>
           </div>
 
-          {/* Cột 3: Hỗ trợ (Chiếm 3/12) */}
+          {/* Cột 3: Cột động - Hỗ trợ (Chiếm 3/12) */}
           <div className="lg:col-span-3">
-            <FooterTitle>{FOOTER_LINKS.support.title}</FooterTitle>
+            <FooterTitle>{footerLinks.support.title}</FooterTitle>
             <ul className="flex flex-col gap-2">
-              {FOOTER_LINKS.support.links.map((link, idx) => (
-                <FooterLinkItem key={idx} {...link} />
+              {(footerLinks.support.links || []).map((link: any, idx: number) => (
+                <FooterLinkItem key={`support-${idx}`} {...link} />
               ))}
             </ul>
           </div>
@@ -173,7 +186,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* 3. COPYRIGHT BOTTOM BAR (Chuẩn thông tin doanh nghiệp) */}
+      {/* 3. COPYRIGHT BOTTOM BAR */}
       <div className="bg-[#F8F9FA] border-t border-gray-200 py-6">
          <div className="w-full max-w-[1340px] mx-auto px-4 lg:px-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -191,7 +204,6 @@ const Footer = () => {
             </div>
          </div>
       </div>
-
     </footer>
   );
 };
