@@ -4,12 +4,19 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useProductFilters } from "@/hooks/useProductFilters";
-import { filterLocations, filterBrands } from "@/lib/mock-data"; // Vẫn dùng tạm danh sách mock để render option
+import { filterLocations } from "@/lib/mock-data"; 
 import FilterCheckbox from "@/components/ui/FilterCheckbox";
-import RatingFilter from "@/components/ui/RatingFilter"; // Cần sửa component này để nhận onClick
 import Button from "@/components/ui/Button";
+import { ChevronDown, ChevronUp } from "lucide-react"; // Đảm bảo bạn đã cài lucide-react
 
-// Spec [0018]: filter per category — admin định nghĩa qua Category.filterKeys.
+// 1. Interfaces cho Danh mục
+interface CategoryItem {
+  id: string;
+  name: string;
+  slug?: string;
+}
+
+// 2. Interfaces cũ của bạn cho Dynamic Filters
 interface DynamicFilter {
   key: string;
   label: string;
@@ -21,6 +28,11 @@ interface DynamicFilter {
 
 interface ProductFilterSidebarProps {
   dynamicFilters?: DynamicFilter[];
+  // Bổ sung props cho phần Danh mục ở trên
+  currentCategory?: CategoryItem;
+  childCategories?: CategoryItem[];
+  selectedCategoryId?: string | null;
+  onCategoryChange?: (categoryId: string) => void;
 }
 
 // Component con để render section
@@ -34,16 +46,26 @@ const FilterSection: React.FC<{ title: string; children: React.ReactNode; isOpen
   </div>
 );
 
-const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({ dynamicFilters = [] }) => {
+const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({ 
+  dynamicFilters = [],
+  currentCategory,
+  childCategories = [],
+  selectedCategoryId,
+  onCategoryChange
+}) => {
   const { filters, toggleLocation, setPriceRange, setRating, clearAll } = useProductFilters();
-
-  // Spec [0018]: dynamic filter state — đẩy vào URL params với prefix `attr_<key>`
-  // để BE parse được khi muốn lọc thêm. Hiện tại ta giữ ở client-side cho đơn giản:
-  // hiển thị UI + lưu chọn lựa, BE filtering sẽ làm pass riêng (chỉ đụng URL).
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // --- STATE CHO DANH MỤC ---
+  const [isCategoryExpanded, setIsCategoryExpanded] = useState(false);
+  const VISIBLE_COUNT = 5;
+  const visibleCategories = isCategoryExpanded 
+    ? childCategories 
+    : childCategories.slice(0, VISIBLE_COUNT);
+
+  // --- LOGIC DYNAMIC FILTERS (Cũ của bạn) ---
   const setDynamicFilter = (key: string, value: string | string[] | { min?: number; max?: number }) => {
     const params = new URLSearchParams(searchParams.toString());
     const paramKey = `attr_${key}`;
@@ -72,12 +94,10 @@ const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({ dynamicFilt
     return raw;
   };
 
-  // State local cho input giá để tránh trigger URL liên tục khi gõ
+  // --- LOGIC PRICE RANGE (Cũ của bạn) ---
   const [localPrice, setLocalPrice] = useState({ min: filters.minPrice, max: filters.maxPrice });
 
-  // hooks-fix wiki 0031: sync local form state from prop — derived state, legitimate
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalPrice({ min: filters.minPrice, max: filters.maxPrice });
   }, [filters.minPrice, filters.maxPrice]);
 
@@ -86,145 +106,186 @@ const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({ dynamicFilt
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 sticky top-4">
-      <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-        <h2 className="font-sans text-lg font-bold flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 10.6667H9.5V9.33333H6.5V10.6667ZM2.5 5.33333V6.66667H13.5V5.33333H2.5ZM4.5 9.66667V8.33333H11.5V9.66667H4.5Z" fill="black"/></svg>
-          BỘ LỌC TÌM KIẾM
-        </h2>
-      </div>
+    <div className="flex flex-col gap-6 sticky top-4 w-64 flex-shrink-0 h-fit">
+      
+      {/* ==================================================== */}
+      {/* BLOCK 1: DANH MỤC Ở TRÊN (Nếu có truyền currentCategory) */}
+      {/* ==================================================== */}
+      {currentCategory && (
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 font-bold text-gray-800 border-b pb-3 mb-3 uppercase">
+            <span>{currentCategory.name}</span>
+          </div>
+          
+          <ul className="space-y-2 text-sm transition-all duration-300">
+            {visibleCategories.map((cat) => (
+              <li
+                key={cat.id}
+                className={`cursor-pointer transition-colors hover:text-brand-orange ${
+                  selectedCategoryId === cat.id ? 'text-brand-orange font-bold' : 'text-gray-600'
+                }`}
+                onClick={() => onCategoryChange && onCategoryChange(cat.id)}
+              >
+                {cat.name}
+              </li>
+            ))}
+          </ul>
 
-      {/* 1. Khoảng Giá (Quan trọng nhất) */}
-      <div className="py-4 border-b border-gray-100">
-        <h3 className="font-sans text-base font-semibold text-gray-800 mb-3">KHOẢNG GIÁ</h3>
-        <div className="flex items-center gap-2 mb-3">
-          <input
-            type="number"
-            placeholder="₫ TỪ"
-            value={localPrice.min}
-            onChange={(e) => setLocalPrice({ ...localPrice, min: e.target.value })}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
-          />
-          <span className="text-gray-400">-</span>
-          <input
-            type="number"
-            placeholder="₫ ĐẾN"
-            value={localPrice.max}
-            onChange={(e) => setLocalPrice({ ...localPrice, max: e.target.value })}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
-          />
-        </div>
-        <Button 
-            variant="primary" 
-            className="w-full py-1 text-sm bg-brand-orange hover:bg-orange-600 text-white font-medium uppercase"
-            onClick={handleApplyPrice}
-        >
-          Áp dụng
-        </Button>
-      </div>
-
-      {/* 2. Nơi Bán */}
-      <FilterSection title="Nơi Bán">
-        {filterLocations.map((item) => (
-          <FilterCheckbox 
-            key={item.id} 
-            label={item.label}
-            // [FIX] Bỏ item.value, chỉ dùng item.label (hoặc item.id tuỳ logic BE)
-            checked={filters.locations.includes(item.label)} 
-            onChange={() => toggleLocation(item.label)}
-          />
-        ))}
-      </FilterSection>
-
-      {/* 3. Đánh Giá (5 sao -> 1 sao) */}
-      <div className="py-4 border-b border-gray-100">
-        <h3 className="font-sans text-base font-semibold text-gray-800 mb-2">ĐÁNH GIÁ</h3>
-        {/* Render manual stars để dễ control logic click */}
-        {[5, 4, 3, 2, 1].map((star) => (
-            <div 
-                key={star} 
-                className={`flex items-center gap-2 cursor-pointer py-1 px-2 rounded hover:bg-gray-50 ${filters.rating === String(star) ? 'bg-orange-50' : ''}`}
-                onClick={() => setRating(star)}
+          {childCategories.length > VISIBLE_COUNT && (
+            <button
+              onClick={() => setIsCategoryExpanded(!isCategoryExpanded)}
+              className="mt-4 flex items-center gap-1 text-sm font-medium text-brand-orange hover:text-orange-600 transition-colors"
             >
-                <div className="flex text-yellow-400 text-sm">
-                    {[...Array(5)].map((_, i) => (
-                        <i key={i} className={i < star ? "fas fa-star" : "far fa-star text-gray-300"}>★</i>
-                    ))}
-                </div>
-                <span className="text-sm text-gray-600">{star !== 5 ? 'trở lên' : ''}</span>
-            </div>
-        ))}
-      </div>
-
-      {/* Spec [0018]: dynamic filters per category */}
-      {dynamicFilters.length > 0 && (
-        <>
-          {dynamicFilters.map((df) => {
-            const value = getDynamicFilterValue(df.key, df.type);
-            return (
-              <FilterSection key={df.key} title={df.label}>
-                {df.type === 'select' && (
-                  <select
-                    value={value as string}
-                    onChange={(e) => setDynamicFilter(df.key, e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange bg-white"
-                  >
-                    <option value="">Tất cả</option>
-                    {(df.options || []).map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                )}
-
-                {df.type === 'multi' && (df.options || []).map(opt => {
-                  const arr = value as string[];
-                  const checked = arr.includes(opt);
-                  return (
-                    <FilterCheckbox
-                      key={opt}
-                      label={opt}
-                      checked={checked}
-                      onChange={() => {
-                        const next = checked ? arr.filter(v => v !== opt) : [...arr, opt];
-                        setDynamicFilter(df.key, next);
-                      }}
-                    />
-                  );
-                })}
-
-                {df.type === 'range' && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      placeholder={df.min !== undefined ? `Từ ${df.min}` : 'Từ'}
-                      value={(value as any).min ?? ''}
-                      onChange={(e) => setDynamicFilter(df.key, { ...(value as any), min: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
-                    />
-                    <span className="text-gray-400">-</span>
-                    <input
-                      type="number"
-                      placeholder={df.max !== undefined ? `Đến ${df.max}` : 'Đến'}
-                      value={(value as any).max ?? ''}
-                      onChange={(e) => setDynamicFilter(df.key, { ...(value as any), max: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
-                    />
-                  </div>
-                )}
-              </FilterSection>
-            );
-          })}
-        </>
+              {isCategoryExpanded ? 'Thu gọn' : 'Xem thêm'}
+              {isCategoryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Nút Xoá Tất Cả */}
-      <Button
-        variant="outline"
-        className="w-full mt-6 py-2 border-brand-orange text-brand-orange hover:bg-orange-50"
-        onClick={clearAll}
-      >
-        XOÁ TẤT CẢ
-      </Button>
+      {/* ==================================================== */}
+      {/* BLOCK 2: BỘ LỌC TÌM KIẾM Ở DƯỚI (Mã cũ của bạn) */}
+      {/* ==================================================== */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+        <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+          <h2 className="font-sans text-lg font-bold flex items-center gap-2 uppercase">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 10.6667H9.5V9.33333H6.5V10.6667ZM2.5 5.33333V6.66667H13.5V5.33333H2.5ZM4.5 9.66667V8.33333H11.5V9.66667H4.5Z" fill="black"/></svg>
+            Bộ lọc tìm kiếm
+          </h2>
+        </div>
+
+        {/* 1. Khoảng Giá */}
+        <div className="py-4 border-b border-gray-100">
+          <h3 className="font-sans text-base font-semibold text-gray-800 mb-3">KHOẢNG GIÁ</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <input
+              type="number"
+              placeholder="₫ TỪ"
+              value={localPrice.min}
+              onChange={(e) => setLocalPrice({ ...localPrice, min: e.target.value })}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
+            />
+            <span className="text-gray-400">-</span>
+            <input
+              type="number"
+              placeholder="₫ ĐẾN"
+              value={localPrice.max}
+              onChange={(e) => setLocalPrice({ ...localPrice, max: e.target.value })}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
+            />
+          </div>
+          <Button 
+            variant="primary" 
+            className="w-full py-1.5 text-sm bg-brand-orange hover:bg-orange-600 text-white font-medium uppercase"
+            onClick={handleApplyPrice}
+          >
+            Áp dụng
+          </Button>
+        </div>
+
+        {/* 2. Nơi Bán */}
+        <FilterSection title="Nơi Bán">
+          {filterLocations.map((item) => (
+            <FilterCheckbox 
+              key={item.id} 
+              label={item.label}
+              checked={filters.locations.includes(item.label)} 
+              onChange={() => toggleLocation(item.label)}
+            />
+          ))}
+        </FilterSection>
+
+        {/* 3. Đánh Giá */}
+        <div className="py-4 border-b border-gray-100">
+          <h3 className="font-sans text-base font-semibold text-gray-800 mb-2">ĐÁNH GIÁ</h3>
+          {[5, 4, 3, 2, 1].map((star) => (
+            <div 
+              key={star} 
+              className={`flex items-center gap-2 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-50 ${filters.rating === String(star) ? 'bg-orange-50' : ''}`}
+              onClick={() => setRating(star)}
+            >
+              <div className="flex text-yellow-400 text-sm">
+                {[...Array(5)].map((_, i) => (
+                  <i key={i} className={i < star ? "fas fa-star" : "far fa-star text-gray-300"}>★</i>
+                ))}
+              </div>
+              <span className="text-sm text-gray-600">{star !== 5 ? 'trở lên' : ''}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 4. Dynamic Filters */}
+        {dynamicFilters.length > 0 && (
+          <>
+            {dynamicFilters.map((df) => {
+              const value = getDynamicFilterValue(df.key, df.type);
+              return (
+                <FilterSection key={df.key} title={df.label}>
+                  
+                  {df.type === 'select' && (
+                    <select
+                      value={value as string}
+                      onChange={(e) => setDynamicFilter(df.key, e.target.value)}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange bg-white"
+                    >
+                      <option value="">Tất cả</option>
+                      {(df.options || []).map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {df.type === 'multi' && (df.options || []).map(opt => {
+                    const arr = value as string[];
+                    const checked = arr.includes(opt);
+                    return (
+                      <FilterCheckbox
+                        key={opt}
+                        label={opt}
+                        checked={checked}
+                        onChange={() => {
+                          const next = checked ? arr.filter(v => v !== opt) : [...arr, opt];
+                          setDynamicFilter(df.key, next);
+                        }}
+                      />
+                    );
+                  })}
+
+                  {df.type === 'range' && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder={df.min !== undefined ? `Từ ${df.min}` : 'Từ'}
+                        value={(value as any).min ?? ''}
+                        onChange={(e) => setDynamicFilter(df.key, { ...(value as any), min: e.target.value === '' ? undefined : Number(e.target.value) })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
+                      />
+                      <span className="text-gray-400">-</span>
+                      <input
+                        type="number"
+                        placeholder={df.max !== undefined ? `Đến ${df.max}` : 'Đến'}
+                        value={(value as any).max ?? ''}
+                        onChange={(e) => setDynamicFilter(df.key, { ...(value as any), max: e.target.value === '' ? undefined : Number(e.target.value) })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-brand-orange"
+                      />
+                    </div>
+                  )}
+
+                </FilterSection>
+              );
+            })}
+          </>
+        )}
+
+        {/* Nút Xoá Tất Cả */}
+        <Button
+          variant="outline"
+          className="w-full mt-6 py-2 border-brand-orange text-brand-orange hover:bg-orange-50 font-medium"
+          onClick={clearAll}
+        >
+          XOÁ TẤT CẢ TÌM KIẾM
+        </Button>
+      </div>
     </div>
   );
 };
