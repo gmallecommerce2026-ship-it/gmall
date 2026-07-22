@@ -169,7 +169,6 @@ export default function ContentClient() {
                 <span className="text-xs text-gray-800 bg-gray-200 px-2 py-0.5 rounded font-medium w-fit">
                   {BANNER_LOCATION_MAP[b.location] || b.location}
                 </span>
-                <span className="text-[10px] text-gray-400">({b.location})</span>
               </div>
               <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${b.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                 {b.isActive ? 'ON' : 'OFF'}
