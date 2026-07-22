@@ -47,6 +47,7 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [categoryBreadcrumbPath, setCategoryBreadcrumbPath] = useState<any[]>([]);
 
   // States cho Sidebar & Title
   const [categoryDisplayName, setCategoryDisplayName] = useState("");
@@ -73,42 +74,42 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
         }
 
         // Nếu CÓ categorySlug -> Tìm danh mục hiện tại trong cây để hiển thị con của nó
-        const findCategoryBySlug = (items: any[], slug: string): any => {
+        const findCategoryPath = (items: any[], slug: string, path: any[] = []): any[] | null => {
           for (const item of items) {
-            if (item.slug === slug) return item;
-            if (item.children) {
-              const found = findCategoryBySlug(item.children, slug);
+            const currentPath = [...path, item];
+            if (item.slug === slug) return currentPath;
+            if (item.children && item.children.length > 0) {
+              const found = findCategoryPath(item.children, slug, currentPath);
               if (found) return found;
             }
           }
           return null;
         };
 
-        const cat = findCategoryBySlug(safeTree, categorySlug);
+        const categoryPath = findCategoryPath(safeTree, categorySlug);
 
-        if (cat) {
+        if (categoryPath && categoryPath.length > 0) {
+          const cat = categoryPath[categoryPath.length - 1]; // node lá (category hiện tại)
+
           setCategoryDisplayName(cat.name);
           setCurrentCategory({ id: cat.id, name: cat.name, slug: cat.slug });
-
-          // Nếu danh mục này có con thì hiển thị con, 
-          // nếu không có con (danh mục lá) thì có thể hiển thị các danh mục anh em hoặc giữ nguyên tree tùy ý
           setChildCategories(cat.children && cat.children.length > 0 ? cat.children : []);
+          setCategoryBreadcrumbPath(categoryPath); // <-- lưu cả chuỗi cha-con
 
-          // Parse filterKeys
           let fk: any[] = [];
           try {
             fk = typeof cat.filterKeys === 'string' ? JSON.parse(cat.filterKeys) : (Array.isArray(cat.filterKeys) ? cat.filterKeys : []);
           } catch { fk = []; }
           setCategoryFilterKeys(fk);
         } else {
-          // Fallback nếu không tìm thấy slug
           const fallbackName = categorySlug.split('-')
-            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+            .map((w: any) => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' ');
           setCategoryDisplayName(fallbackName);
           setCurrentCategory(null);
           setChildCategories([]);
           setCategoryFilterKeys([]);
+          setCategoryBreadcrumbPath([]); // <-- reset khi không tìm thấy
         }
       } catch (e) {
         console.error("Lỗi fetch categories:", e);
@@ -128,15 +129,26 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   // Breadcrumbs logic
   const breadcrumbItems = useMemo(() => {
     const items = [{ name: "Trang chủ", href: "/" }];
+
     if (categorySlug) {
-      const fallback = (categorySlug || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      items.push({ name: categoryDisplayName || fallback, href: "#" });
+      if (categoryBreadcrumbPath.length > 0) {
+        categoryBreadcrumbPath.forEach(cat => {
+          items.push({
+            name: cat.name,
+            href: `/category/${cat.slug || cat.id}`, // href thật, không phải "#"
+          });
+        });
+      } else {
+        const fallback = (categorySlug || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        items.push({ name: categoryDisplayName || fallback, href: "#" });
+      }
     } else {
       if (tag) items.push({ name: humanizeTag(tag), href: "#" });
       if (query) items.push({ name: `Tìm: "${query}"`, href: "#" });
     }
+
     return items;
-  }, [query, tag, categorySlug, categoryDisplayName]);
+  }, [query, tag, categorySlug, categoryDisplayName, categoryBreadcrumbPath]);
 
   // Handle Page Change
   const handlePageChange = useCallback((newPage: number) => {
