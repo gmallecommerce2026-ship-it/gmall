@@ -52,7 +52,7 @@ const TABS = [
 ];
 export const BANNER_LOCATION_MAP: Record<string, string> = {
   HOMEPAGE: 'Trang chủ — banner chính',
-  HERO_MAIN: 'Banner chính (To, trên cùng)',
+  HERO_MAIN: 'Banner chính (To, trên cùng) trang chủ',
   HERO_SUB: 'Banner phụ trang chủ',
   PRODUCT_DETAIL: 'Trang chi tiết sản phẩm',
   CATEGORY: 'Trang danh mục',
