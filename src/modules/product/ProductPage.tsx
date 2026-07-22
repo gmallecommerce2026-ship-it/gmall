@@ -109,26 +109,6 @@ const ProductPageContent = () => {
     }
   };
 
-  const breadcrumbItems = React.useMemo(() => {
-    const base = [{ name: "Trang chủ", href: "/" }];
-
-    if (categoryBreadcrumbs.length > 0) {
-      // Nếu đang trong một danh mục cụ thể, render tất cả các cấp của danh mục đó
-      categoryBreadcrumbs.forEach(cat => {
-        base.push({
-          name: cat.name,
-          // Điều hướng về trang product kèm theo slug của danh mục tương ứng
-          href: `/product?categorySlug=${cat.slug || cat.id}`
-        });
-      });
-    } else {
-      // Nếu đang ở màn hình "TẤT CẢ DANH MỤC"
-      base.push({ name: "SẢN PHẨM", href: "/product" });
-    }
-
-    return base;
-  }, [categoryBreadcrumbs]);
-
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 min-h-screen">
       <div className="w-full max-w-[1340px] mx-auto px-4 py-8">
