@@ -15,7 +15,7 @@ import { useProductFilters } from "@/hooks/useProductFilters";
 const ProductPageContent = () => {
   const { products, loading, hasMore, lastProductRef } = useInfiniteProduct();
   const searchParams = useSearchParams();
-  
+  const [categoryBreadcrumbs, setCategoryBreadcrumbs] = useState<any[]>([]);
   // Đọc param categorySlug dựa theo format của getSearchUrl / useProductFilters
   const categorySlug = searchParams.get("categorySlug");
   const { updateFilter } = useProductFilters();
@@ -32,26 +32,37 @@ const ProductPageContent = () => {
           if (data) {
             setCurrentCategory({ id: data.id, name: data.name, slug: data.slug });
             setChildCategories(data.children || []);
+
+            // --- BẮT ĐẦU ĐOẠN THÊM MỚI ---
+            // Gọi API lấy phả hệ danh mục dựa vào ID vừa lấy được
+            CategoryService.getBreadcrumbs(data.id)
+              .then((breadcrumbs) => {
+                if (Array.isArray(breadcrumbs)) {
+                  setCategoryBreadcrumbs(breadcrumbs);
+                }
+              })
+              .catch((err) => console.error("Lỗi fetch breadcrumbs:", err));
+            // --- KẾT THÚC ĐOẠN THÊM MỚI ---
           }
         })
         .catch((err) => {
           console.error("Lỗi fetch category:", err);
           setCurrentCategory(null);
           setChildCategories([]);
+          setCategoryBreadcrumbs([]); // Reset khi lỗi
         });
     } else {
-      // ✅ SỬA LẠI NHÁNH NÀY: Gọi getTree() thay vì set null
       CategoryService.getTree()
         .then((data) => {
-          // Tạo một danh mục ảo đại diện cho Root
           setCurrentCategory({ id: 'root', name: 'TẤT CẢ DANH MỤC', slug: '' });
-          // getTree trả về list level 1, đưa vào childCategories để render
           setChildCategories(Array.isArray(data) ? data : []);
+          setCategoryBreadcrumbs([]); // Reset khi ở thư mục gốc
         })
         .catch((err) => {
           console.error("Lỗi fetch root categories:", err);
           setCurrentCategory(null);
           setChildCategories([]);
+          setCategoryBreadcrumbs([]);
         });
     }
   }, [categorySlug]);
@@ -65,10 +76,25 @@ const ProductPageContent = () => {
     }
   };
 
-  const breadcrumbItems = [
-    { name: "Trang chủ", href: "/" },
-    { name: "SẢN PHẨM", href: "/product" },
-  ];
+  const breadcrumbItems = React.useMemo(() => {
+    const base = [{ name: "Trang chủ", href: "/" }];
+
+    if (categoryBreadcrumbs.length > 0) {
+      // Nếu đang trong một danh mục cụ thể, render tất cả các cấp của danh mục đó
+      categoryBreadcrumbs.forEach(cat => {
+        base.push({
+          name: cat.name,
+          // Điều hướng về trang product kèm theo slug của danh mục tương ứng
+          href: `/product?categorySlug=${cat.slug || cat.id}`
+        });
+      });
+    } else {
+      // Nếu đang ở màn hình "TẤT CẢ DANH MỤC"
+      base.push({ name: "SẢN PHẨM", href: "/product" });
+    }
+
+    return base;
+  }, [categoryBreadcrumbs]);
 
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 min-h-screen">
@@ -81,10 +107,10 @@ const ProductPageContent = () => {
           {/* Sidebar */}
           <div className="w-full lg:w-[333px] flex-shrink-0 hidden lg:block">
             {/* Truyền đúng props xuống ProductFilterSidebar mà không sửa Component đó */}
-            <ProductFilterSidebar 
+            <ProductFilterSidebar
               currentCategory={currentCategory}
               childCategories={childCategories}
-              selectedCategoryId={null} 
+              selectedCategoryId={null}
               onCategoryChange={handleCategoryChange}
             />
           </div>
@@ -115,9 +141,9 @@ const ProductPageContent = () => {
                 <div className="w-8 h-8 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
-            
+
             {!hasMore && products.length > 0 && (
-               <div className="text-center py-8 text-gray-500">Đã hiển thị tất cả sản phẩm.</div>
+              <div className="text-center py-8 text-gray-500">Đã hiển thị tất cả sản phẩm.</div>
             )}
           </div>
         </div>
