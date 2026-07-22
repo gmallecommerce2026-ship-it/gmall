@@ -33,30 +33,43 @@ const ProductPageContent = () => {
             setCurrentCategory({ id: data.id, name: data.name, slug: data.slug });
             setChildCategories(data.children || []);
 
-            // --- BẮT ĐẦU ĐOẠN THÊM MỚI ---
-            // Gọi API lấy phả hệ danh mục dựa vào ID vừa lấy được
-            CategoryService.getBreadcrumbs(data.id)
-              .then((breadcrumbs) => {
-                if (Array.isArray(breadcrumbs)) {
-                  setCategoryBreadcrumbs(breadcrumbs);
-                }
-              })
-              .catch((err) => console.error("Lỗi fetch breadcrumbs:", err));
-            // --- KẾT THÚC ĐOẠN THÊM MỚI ---
+            // 1. Kiểm tra xem Backend có trả sẵn mảng breadcrumbs bên trong data không
+            if (data.breadcrumbs && Array.isArray(data.breadcrumbs) && data.breadcrumbs.length > 0) {
+              setCategoryBreadcrumbs(data.breadcrumbs);
+            } else {
+              // 2. Nếu không có sẵn, gọi API getBreadcrumbs dựa vào data.id
+              CategoryService.getBreadcrumbs(data.id)
+                .then((breadcrumbs) => {
+                  console.log("Breadcrumbs API trả về:", breadcrumbs); // Debug xem API có trả đủ các cấp không
+
+                  if (Array.isArray(breadcrumbs) && breadcrumbs.length > 0) {
+                    setCategoryBreadcrumbs(breadcrumbs);
+                  } else {
+                    // Fallback nếu API trả về mảng rỗng
+                    setCategoryBreadcrumbs([{ id: data.id, name: data.name, slug: data.slug }]);
+                  }
+                })
+                .catch((err) => {
+                  console.error("Lỗi fetch breadcrumbs:", err);
+                  // Fallback nếu gọi API lỗi (đảm bảo ít nhất vẫn hiện được tên danh mục hiện tại)
+                  setCategoryBreadcrumbs([{ id: data.id, name: data.name, slug: data.slug }]);
+                });
+            }
           }
         })
         .catch((err) => {
           console.error("Lỗi fetch category:", err);
           setCurrentCategory(null);
           setChildCategories([]);
-          setCategoryBreadcrumbs([]); // Reset khi lỗi
+          setCategoryBreadcrumbs([]);
         });
     } else {
+      // Trường hợp ở màn hình danh mục gốc
       CategoryService.getTree()
         .then((data) => {
           setCurrentCategory({ id: 'root', name: 'TẤT CẢ DANH MỤC', slug: '' });
           setChildCategories(Array.isArray(data) ? data : []);
-          setCategoryBreadcrumbs([]); // Reset khi ở thư mục gốc
+          setCategoryBreadcrumbs([]);
         })
         .catch((err) => {
           console.error("Lỗi fetch root categories:", err);
@@ -66,6 +79,26 @@ const ProductPageContent = () => {
         });
     }
   }, [categorySlug]);
+
+  // Xử lý render Breadcrumb
+  const breadcrumbItems = React.useMemo(() => {
+    const base = [{ name: "Trang chủ", href: "/" }];
+
+    if (categoryBreadcrumbs.length > 0) {
+      // Lặp qua toàn bộ cây phả hệ (từ gốc tới ngọn)
+      categoryBreadcrumbs.forEach(cat => {
+        base.push({
+          name: cat.name,
+          href: `/product?categorySlug=${cat.slug || cat.id}`
+        });
+      });
+    } else {
+      // Nếu đang ở màn hình "TẤT CẢ DANH MỤC"
+      base.push({ name: "SẢN PHẨM", href: "/product" });
+    }
+
+    return base;
+  }, [categoryBreadcrumbs]);
 
   // Xử lý khi user chọn một category con trong Sidebar
   const handleCategoryChange = (categoryId: string) => {
