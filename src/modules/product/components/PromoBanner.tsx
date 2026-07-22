@@ -18,7 +18,7 @@ interface BannerItem {
   ctaLink?: string;
 }
 
-const PROMO_BANNER_LOCATION = 'PRODUCT_LIST'; // TODO: xác nhận lại giá trị đúng với admin
+const PROMO_BANNER_LOCATION = 'CATEGORY'; // TODO: xác nhận lại giá trị đúng với admin
 
 const PromoBanner = () => {
   const [banners, setBanners] = useState<BannerItem[]>([]);
