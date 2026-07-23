@@ -78,12 +78,16 @@ export default function ShopProfileClient() {
 
                 setAvatarPreview(res.avatar || "/assets/default-avatar.svg");
                 setCoverPreview(res.coverImage || null);
-                setUser({
-                    ...user,
-                    shopName: res.name,
-                    avatar: res.avatar ?? user?.avatar,
-                    coverImage: res.coverImage ?? user?.coverImage,
-                });
+                const currentUser = useUserStore.getState().user;
+                if (currentUser) {
+                    setUser({
+                        ...currentUser,
+                        shopName: res.name,
+                        avatar: res.avatar ?? currentUser.avatar,
+                        coverImage: res.coverImage ?? currentUser.coverImage,
+                    });
+                }
+
 
                 // Xử lý hiển thị giấy tờ (Ưu tiên hiển thị cái đang Pending nếu có)
                 const pending = res.pendingDetails || {};
