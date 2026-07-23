@@ -270,7 +270,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
                     // Nếu thiếu, fallback dần: features -> benefits -> brand story -> mô tả dài.
                     let short = '';
                     if (sd && typeof sd === 'object') {
-                        short = [sd.features, sd.benefits].filter(Boolean).join(' — ');
+                        short = sd.brand;
                         if (!short) short = sd.brand || sd.note || '';
                     }
 
