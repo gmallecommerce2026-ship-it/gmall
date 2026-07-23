@@ -250,7 +250,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
         <div className="flex flex-col gap-6 relative">
             <Toaster position="top-right" containerStyle={{ top: 80 }} />
 
-            {/* 1. Header */}
             <div className="flex flex-col gap-2">
                 <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-snug">
                     {product.title}
@@ -264,18 +263,25 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
                     <span className="text-gray-500">Đã bán {product.salesCount || 0}</span>
                 </div>
 
-                {/* B5.1: mô tả ngắn ngay dưới tên. Dùng shortDescription từ schema
-            nếu có; fallback sang 160 ký tự đầu của description (strip HTML). */}
                 {(() => {
-                    const short =
-                        (product as any).shortDescription || (product as any).shortDesc || 
-                        (product.description
-                            ? String(product.description)
-                                .replace(/<[^>]*>/g, ' ')
-                                .replace(/\s+/g, ' ')
-                                .trim()
-                                .slice(0, 160)
-                            : '');
+                    const sd = (product as any).shortDesc;
+
+                    // Ưu tiên: ghép "Đặc điểm nổi bật" + "Lợi ích" nếu có (2 field khoe nhanh nhất).
+                    // Nếu thiếu, fallback dần: features -> benefits -> brand story -> mô tả dài.
+                    let short = '';
+                    if (sd && typeof sd === 'object') {
+                        short = [sd.features, sd.benefits].filter(Boolean).join(' — ');
+                        if (!short) short = sd.brand || sd.note || '';
+                    }
+
+                    if (!short && product.description) {
+                        short = String(product.description)
+                            .replace(/<[^>]*>/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim()
+                            .slice(0, 160);
+                    }
+
                     return short ? (
                         <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
                             {short}
@@ -285,7 +291,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
                 })()}
             </div>
 
-            {/* 2. Price Section */}
             <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 relative overflow-hidden">
                 {discountBadge && (
                     <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl shadow-sm">
