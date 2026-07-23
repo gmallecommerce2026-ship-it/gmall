@@ -264,7 +264,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
                 </div>
 
                 {(() => {
-                    const sd = (product as any).shortDesc.brand;
+                    const sd = (product as any).shortDesc;
 
                     // Ưu tiên: ghép "Đặc điểm nổi bật" + "Lợi ích" nếu có (2 field khoe nhanh nhất).
                     // Nếu thiếu, fallback dần: features -> benefits -> brand story -> mô tả dài.
