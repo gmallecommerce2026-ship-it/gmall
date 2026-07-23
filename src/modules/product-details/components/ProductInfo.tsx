@@ -313,31 +313,34 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
                 <ProductVouchers vouchers={vouchers} />
 
                 {product.tiers && product.tiers.length > 0 && product.tiers.map((tier, idx) => {
-                    // 1. Map options kèm theo index gốc ban đầu của nó
                     const mappedOptions = tier.options.map((opt: string, originalIdx: number) => ({
                         label: opt,
                         originalIdx
                     }));
 
-                    // 2. Sắp xếp tăng dần một cách tự nhiên (1 T -> 2 T, 11 inch -> 13 inch)
-                    // Nếu chỉ muốn đảo ngược mảng backend, bạn thay .sort(...) bằng .reverse()
                     const sortedOptions = [...mappedOptions].sort((a, b) =>
                         a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
                     );
 
-                    // 3. Tạo một object tier clone đã được sắp xếp lại danh sách lựa chọn
                     const orderedTier = {
                         ...tier,
                         options: sortedOptions.map(o => o.label)
                     };
 
+                    // [FIX] Tìm vị trí (trong mảng ĐÃ SORT) của option đang được chọn,
+                    // dựa vào originalIdx khớp với selections[idx]. Trước đây dùng
+                    // tier.options.findIndex(...) chỉ trả về lại chính selections[idx]
+                    // (index GỐC, chưa sort) → lệch với orderedTier đã sort → chọn nhầm nút.
+                    const selectedSortedIndex = sortedOptions.findIndex(
+                        (o) => o.originalIdx === selections[idx]
+                    );
+
                     return (
                         <VariantSelector
                             key={idx}
                             tier={orderedTier}
-                            selectedIndex={tier.options.findIndex((_, oIdx) => oIdx === selections[idx])}
+                            selectedIndex={selectedSortedIndex}
                             onSelect={(sortedIdx) => {
-                                // Tìm lại index gốc của phần tử vừa click để trigger hàm handleSelectOption chính xác
                                 const originalIndex = sortedOptions[sortedIdx].originalIdx;
                                 handleSelectOption(idx, originalIndex);
                             }}
