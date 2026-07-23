@@ -268,7 +268,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, vouchers, onHoverVar
             nếu có; fallback sang 160 ký tự đầu của description (strip HTML). */}
                 {(() => {
                     const short =
-                        (product as any).shortDescription ||
+                        (product as any).shortDescription || (product as any).shortDesc || 
                         (product.description
                             ? String(product.description)
                                 .replace(/<[^>]*>/g, ' ')
