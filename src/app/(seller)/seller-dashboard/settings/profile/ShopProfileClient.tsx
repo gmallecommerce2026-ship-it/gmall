@@ -179,18 +179,21 @@ export default function ShopProfileClient() {
 
             const res = await SellerAuthService.updateShopProfile(payload);
             toast.success("Đã lưu. Các thay đổi giấy tờ sẽ được gửi Admin duyệt.");
-            if (res?.user) {
+
+            // res chính là Shop entity trả về, KHÔNG có field "user" bọc ngoài
+            // -> luôn đồng bộ store bằng dữ liệu vừa lưu, không gate theo res?.user
+            if (res) {
                 setUser({
-                    ...user,        // giữ toàn bộ field cũ trong store (phòng khi res.user thiếu field)
-                    ...res.user,    // ghi đè bằng field mới nhất từ backend (nếu có)
-                    shopName: data.shopName,   // luôn ưu tiên giá trị vừa submit, đảm bảo sync ngay lập tức
-                    avatar: avatarUrl ?? user?.avatar,
-                    coverImage: coverUrl ?? user?.coverImage,
+                    ...user,
+                    shopName: res.name ?? data.shopName,          // Shop entity dùng field "name"
+                    avatar: res.avatar ?? avatarUrl ?? user?.avatar,
+                    coverImage: res.coverImage ?? coverUrl ?? user?.coverImage,
                 });
 
                 // Reset files
-                setAvatarFile(null); setCoverFile(null);
-                setLegalDocs(prev => {
+                setAvatarFile(null);
+                setCoverFile(null);
+                setLegalDocs((prev: any) => {
                     const newState = { ...prev };
                     (Object.keys(newState) as LegalDocType[]).forEach(k => newState[k].file = null);
                     return newState;
