@@ -9,14 +9,14 @@ export interface ProductTier {
 
 // 2. Định nghĩa Variant (Biến thể SKU) - Ví dụ: Màu Đỏ - Size S
 export interface ProductVariant {
-  id?: string;         
-  price: number;       
+  id?: string;
+  price: number;
   originalPrice?: number;
-  stock: number;       
-  sku?: string;        
-  image?: string | null;   
-  imageUrl?: string; 
-  tierIndex: number[] | string; 
+  stock: number;
+  sku?: string;
+  image?: string | null;
+  imageUrl?: string;
+  tierIndex: number[] | string;
   discountValue?: number;
 }
 
@@ -26,12 +26,20 @@ export interface Product {
   title: string;          // Tên sản phẩm
   slug: string;
   description?: string;   // Mô tả HTML hoặc text
-  
-  
+  shortDesc?: {
+    brand?: string;
+    features?: string;
+    benefits?: string;
+    recipient?: string;
+    occasion?: string;
+    note?: string;
+  };
+
+
   // --- Giá & Kho (Hiển thị mặc định khi chưa chọn phân loại) ---
   price: number;          // Giá bán hiện tại (hoặc giá thấp nhất)
   regularPrice?: number;  // Giá niêm yết (nếu có giảm giá)
-  
+
   // --- NEW: Direct Discount System ---
   originalPrice?: number; // Giá gốc trước khi giảm (Field mới)
   discountType?: 'PERCENT';
@@ -47,7 +55,7 @@ export interface Product {
   imageUrl: string;       // Ảnh đại diện chính (Thumbnail)
   images?: string[];      // Danh sách ảnh gallery
   videos?: string[];      // Danh sách video
-  options?: any; 
+  options?: any;
   // --- Thông tin SEO / Chi tiết ---
   brand?: string;
   origin?: string;
@@ -65,12 +73,12 @@ export interface Product {
   tiers?: ProductTier[];       // Mảng các nhóm phân loại (Màu, Size...)
   variants?: ProductVariant[];
   // variations?: ProductVariant[]; // Danh sách các biến thể SKU
-  
+
   // --- Thống kê ---
   rating?: number;        // Đánh giá trung bình (VD: 4.5)
   reviewCount?: number;   // Số lượng đánh giá
   salesCount?: number;    // Số lượng đã bán (VD: 1200)
-  
+
   // --- Vận chuyển (Optional - nếu cần tính phí ship bên client) ---
   weight?: number;
   length?: number;

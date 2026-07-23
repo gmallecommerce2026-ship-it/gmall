@@ -56,6 +56,7 @@ export default function ProductDetailPageWrapper() {
             salesCount: detailRes.salesCount || 0,
             stockTotal: detailRes.stock,
             description: detailRes.description,
+            shortDesc: detailRes.shortDesc || undefined,
             sellerId: detailRes.sellerId || detailRes.shopId,
             shopId: detailRes.shopId, // Alias
             tiers: detailRes.tiers || [],
