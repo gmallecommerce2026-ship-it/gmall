@@ -266,17 +266,6 @@ const SellerSidebarContent = () => {
   };
   return (
     <aside className="hidden lg:flex fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex-col font-sans">
-      {/* Header */}
-      <div className="h-[70px] flex items-center px-5 border-b border-gray-100 gap-3 shrink-0">
-        <div className="w-8 h-8 bg-gradient-to-br from-[#E78720] to-[#FFB05C] rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
-          S
-        </div>
-        <div className="flex flex-col">
-            <h1 className="font-bold text-gray-800 text-base leading-tight">Seller Hub</h1>
-            <span className="text-[11px] text-gray-400 font-medium">QUẢN LÝ CỬA HÀNG</span>
-        </div>
-      </div>
-
       {/* Shop info block (B7.1, B7.2) — hiển thị seller đang ở shop nào.
           Trước đây sidebar chỉ có "Seller Hub" generic, seller login nhiều
           account không biết mình đang ở cái nào. */}
