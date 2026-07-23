@@ -154,7 +154,7 @@ const MegaMenu = ({ isSticky = false, headerHeight = 0, onMenuOpenChange }: Mega
 
                         {lvl2.children && lvl2.children.length > 0 && (
                           <div className="flex flex-col gap-1.5 pl-0.5">
-                            {lvl2.children.map(lvl3 => (
+                            {lvl2.children.slice(0, 2).map(lvl3 => (
                               <Link
                                 key={lvl3.id}
                                 href={getSafeLink(lvl3)}
@@ -163,6 +163,14 @@ const MegaMenu = ({ isSticky = false, headerHeight = 0, onMenuOpenChange }: Mega
                                 {lvl3.name}
                               </Link>
                             ))}
+                            {lvl2.children.length > 2 && (
+                              <Link
+                                href={getSafeLink(lvl2)}
+                                className="font-medium text-orange-400 text-[12px] hover:text-orange-600 hover:underline transition-colors leading-snug"
+                              >
+                                Xem thêm ({lvl2.children.length - 2})
+                              </Link>
+                            )}
                           </div>
                         )}
                       </div>
