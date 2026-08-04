@@ -124,18 +124,7 @@ const normalizeProductData = (raw: any): Product => {
 
 const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initialProduct }) => {
   const product = useMemo(() => normalizeProductData(initialProduct), [initialProduct]);
-
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [syncedState, setSyncedState] = useState<any>({
-    finalPrice: product.price,
-    displayStock: product.stock || 0,
-    isAddingCart: false,
-    isGifting: false,
-    handleAddToCart: () => {},
-    handleBuyNow: () => {},
-    handleGiftNow: () => {},
-  });
 
   const { track } = useTracking();
   useEffect(() => {
@@ -186,7 +175,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
     fetchRealData();
   }, [product.sellerId, product.id, product.categoryId]);
 
-  const allVouchersForMainInfo = [...systemVouchers, ...shopVouchers];
+  const allVouchers = [...systemVouchers, ...shopVouchers];
 
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 min-h-screen pb-12">
@@ -203,11 +192,15 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
           <RelatedBrands categoryId={product.categoryId} />
         </div>
 
-        {/* TOP SECTION: BỐ CỤC 3 CỘT (MÔ HÌNH TIKI / AMAZON) */}
+        {/* 
+          KHỐI 3 CỘT ĐẦU TRANG:
+          - Đã xóa `overflow-hidden` ở container cha để `position: sticky` hoạt động.
+          - `items-start` cho phép cột phải có chiều cao theo nội dung và trượt dính theo trang.
+        */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-8 mb-6">
           <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* CỘT 1: BỘ SƯU TẬP ẢNH & VIDEO (W-32%) */}
-            <div className="w-full lg:w-[32%] flex flex-col gap-6 shrink-0">
+            {/* CỘT 1 (BÊN TRÁI): GALLERY BỘ SƯU TẬP ẢNH & VIDEO */}
+            <div className="w-full lg:w-[32%] shrink-0 flex flex-col gap-6">
               <ProductGallery
                 images={product.images || []}
                 videos={product.videos || []}
@@ -216,38 +209,24 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
               <PromoCombo products={[]} />
             </div>
 
-            {/* CỘT 2: THÔNG TIN CHI TIẾT SẢN PHẨM Ở GIỮA (FLEX-1) */}
+            {/* CỘT 2 (Ở GIỮA): TIÊU ĐỀ, ĐÁNH GIÁ & MÔ TẢ NGẮN */}
             <div className="w-full lg:flex-1">
-              <ProductInfo
-                product={product}
-                vouchers={allVouchersForMainInfo}
-                onHoverVariant={(img) => setPreviewImage(img)}
-                quantity={quantity}
-                onQuantityChange={setQuantity}
-                onSyncState={(state) => setSyncedState(state)}
-              />
+              <ProductInfo product={product} />
             </div>
 
-            {/* CỘT 3: KHỐI MUA HÀNG STICKY BÊN PHẢI (W-280px / 300px) */}
-            <div className="w-full lg:w-[280px] xl:w-[310px] shrink-0 hidden lg:block">
+            {/* CỘT 3 (BÊN PHẢI STICKY): BIẾN THỂ, SỐ LƯỢNG, TẠM TÍNH & NÚT MUA HÀNG */}
+            <div className="w-full lg:w-[300px] xl:w-[330px] shrink-0 hidden lg:block">
               <StickyBuyBox
                 product={product}
                 shopProfile={shopProfile}
-                quantity={quantity}
-                onQuantityChange={setQuantity}
-                finalPrice={syncedState.finalPrice || product.price}
-                displayStock={syncedState.displayStock ?? (product.stock || 0)}
-                isAddingCart={syncedState.isAddingCart}
-                isGifting={syncedState.isGifting}
-                onAddToCart={syncedState.handleAddToCart}
-                onBuyNow={syncedState.handleBuyNow}
-                onGiftNow={syncedState.handleGiftNow}
+                vouchers={allVouchers}
+                onHoverVariant={(img) => setPreviewImage(img)}
               />
             </div>
           </div>
         </div>
 
-        {/* CÁC PHẦN DƯỚI GIỮ NGUYÊN LAYOUT */}
+        {/* THÔNG TIN SHOP & CÁC PHẦN LIÊN QUAN */}
         <div className="mb-6">
           {isLoading && !shopProfile ? <ShopInfoSkeleton /> : <ShopInfo shop={shopProfile} />}
         </div>
