@@ -180,7 +180,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 min-h-screen pb-12">
       <div className="w-full max-w-[1340px] mx-auto px-4 py-6">
-        {/* Breadcrumb & Banners Top */}
+        {/* Breadcrumb & Banners */}
         <div className="mb-4">
           <Breadcrumbs items={breadcrumbItems} />
         </div>
@@ -194,20 +194,18 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
         </div>
 
         {/* 
-          BỐ CỤC 2 CỘT CHÍNH CẤP CAO NHẤT:
-          - Cột Trái (flex-1): Chứa toàn bộ nội dung trang (Gallery, Info, Shop, Description, Reviews, Rows).
-          - Cột Phải (w-[320px]): Chứa mỗi StickyBuyBox với `sticky top-24`.
-          - `items-start` giúp Cột Phải có đường trượt dài bằng toàn bộ Cột Trái.
+          CONTAINER 2 CỘT TỔNG THỂ:
+          - `items-start relative`: Đảm bảo cột phải có chiều cao kéo dài hết cột trái để sticky hoạt động.
         */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start relative">
+        <div className="flex flex-col lg:flex-row gap-6 items-start relative w-full">
           
-          {/* CỘT TRÁI - CHỨA TOÀN BỘ NỘI DUNG DÀI CỦA TRANG */}
-          <div className="flex-1 w-full flex flex-col gap-6">
+          {/* CỘT TRÁI: CHỨA THẺ ĐẦU TRANG + TOÀN BỘ NỘI DUNG DÀI (MÔ TẢ, ĐÁNH GIÁ, SẢN PHẨM KHÁC) */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6 w-full">
             
-            {/* Khối Gallery & Product Info */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-8">
+            {/* THẺ ĐẦU TRANG: GALLERY & PRODUCT INFO GIỮ NGUYÊN CÂN ĐỐI */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
               <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="w-full md:w-[45%] lg:w-[42%] shrink-0 flex flex-col gap-6">
+                <div className="w-full md:w-[48%] lg:w-[45%] shrink-0 flex flex-col gap-6">
                   <ProductGallery
                     images={product.images || []}
                     videos={product.videos || []}
@@ -216,7 +214,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
                   <PromoCombo products={[]} />
                 </div>
 
-                <div className="w-full md:w-[55%] lg:flex-1">
+                <div className="w-full md:w-[52%] lg:flex-1">
                   <ProductInfo product={product} />
                 </div>
               </div>
@@ -228,7 +226,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
             </div>
 
             {/* Mua kèm deal sốc */}
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div>
               <BoughtTogether mainProduct={product} />
             </div>
 
@@ -254,14 +252,16 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
             </div>
           </div>
 
-          {/* CỘT PHẢI - STICKY BUY BOX (TRƯỢT BÁM THEO TOÀN BỘ TRANG) */}
-          <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 hidden lg:block">
-            <StickyBuyBox
-              product={product}
-              shopProfile={shopProfile}
-              vouchers={allVouchers}
-              onHoverVariant={(img) => setPreviewImage(img)}
-            />
+          {/* CỘT PHẢI STICKY (CÓ `self-stretch` ĐỂ TẠO ĐƯỜNG TRƯỢT DÀI THEO TRANG) */}
+          <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 hidden lg:block self-stretch">
+            <div className="sticky top-24 z-20">
+              <StickyBuyBox
+                product={product}
+                shopProfile={shopProfile}
+                vouchers={allVouchers}
+                onHoverVariant={(img) => setPreviewImage(img)}
+              />
+            </div>
           </div>
 
         </div>
