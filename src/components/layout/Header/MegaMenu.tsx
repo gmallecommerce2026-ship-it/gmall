@@ -32,7 +32,7 @@ const MegaMenu = ({ isSticky = false, headerHeight = 0, onMenuOpenChange }: Mega
       } catch (error) {
         console.error('Failed to load category tree', error);
         setCategories([]);
-      } font-medium {
+      } finally {
         setLoading(false);
       }
     };
