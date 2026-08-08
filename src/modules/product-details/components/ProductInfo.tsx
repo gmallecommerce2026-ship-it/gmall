@@ -34,21 +34,56 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
           Mô tả ngắn & Đặc điểm
         </h3>
         {(() => {
-          const sd = (product as any).shortDesc;
-          let short = "";
-          if (sd && typeof sd === "object") {
-            short = sd.brand || sd.note || "";
-          }
-          if (!short && product.description) {
-            short = String(product.description)
-              .replace(/<[^>]*>/g, " ")
-              .replace(/\s+/g, " ")
-              .trim();
+          // Wiki 0094 (spec 0018): mô tả ngắn gồm 6 mục — Thương hiệu / Đặc điểm nổi bật /
+          // Lợi ích / Phù hợp tặng cho / Dịp tặng / Ghi chú. Seller nhập đủ 6 ở trang thêm SP,
+          // nhưng bản trước chỉ render `sd.brand || sd.note` → 4/6 mục KHÔNG BAO GIỜ hiện.
+          // (Bản trước nữa còn đọc sai tên trường: `shortDescription` trong khi DB lưu `shortDesc`
+          //  → luôn rơi về cắt mô tả dài.)
+          const raw = (product as any).shortDesc;
+          let sd: Record<string, string> | null = null;
+          if (raw) {
+            try {
+              sd = typeof raw === "string" ? JSON.parse(raw) : raw;
+            } catch {
+              sd = null;
+            }
           }
 
+          const ROWS = [
+            { key: "brand", label: "Thương hiệu" },
+            { key: "features", label: "Đặc điểm nổi bật" },
+            { key: "benefits", label: "Lợi ích" },
+            { key: "recipient", label: "Phù hợp tặng cho" },
+            { key: "occasion", label: "Dịp tặng" },
+            { key: "note", label: "Ghi chú" },
+          ];
+
+          const filled = sd
+            ? ROWS.filter((r) => typeof sd?.[r.key] === "string" && sd[r.key].trim() !== "")
+            : [];
+
+          if (filled.length > 0) {
+            return (
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                {filled.map((r) => (
+                  <div key={r.key} className="flex gap-2 text-sm leading-relaxed">
+                    <dt className="text-gray-500 shrink-0">{r.label}:</dt>
+                    <dd className="text-gray-800 font-medium whitespace-pre-line">
+                      {sd?.[r.key]}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            );
+          }
+
+          // Chưa nhập mô tả ngắn → rút gọn từ mô tả dài (strip HTML), giữ hành vi cũ.
+          const fallback = product.description
+            ? String(product.description).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+            : "";
           return (
             <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-              {short || "Thông tin mô tả chi tiết sản phẩm đang được cập nhật."}
+              {fallback || "Thông tin mô tả chi tiết sản phẩm đang được cập nhật."}
             </p>
           );
         })()}

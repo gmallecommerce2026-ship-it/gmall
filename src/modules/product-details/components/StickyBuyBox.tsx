@@ -238,8 +238,11 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0 bg-gray-50 flex items-center justify-center">
-              {shopProfile?.avatar ? (
-                <img src={shopProfile.avatar} alt={shopProfile.name} className="w-full h-full object-cover" />
+              {/* Wiki 0094: trước đây đọc `shopProfile.avatar` — ShopProfileData KHÔNG có
+                  trường đó (đúng tên là `avatarUrl`) nên luôn undefined → ảnh đại diện shop
+                  KHÔNG BAO GIỜ hiện, luôn rơi về chữ cái placeholder. */}
+              {shopProfile?.avatarUrl ? (
+                <img src={shopProfile.avatarUrl} alt={shopProfile.name} className="w-full h-full object-cover" />
               ) : (
                 <span className="font-bold text-gray-500 text-sm">
                   {product.brand?.charAt(0) || "S"}

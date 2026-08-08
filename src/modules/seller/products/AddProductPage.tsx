@@ -1062,8 +1062,12 @@ const AddProductPage = () => {
                                                 }}
                                                 // [FIX]: Truyền thêm onClose để hiển thị nút Hủy trong component
                                                 onClose={() => setShowCategoryModal(false)}
-                                            // Nếu muốn cho phép chọn danh mục cha, bỏ comment dòng dưới (tùy nghiệp vụ)
-                                            // allowSelectParent={true}
+                                                // Wiki 0094: BẬT chọn danh mục cha. Mặc định của CategoryCascader là
+                                                // false = chỉ chọn được danh mục LÁ → admin thêm danh mục mới ở cấp 1/2/3
+                                                // mà bên dưới đã có con thì seller bấm vào chỉ mở tiếp cấp con, KHÔNG
+                                                // chọn được chính nó ("không chọn được danh mục vừa thêm").
+                                                // Spec 0018: cây tối đa 5 cấp, gán SP ở cấp nào cũng hợp lệ.
+                                                allowSelectParent={true}
                                             />
                                         </div>
                                     </div>

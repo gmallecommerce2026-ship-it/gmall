@@ -183,17 +183,26 @@ const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({
           </Button>
         </div>
 
-        {/* 2. Nơi Bán */}
+        {/* 2. Nơi Bán — ẨN (wiki 0094).
+            Hai lý do, cái nào cũng đủ để không hiển thị cho khách:
+            (a) Danh sách lấy từ `@/lib/mock-data` — dữ liệu GIẢ, chỉ có 4 mục và còn trộn
+                lẫn tỉnh với quận ("Hà Nội", "TP. Hồ Chí Minh", "Quận Hà Đông", "Quận Hoàng Mai").
+            (b) Kể cả tick vào cũng KHÔNG lọc gì: FE có đẩy `?locations=` lên nhưng BE
+                (modules/product) không hề đọc param này → kết quả trả về y hệt.
+            Muốn bật lại: BE lọc theo `shop.provinceId`, FE lấy danh sách tỉnh thật từ
+            /ghn/provinces, rồi bỏ comment khối dưới. */}
+        {/*
         <FilterSection title="Nơi Bán">
           {filterLocations.map((item) => (
-            <FilterCheckbox 
-              key={item.id} 
+            <FilterCheckbox
+              key={item.id}
               label={item.label}
-              checked={filters.locations.includes(item.label)} 
+              checked={filters.locations.includes(item.label)}
               onChange={() => toggleLocation(item.label)}
             />
           ))}
         </FilterSection>
+        */}
 
         {/* 3. Đánh Giá */}
         <div className="py-4 border-b border-gray-100">
