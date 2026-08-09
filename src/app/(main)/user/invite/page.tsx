@@ -74,20 +74,35 @@ export default function InvitePage() {
 
       setLoading(true);
       try {
-          const res = await apiClient.post('/friends/invite-by-email', {
+          // wiki 0095 B4 — BUG GỐC khách chụp màn hình ("chỗ này báo lỗi email gửi đi"):
+          // code cũ đọc `res.data.type`, nhưng ApiClient.post KHÔNG bọc kiểu axios —
+          // nó trả THẲNG body JSON đã parse (xem ApiClient.request → res.json()).
+          // Nên `res.data` là undefined → `res.data.type` ném TypeError → rơi vào
+          // catch → LUÔN hiện toast đỏ "Có lỗi xảy ra khi gửi lời mời", kể cả khi
+          // BE đã gửi mail thành công. Email vẫn đi, chỉ là UI báo sai.
+          const res: any = await apiClient.post('/friends/invite-by-email', {
               email,
               message: customMessage
           });
 
-          if (res.data.type === 'internal') {
-              toast.success(res.data.message); // Thông báo kết bạn
-          } else {
-              toast.success("Đã gửi thư mời thành công!"); // Thông báo gửi mail
-          }
-          
+          // BE trả { success, type: 'internal' | 'email', message } và message đã
+          // nêu rõ email đích → hiển thị thẳng thay vì câu chung chung.
+          toast.success(
+              res?.message ||
+              (res?.type === 'internal'
+                  ? 'Đã gửi lời mời kết bạn!'
+                  : 'Đã gửi thư mời thành công!')
+          );
+
           setEmail(''); // Reset email sau khi gửi
       } catch (error: any) {
-          toast.error(error?.response?.data?.message || "Có lỗi xảy ra khi gửi lời mời");
+          // BE nêu rõ lý do (trùng email đã mời, đã là bạn bè, email của chính mình...)
+          // — ưu tiên message thật, chỉ fallback khi mất mạng.
+          toast.error(
+              error?.response?.data?.message ||
+              error?.message ||
+              'Có lỗi xảy ra khi gửi lời mời'
+          );
       } finally {
           setLoading(false);
       }
@@ -104,8 +119,14 @@ export default function InvitePage() {
          </div>
          <div>
              <h2 className="text-lg font-bold text-gray-800 mb-2">Mời bạn thêm vui - Nhận quà cực chất</h2>
+             {/* wiki 0095 B6: câu cũ ghi "đăng ký thành viên thành công là được
+                 20.000 điểm" — SAI so với luật thật trong code
+                 (order.service.handleReferralReward): điểm chỉ về khi bạn được
+                 mời có ĐƠN ĐẦU TIÊN đạt giá trị tối thiểu VÀ đã giao thành công.
+                 Hứa sai về tiền/điểm là thứ user sẽ khiếu nại. */}
              <p className="text-sm text-gray-700 leading-relaxed">
-                Mời bạn bè tham gia đăng ký thành viên thành công tại GMall, bạn sẽ được cộng <span className="font-bold text-brand-orange text-orange-600">20.000 điểm thưởng</span> vào tài khoản tích lũy.
+                Mời bạn bè đăng ký GMall qua link của bạn. Khi bạn ấy nhận thành công đơn hàng đầu tiên đạt giá trị tối thiểu, bạn được cộng <span className="font-bold text-brand-orange text-orange-600">điểm thưởng</span> vào tài khoản tích lũy.{' '}
+                <a href="/user/affiliate" className="text-orange-600 font-medium hover:underline">Xem link giới thiệu &amp; tiến độ →</a>
              </p>
          </div>
       </div>

@@ -53,6 +53,7 @@ const UserSidebar = () => {
         { label: 'Đánh giá sản phẩm', path: '/user/reviews' }, // MỚI
         { label: 'Quản lý bạn bè', path: '/user/friends' }, // MỚI
         { label: 'Mời bạn bè', path: '/user/invite' }, // MỚI
+        { label: 'Link giới thiệu', path: '/user/affiliate' }, // wiki 0095 B6
       ]
     },
     {

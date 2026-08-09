@@ -457,6 +457,9 @@ const AddProductPage = () => {
     // Sales (Variants)
     const [tiers, setTiers] = useState<Tier[]>([]);
     const [skuRows, setSkuRows] = useState<SkuRow[]>([]);
+    // wiki 0095 B3: chỉ cho phép ghi đè phân loại lên BE khi form đã nạp xong
+    // phân loại cũ. Nếu prefill lỗi mà vẫn gửi cờ thì bấm Lưu = xoá sạch SKU.
+    const [variantsPrefilled, setVariantsPrefilled] = useState(false);
 
     // Single Price
     const [singlePrice, setSinglePrice] = useState(0);
@@ -562,6 +565,55 @@ const AddProductPage = () => {
                 if (Array.isArray(product.crossSellProducts)) {
                     setCrossSellIds(product.crossSellProducts.map((p: any) => p.id));
                 }
+
+                // wiki 0095 B3 — NẠP LẠI PHÂN LOẠI HÀNG.
+                // Trước đây khối này KHÔNG tồn tại: mở form sửa một sản phẩm có
+                // phân loại thì mục "Phân loại hàng" hiện rỗng ("ko tải được
+                // nhiều phân loại" trong report của khách), và vì tiers rỗng nên
+                // lúc submit `variations` cũng rỗng → không lưu được gì.
+                const rawOptions: any[] = Array.isArray(product.options) ? product.options : [];
+                if (rawOptions.length > 0) {
+                    const loadedTiers: Tier[] = rawOptions.map((o: any) => {
+                        const values: any[] = Array.isArray(o.values) ? o.values : [];
+                        return {
+                            name: o.name ?? '',
+                            options: values.map((v: any) => String(v.value ?? '')),
+                            images: values.map((v: any) => v.image ?? ''),
+                        };
+                    });
+
+                    // tierIndex lưu dạng chuỗi "0,1" (xem ProductVariant.tierIndex).
+                    const rawVariants: any[] = Array.isArray(product.variants) ? product.variants : [];
+                    const mappedRows: (SkuRow | null)[] = rawVariants
+                        .map((v: any): SkuRow | null => {
+                            const indices: number[] = Array.isArray(v.tierIndex)
+                                ? v.tierIndex.map((n: any) => Number(n))
+                                : String(v.tierIndex ?? '')
+                                    .split(',')
+                                    .filter((s: string) => s !== '')
+                                    .map((s: string) => parseInt(s, 10));
+
+                            // Biến thể lệch số nhóm phân loại = dữ liệu rác, bỏ qua
+                            // thay vì dựng key sai rồi ghi đè nhầm SKU khác.
+                            if (indices.length !== loadedTiers.length) return null;
+                            if (indices.some((n, ti) => !Number.isInteger(n) || !loadedTiers[ti]?.options[n])) return null;
+
+                            return {
+                                // key phải TRÙNG định dạng của generateSkuMatrix (' - ')
+                                // thì effect đồng bộ mới giữ lại được giá/kho đã nạp.
+                                key: indices.map((n, ti) => loadedTiers[ti].options[n]).join(' - '),
+                                indices,
+                                price: Number(v.price ?? 0),
+                                stock: Number(v.stock ?? 0),
+                                sku: v.sku ?? '',
+                            };
+                        });
+                    const loadedRows: SkuRow[] = mappedRows.filter((r): r is SkuRow => r !== null);
+
+                    setTiers(loadedTiers);
+                    setSkuRows(loadedRows);
+                }
+                setVariantsPrefilled(true);
             } catch (e: any) {
                 console.error('[AddProductPage] prefill fail:', e);
                 toast.error('Không tải được dữ liệu sản phẩm để chỉnh sửa');
@@ -817,6 +869,10 @@ const AddProductPage = () => {
 
                 tiers: validTiers,
                 variations: validVariations,
+                // wiki 0095 B3: cờ opt-in báo BE "phân loại trong payload này là
+                // đầy đủ, hãy ghi đè". Chỉ gửi khi form đã nạp xong phân loại cũ
+                // — prefill lỗi mà vẫn gửi thì bấm Lưu sẽ xoá sạch SKU.
+                ...(isEditMode && variantsPrefilled ? { syncVariants: true } : {}),
                 crossSellIds,
                 //systemTags: systemTags,
                 systemTags: [],

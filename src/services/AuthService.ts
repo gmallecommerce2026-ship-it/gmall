@@ -36,6 +36,8 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  /** wiki 0095 B6: mã giới thiệu từ link affiliate `/register?ref=<id>`. */
+  ref?: string;
 }
 
 export interface LoginPayload {

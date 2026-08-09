@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthLayout, AuthInput, PrimaryButton, SocialButton } from "@/components/auth/AuthComponents";
 import { OtpInput } from "@/components/auth/OtpInput";
 import { AuthService } from "@/services/AuthService";
@@ -19,6 +19,11 @@ const ArrowLeftIcon = () => (
 
 const RegisterClient = () => {
   const router = useRouter();
+  // wiki 0095 B6: link affiliate là `/register?ref=<userId>`. Trước đây trang
+  // đăng ký KHÔNG hề đọc `ref` → mọi lượt giới thiệu đều mất dấu, người mời
+  // không bao giờ được ghi nhận. Đọc 1 lần ở đây rồi gửi kèm payload đăng ký.
+  const searchParams = useSearchParams();
+  const referralCode = (searchParams?.get('ref') ?? '').trim();
   const [step, setStep] = useState<'form' | 'otp'>('form');
   
   // --- SỬA 1: Gom nhóm state form ---
@@ -101,7 +106,9 @@ const RegisterClient = () => {
         const res: any = await AuthService.register({
           name: formData.name,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          // Chỉ gửi khi có — BE bỏ qua ref sai chứ không chặn đăng ký (wiki 0095 B6).
+          ...(referralCode ? { ref: referralCode } : {}),
         });
         // Wiki 0068 B2: BE trả devOtp khi mail chưa cấu hình (dev/staging) →
         // hiển ngay để user hoàn tất đăng ký (không nhận được email).
@@ -164,6 +171,16 @@ const RegisterClient = () => {
             <h1 className="text-4xl font-medium text-brand-orange text-center mb-2">
               Đăng ký
             </h1>
+
+            {/* wiki 0095 B6: xác nhận cho người được mời thấy link giới thiệu đã
+                được ghi nhận. Không có phản hồi nào thì cả hai bên đều không biết
+                lượt giới thiệu có tính hay không. */}
+            {referralCode && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+                🎁 Bạn đang đăng ký qua <span className="font-semibold">link giới thiệu của bạn bè</span>.
+                Hoàn tất đăng ký để cả hai cùng nhận ưu đãi nhé!
+              </div>
+            )}
 
             <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
               <div>

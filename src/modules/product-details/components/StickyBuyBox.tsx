@@ -18,6 +18,7 @@ import ProductVouchers from "./ProductVouchers";
 import { Product } from "@/types/product";
 import { CartItem } from "@/types/cart";
 import { ShopProfileData } from "./ShopInfo";
+import { applyVariantDisplayOrder } from "@/lib/variant-order";
 
 interface StickyBuyBoxProps {
   product: Product;
@@ -284,23 +285,17 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
         {product.tiers &&
           product.tiers.length > 0 &&
           product.tiers.map((tier, idx) => {
-            const mappedOptions = tier.options.map((opt: string, originalIdx: number) => ({
-              label: opt,
-              originalIdx,
-            }));
+            // wiki 0095 B2: trước đây sort bằng
+            //   localeCompare(..., { numeric: true })
+            // → chỉ so cụm số đầu, bỏ qua đơn vị ⇒ "1TB, 2TB, 256GB, 512GB".
+            // Ngoài ra `images` KHÔNG được sort kèm nên ảnh swatch lệch nhãn.
+            // applyVariantDisplayOrder quy đổi đơn vị về giá trị nền, sắp cả
+            // options lẫn images, và trả originalIndexes để giữ đúng mapping
+            // sang variants[].tierIndex.
+            const { tier: orderedTier, originalIndexes } =
+              applyVariantDisplayOrder(tier);
 
-            const sortedOptions = [...mappedOptions].sort((a, b) =>
-              a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" })
-            );
-
-            const orderedTier = {
-              ...tier,
-              options: sortedOptions.map((o) => o.label),
-            };
-
-            const selectedSortedIndex = sortedOptions.findIndex(
-              (o) => o.originalIdx === selections[idx]
-            );
+            const selectedSortedIndex = originalIndexes.indexOf(selections[idx]);
 
             return (
               <VariantSelector
@@ -308,8 +303,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
                 tier={orderedTier}
                 selectedIndex={selectedSortedIndex}
                 onSelect={(sortedIdx) => {
-                  const originalIndex = sortedOptions[sortedIdx].originalIdx;
-                  handleSelectOption(idx, originalIndex);
+                  handleSelectOption(idx, originalIndexes[sortedIdx]);
                 }}
                 onHoverOption={(img) => {
                   if (onHoverVariant) onHoverVariant(img);
