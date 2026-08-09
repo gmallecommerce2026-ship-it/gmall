@@ -329,15 +329,20 @@ export const AdminService = {
       return apiClient.delete(`/admin/products/${id}`);
   },
 
-  getConversionRate: async () => {
-    const res = await apiClient.get('/points/rate');
-    return res.data; // Trả về { rate: 10000 }
+  // [wiki 0099 FIX apiClient-no-data-wrapper] apiClient (fetch) trả THẲNG body JSON,
+  // KHÔNG bọc { data } như axios. BE GET /points/rate trả { rate } (point.controller.ts:53).
+  // Đọc res.data ở đây luôn ra undefined -> màn hình cấu hình xu không bao giờ nhận được
+  // tỷ giá thật. Đọc res?.rate và trả về number (?. vì request() trả null khi 401/body rỗng).
+  getConversionRate: async (): Promise<number | undefined> => {
+    const res = await apiClient.get<{ rate: number }>('/points/rate');
+    return res?.rate; // BE: { rate: 10000 } -> trả về 10000
   },
 
-  // Cập nhật tỷ lệ
-  updateConversionRate: async (amount: number) => {
-    const res = await apiClient.post('/points/rate', { amount });
-    return res.data;
+  // Cập nhật tỷ lệ. BE trả { success: true, rate } (point.service.ts:109) -> trả về
+  // tỷ giá server đã thực sự lưu để caller đồng bộ lại state, không tin mù input local.
+  updateConversionRate: async (amount: number): Promise<number | undefined> => {
+    const res = await apiClient.post<{ success: boolean; rate: number }>('/points/rate', { amount });
+    return res?.rate;
   },
   deleteAllProducts: async () => {
     return await apiClient.delete('/admin/products/delete-all/cleanup');

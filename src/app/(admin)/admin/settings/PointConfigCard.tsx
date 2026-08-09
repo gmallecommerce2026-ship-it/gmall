@@ -16,11 +16,14 @@ export default function PointConfigCard() {
 
   const loadRate = async () => {
     try {
-      const data = await AdminService.getConversionRate();
-      // Kiểm tra nếu API trả về data.rate thì set, không thì dùng mặc định
-      console.log("data: ", data, " VNĐ = 1 Xu");
-      if (data || data.rate) {
-        setRate(data || data.rate);
+      // [wiki 0099 FIX apiClient-no-data-wrapper] getConversionRate nay trả về number
+      // (trước trả undefined do đọc res.data trên apiClient không-bọc-data).
+      // Code cũ `if (data || data.rate)` còn ném TypeError khi data undefined, và
+      // `setRate(data || data.rate)` sẽ nhét nguyên object vào input type="number".
+      // Guard bằng typeof number: API lỗi/chưa sẵn sàng thì giữ mặc định 10000.
+      const value = await AdminService.getConversionRate();
+      if (typeof value === 'number' && value > 0) {
+        setRate(value);
       }
     } catch (error) {
       console.error("Lỗi tải cấu hình xu", error);
@@ -36,7 +39,12 @@ export default function PointConfigCard() {
 
     setLoading(true);
     try {
-      await AdminService.updateConversionRate(rate);
+      // Đồng bộ lại theo giá trị server đã lưu (BE trả { success, rate }) thay vì
+      // giữ nguyên input local -> tránh hiển thị lệch nếu BE chuẩn hoá giá trị.
+      const saved = await AdminService.updateConversionRate(rate);
+      if (typeof saved === 'number' && saved > 0) {
+        setRate(saved);
+      }
       toast.success("Đã cập nhật tỷ lệ quy đổi thành công!");
     } catch (error) {
       console.error(error);
