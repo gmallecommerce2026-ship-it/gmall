@@ -20,6 +20,21 @@ import type { Product } from '@/types/product';
 /** Chặn một BE treo giữ luôn tiến trình SSR (không có timeout thì fetch của Node chờ vô hạn). */
 const FETCH_TIMEOUT_MS = 8_000;
 
+/**
+ * Địa chỉ BE dùng cho lời gọi TỪ SERVER.
+ *
+ * `API_BASE_URL` là `NEXT_PUBLIC_API_URL` — địa chỉ dành cho TRÌNH DUYỆT. Trên VPS, FE và BE
+ * chạy cùng máy, nên gọi qua URL công khai nghĩa là đi ra internet rồi vòng lại qua nginx +
+ * bắt tay TLS: đo thực tế **166ms**, trong khi gọi thẳng `http://127.0.0.1:4001` chỉ **3ms**.
+ * Chỗ này nằm trên đường tới TTFB của mọi trang sản phẩm, và còn khiến SSR phụ thuộc vào
+ * nginx/chứng chỉ dù BE vẫn sống.
+ *
+ * `API_INTERNAL_URL` KHÔNG có tiền tố `NEXT_PUBLIC_` nên chỉ tồn tại phía server và đọc lúc
+ * chạy — đổi giá trị không phải build lại. Không đặt thì tự lùi về URL công khai (dev local
+ * không cần khai gì thêm).
+ */
+const SERVER_API_BASE = (process.env.API_INTERNAL_URL || API_BASE_URL).replace(/\/$/, '');
+
 /** Response thô của `GET /store/products/:id` (BE `ProductReadService.findOnePublic`). */
 type RawProductDetail = Record<string, any>;
 
@@ -86,7 +101,7 @@ export function mapProductDetail(raw: RawProductDetail): Product {
 export const getProductDetail = cache(async (idOrSlug: string): Promise<Product | null> => {
   if (!idOrSlug) return null;
 
-  const url = `${API_BASE_URL}/store/products/${encodeURIComponent(idOrSlug)}`;
+  const url = `${SERVER_API_BASE}/store/products/${encodeURIComponent(idOrSlug)}`;
 
   let res: Response;
   try {
