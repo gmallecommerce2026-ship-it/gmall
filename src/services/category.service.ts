@@ -17,19 +17,23 @@ export interface Category {
 }
 
 export const CategoryService = {
-  // Lấy danh sách theo parentId
+  // Lấy danh sách theo parentId.
+  // wiki 0103: BE `GET /categories` trả MẢNG THẲNG, và `apiClient` (fetch) trả nguyên
+  // body chứ không bọc `{data}` như axios → `response.data` luôn `undefined`. Hai hàm
+  // này hiện chưa nơi nào gọi nên chưa ai thấy hậu quả; sửa để nếu sau này dùng tới
+  // thì không dính bẫy. (`?? []` giữ đúng kiểu trả về khi 401 → `request()` trả `null`.)
   getById: async (parentId?: string): Promise<Category[]> => {
     const params = parentId ? { parentId } : {};
-    const response = await apiClient.get('/categories', { params });
-    return response.data;
+    const response = await apiClient.get<Category[]>('/categories', { params });
+    return Array.isArray(response) ? response : [];
   },
 
-  // Tìm kiếm danh mục
+  // Tìm kiếm danh mục — BE `GET /categories/search` cũng trả mảng thẳng.
   search: async (keyword: string): Promise<Category[]> => {
-    const response = await apiClient.get('/categories/search', {
+    const response = await apiClient.get<Category[]>('/categories/search', {
       params: { q: keyword },
     });
-    return response.data;
+    return Array.isArray(response) ? response : [];
   },
   getBySlug: async (slug: string): Promise<any> => {
     const response = await apiClient.get(`/categories/slug/${slug}`);
