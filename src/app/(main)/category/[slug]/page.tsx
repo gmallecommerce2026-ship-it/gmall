@@ -46,10 +46,16 @@ export default async function CategoryPage({ params }: any) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
 
+  // Wiki 0104 (đợt 2): lấy sẵn tên danh mục ở server để tiêu đề `<h1>` có mặt NGAY
+  // trong HTML đầu tiên. Trước đây tên chỉ có sau `useEffect`, nên tiêu đề hiện ra là
+  // "DANH MỤC:" cụt lủn. `getCategoryBySlug` được bọc `cache()` nên lời gọi này dùng
+  // chung kết quả với `generateMetadata` ở trên — không phát sinh thêm request.
+  const category = await getCategoryBySlug(slug);
+
   return (
     // [QUAN TRỌNG] Bắt buộc phải có Suspense vì SearchProductPage dùng useSearchParams
     <Suspense fallback={<LoadingFallback />}>
-      <SearchProductPage initialCategorySlug={slug} />
+      <SearchProductPage initialCategorySlug={slug} initialCategoryName={category?.name} />
     </Suspense>
   );
 }

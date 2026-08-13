@@ -4,9 +4,10 @@
 import React from "react";
 import { useProductFilters } from "@/hooks/useProductFilters";
 
-interface ProductSortBarProps {
-  title?: string;
-}
+// Wiki 0104 (đợt 2): bỏ prop `title` — nó được khai và được truyền vào, nhưng component
+// KHÔNG hề đọc tới, nên tiêu đề trang bị nuốt mất suốt thời gian qua. Tiêu đề nay do
+// `SearchProductPage` dựng thành `<h1>` thật, đúng chỗ về mặt ngữ nghĩa.
+// (không còn prop nào)
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Mới Nhất' },
@@ -18,7 +19,7 @@ const SORT_OPTIONS = [
 // R3-2 (wiki 0045): refactor sort UI — rời NavButton wrapper sang button native
 // để: (a) active state rõ ràng (background brand-orange), (b) hover smooth,
 // (c) typography đồng bộ system, (d) bỏ prop magic-number của NavButton.
-const ProductSortBar: React.FC<ProductSortBarProps> = () => {
+const ProductSortBar: React.FC = () => {
   const { filters, setSort } = useProductFilters();
 
   return (

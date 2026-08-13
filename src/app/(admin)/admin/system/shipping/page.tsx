@@ -4,10 +4,13 @@ import React from 'react';
 import { FiTruck, FiAlertTriangle, FiSettings } from 'react-icons/fi';
 
 export default function ShippingSystemPage() {
+  // Wiki 0104 (đợt 2): danh sách cũ ghi "GHTK — Đã kết nối" và "SPX Express — Bảo trì".
+  // Cả hai đều KHÔNG có thật: BE chỉ có module `ghn/` với đúng ba biến môi trường
+  // `GHN_API_URL`, `GHN_SHOP_ID`, `GHN_TOKEN` — không có dòng mã nào cho GHTK hay SPX.
+  // Ghi "đã kết nối" cho một hãng chưa tích hợp sẽ khiến người vận hành tưởng có thể
+  // chọn hãng đó khi giao đơn.
   const providers = [
-      { name: 'Giao Hàng Nhanh (GHN)', logo: 'GHN', color: 'bg-orange-500', status: 'Đã kết nối' },
-      { name: 'Giao Hàng Tiết Kiệm (GHTK)', logo: 'GHTK', color: 'bg-green-600', status: 'Đã kết nối' },
-      { name: 'SPX Express', logo: 'SPX', color: 'bg-red-500', status: 'Bảo trì' },
+      { name: 'Giao Hàng Nhanh (GHN)', logo: 'GHN', color: 'bg-orange-500', status: 'Đã tích hợp', note: 'Cấu hình qua biến môi trường GHN_*' },
   ];
 
   return (
@@ -37,8 +40,8 @@ export default function ShippingSystemPage() {
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{p.status}</span>
                     </div>
                     <h3 className="font-bold text-gray-800">{p.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1">API Integration v2.0</p>
-                    
+                    <p className="text-xs text-gray-500 mt-1">{p.note}</p>
+
                     <button disabled className="mt-4 w-full py-2 border border-gray-200 rounded text-sm text-gray-400 flex items-center justify-center gap-2 cursor-not-allowed">
                         <FiSettings size={14} /> Cấu hình (Coming soon)
                     </button>

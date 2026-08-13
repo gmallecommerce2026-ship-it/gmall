@@ -114,7 +114,14 @@ const ProductPageContent = () => {
       <div className="w-full max-w-[1340px] mx-auto px-4 py-8">
         <Breadcrumbs items={breadcrumbItems} />
         <PromoBanner />
-        <ProductSortBar title="TẤT CẢ SẢN PHẨM" />
+
+        {/* Wiki 0104 (đợt 2): trước truyền `title` vào `ProductSortBar` — prop mà component
+            đó không hề đọc, nên trang `/product` cũng không có tiêu đề lẫn `<h1>`. */}
+        <h1 className="mt-6 text-xl font-semibold tracking-tight text-gray-800 md:text-2xl">
+          TẤT CẢ SẢN PHẨM
+        </h1>
+
+        <ProductSortBar />
 
         <div className="flex flex-col lg:flex-row gap-6 mt-8">
           {/* Sidebar */}
