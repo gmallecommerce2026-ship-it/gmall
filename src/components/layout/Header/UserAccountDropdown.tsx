@@ -66,7 +66,7 @@ const UserAccountDropdown = ({ user, logout }: UserAccountDropdownProps) => {
             </Link>
             
             {/* MỚI: Thêm Affiliate Option */}
-            <Link href="/affiliate/dashboard" className="px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700 hover:text-brand-orange transition-colors">
+            <Link href="/user/affiliate" className="px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700 hover:text-brand-orange transition-colors">
               {/* Tạm thời dùng icon User hoặc Order nếu chưa có icon riêng */}
               <Icons.User className="w-4 h-4" /> Cộng tác viên (Affiliate)
             </Link>

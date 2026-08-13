@@ -10,11 +10,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const fund = await CharityService.getFund(slug);
     return {
-      title: `${fund.name} — Quỹ từ thiện GMall`,
+      title: `${fund.name} — Quỹ từ thiện`,
       description: fund.description ?? undefined,
     };
   } catch {
-    return { title: 'Quỹ từ thiện — GMall' };
+    return { title: 'Quỹ từ thiện' };
   }
 }
 

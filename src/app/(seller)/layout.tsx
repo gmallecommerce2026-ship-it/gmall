@@ -4,6 +4,14 @@ import SellerSidebar from '@/layout/seller/SellerSidebar';
 import SellerRightSidebar from '@/layout/seller/SellerRightSidebar'; // [MỚI]
 import ChatWindow from '@/components/chat/ChatWindow'; // [MỚI] Import ChatWindow
 import ChatSocketProvider from '@/components/chat/ChatSocketProvider'; // wiki 0067 - luôn mounted để nhận realtime ngay cả khi popup đóng
+import type { Metadata } from 'next';
+
+// Wiki 0104: xem giải thích ở `(admin)/layout.tsx` — kênh người bán cũng là khu nội bộ,
+// không lập chỉ mục, và gom hậu tố tiêu đề về một kiểu.
+export const metadata: Metadata = {
+  title: { default: 'Kênh người bán GMall', template: '%s | Kênh người bán GMall' },
+  robots: { index: false, follow: false },
+};
 
 export default function SellerLayout({
   children,

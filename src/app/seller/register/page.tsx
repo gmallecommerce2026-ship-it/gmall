@@ -366,7 +366,7 @@ const SellerRegisterPage = () => {
                     className="mt-1 w-4 h-4 text-brand-orange rounded border-gray-300 focus:ring-brand-orange"
                 />
                 <label htmlFor="agree-term" className="text-sm text-gray-600">
-                    Tôi cam kết thông tin trên là chính xác và đồng ý với <Link href="/terms" target="_blank" className="text-brand-orange hover:underline">Điều khoản dịch vụ</Link> & <Link href="/policy" target="_blank" className="text-brand-orange hover:underline">Chính sách bảo mật</Link> của sàn.
+                    Tôi cam kết thông tin trên là chính xác và đồng ý với <Link href="/terms" target="_blank" className="text-brand-orange hover:underline">Điều khoản dịch vụ</Link> & <Link href="/privacy" target="_blank" className="text-brand-orange hover:underline">Chính sách bảo mật</Link> của sàn.
                 </label>
             </div>
 

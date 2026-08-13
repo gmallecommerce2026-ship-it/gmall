@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+
+  // Wiki 0104: đo trên prod thấy console của khách đầy log debug
+  // (`🔍 Menu Item Debug`, `🔍 DEBUG PRODUCT`, dump nguyên object sản phẩm).
+  // Đã gỡ các ổ lớn trong mã nguồn, nhưng gỡ tay không chặn được lần sau: chỉ cần
+  // một `console.log` quên xoá là lại lên production. `removeConsole` cắt ở tầng
+  // biên dịch cho bản production, GIỮ LẠI `error`/`warn` để không mất log vận hành
+  // thật (PM2 vẫn cần thấy lỗi). Bản dev không bị ảnh hưởng nên vẫn debug bình thường.
+  compiler: {
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
+  },
   // 2. Proxy /api/* sang Backend.
   // Wiki 0094: destination trước đây viết cứng `http://localhost:4001`. Giá trị đó ĐÚNG cho
   // VPS (FE `my-next-app` và BE `nest-app` chạy cùng máy, BE PORT=4001) nhưng SAI ở mọi nơi

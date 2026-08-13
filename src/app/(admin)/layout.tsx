@@ -4,6 +4,16 @@ import Link from 'next/link';
 import AdminSidebar from '@/layout/admin/AdminSidebar'; // Đảm bảo đường dẫn đúng
 import { FiBell } from 'react-icons/fi'; // Thêm icon cho header
 import AdminSearchBox from './components/AdminSearchBox';
+import type { Metadata } from 'next';
+
+// Wiki 0104: các trang admin tự viết hậu tố "| Admin Portal" / "| Admin" / "| Admin
+// Dashboard" — ba kiểu cho cùng một khu vực. Đặt template ở layout nhóm route để mọi
+// trang con nhất quán mà không phải sửa từng file, và `noindex` để khu quản trị không
+// bao giờ lọt vào kết quả tìm kiếm (trước đây thừa hưởng `index: true` từ root).
+export const metadata: Metadata = {
+  title: { default: 'Quản trị GMall', template: '%s | Quản trị GMall' },
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({
   children,

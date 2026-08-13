@@ -25,14 +25,14 @@ export async function generateMetadata(
     
     if (!category) {
       return {
-        title: 'Không tìm thấy danh mục - G-Mall Blog',
+        title: 'Không tìm thấy danh mục',
       };
     }
 
     const previousImages = (await parent).openGraph?.images || [];
 
     return {
-      title: `${category.name} - Tạp Chí Đời Sống | G-Mall`,
+      title: `${category.name} - Tạp Chí Đời Sống`,
       description: category.description || `Tổng hợp các bài viết về ${category.name}`,
       openGraph: {
         title: `${category.name} - Tạp Chí Đời Sống`,
@@ -42,7 +42,7 @@ export async function generateMetadata(
     };
   } catch (error) {
     return {
-      title: 'Danh mục Blog - G-Mall',
+      title: 'Danh mục Blog',
     };
   }
 }

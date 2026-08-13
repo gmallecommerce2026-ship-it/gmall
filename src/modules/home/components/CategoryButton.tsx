@@ -8,7 +8,9 @@ import Link from 'next/link';
 export const CategoryButton = () => {
   return (
     <div className="w-full max-w-[1340px] mx-auto px-4 mt-6">
-      <Link href="/categories" className="inline-flex items-center gap-3 bg-brand-orange text-white px-6 py-3 rounded-t-lg font-bold text-lg hover:bg-brand-orange-dark transition-all shadow-md">
+      {/* Wiki 0104: `/categories` không tồn tại (component này hiện chưa nơi nào dùng,
+          nhưng để nguyên là gài sẵn một link 404 cho lần ai đó đem ra dùng). */}
+      <Link href="/search" className="inline-flex items-center gap-3 bg-brand-orange text-white px-6 py-3 rounded-t-lg font-bold text-lg hover:bg-brand-orange-dark transition-all shadow-md">
         <div className="p-1 border-2 border-white rounded">
            {/* Hamburger Icon đơn giản (SVG nội tuyến thay vì import) */}
            <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">

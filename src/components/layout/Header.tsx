@@ -102,7 +102,7 @@ const Header = () => {
       <div className="hidden lg:block w-full relative bg-white z-[60]">
         <div className="w-full bg-gradient-to-r from-[#FFF0F0] to-[#FFF8F0] h-[32px]">
             <div className="max-w-[1340px] mx-auto px-4 h-full flex items-center justify-center text-xs text-gray-600">
-                🎉 Trở thành đối tác Affiliate - Kiếm thu nhập không giới hạn - <Link href="/affiliate/dashboard" className="text-brand-orange font-bold ml-1 hover:underline">Xem ngay</Link>
+                🎉 Trở thành đối tác Affiliate - Kiếm thu nhập không giới hạn - <Link href="/user/affiliate" className="text-brand-orange font-bold ml-1 hover:underline">Xem ngay</Link>
             </div>
         </div>
         <TopBar />

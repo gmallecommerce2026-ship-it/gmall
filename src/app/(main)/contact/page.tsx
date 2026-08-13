@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Liên hệ — GMall",
+  title: "Liên hệ",
   description: "Hotline 19001221 — Email support@gmall.com.vn. Liên hệ với GMall qua hotline, email hoặc tạo khiếu nại trực tiếp.",
 };
 

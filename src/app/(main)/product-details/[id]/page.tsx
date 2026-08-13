@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!product) {
     return {
-      title: `Không tìm thấy sản phẩm | ${BRAND.name}`,
+      title: 'Không tìm thấy sản phẩm',
       robots: { index: false, follow: false },
     };
   }
@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // Root layout chưa khai báo `metadataBase`; đặt ở đây để ảnh/URL tương đối
     // (vd `/assets/placeholder.png`) được nở thành absolute trong og:image + canonical.
     metadataBase: new URL(SITE_URL),
-    title: `${product.title} | ${BRAND.name}`,
+    title: product.title,
     description,
     alternates: { canonical: url },
     openGraph: {
