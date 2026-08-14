@@ -126,6 +126,13 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
   const product = useMemo(() => normalizeProductData(initialProduct), [initialProduct]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Wiki 0104 (đợt 4): biến thể + giá đang chọn ở khung mua, nâng lên đây để khối
+  // "Thường được mua cùng" ở cột khác tính tiền theo đúng thứ khách đang chọn.
+  const [selectedVariantInfo, setSelectedVariantInfo] = useState<{
+    variantId?: string;
+    price: number;
+  } | null>(null);
+
   const { track } = useTracking();
   useEffect(() => {
     if (product?.id) {
@@ -227,7 +234,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
 
             {/* Mua kèm deal sốc */}
             <div>
-              <BoughtTogether mainProduct={product} />
+              {/* Wiki 0104 (đợt 4): truyền biến thể đang chọn ở khung mua xuống, để khối
+                  "mua cùng" tính tiền theo ĐÚNG thứ khách đang chọn thay vì giá gốc. */}
+              <BoughtTogether mainProduct={product} mainSelectedVariant={selectedVariantInfo} />
             </div>
 
             {/* Mô tả chi tiết sản phẩm */}
@@ -260,6 +269,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
                 shopProfile={shopProfile}
                 vouchers={allVouchers}
                 onHoverVariant={(img) => setPreviewImage(img)}
+                onVariantChange={setSelectedVariantInfo}
               />
             </div>
           </div>

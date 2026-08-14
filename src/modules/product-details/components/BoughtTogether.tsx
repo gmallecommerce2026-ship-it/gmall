@@ -31,11 +31,42 @@ const MiniVariantSelector = ({ label, options, selected, onSelect }: any) => (
   </div>
 );
 
+/** Ảnh dự phòng khi URL ảnh của sản phẩm chết (đã kiểm: có thật trên prod, HTTP 200). */
+const FALLBACK_IMAGE = '/assets/placeholder.png';
+
+/**
+ * Wiki 0104 (đợt 4): đổi src sang ảnh dự phòng khi ảnh gốc lỗi.
+ *
+ * Vì sao cần: thẻ `<img>` ở khối này KHÔNG có `onError`, nên khi URL ảnh chết trình duyệt
+ * đổ **chữ `alt`** ra chỗ của ảnh — tên sản phẩm dài tràn khỏi khung, đè lên ô tick.
+ * Quét toàn bộ 3.837 URL ảnh trong danh mục: đúng 1 URL chết (`salt.tikicdn.com/media/...`,
+ * hotlink còn lại từ tính năng crawler) nhưng nó dùng cho 2 sản phẩm.
+ *
+ * `dataset.fallbackApplied` chặn VÒNG LẶP: nếu chính ảnh dự phòng cũng lỗi thì `onError`
+ * sẽ nổ lại vô hạn.
+ */
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  const img = e.currentTarget;
+  if (img.dataset.fallbackApplied === '1') return;
+  img.dataset.fallbackApplied = '1';
+  img.src = FALLBACK_IMAGE;
+};
+
 interface BoughtTogetherProps {
   mainProduct: any;
+  /**
+   * Biến thể + giá đang chọn ở khung mua (wiki 0104 đợt 4).
+   *
+   * Trước đây khối này luôn dùng `mainProduct.price` (giá GỐC) để hiển thị và tính
+   * "Tổng tiền", trong khi `resolveVariantId` lại thêm `variants[0]` vào giỏ. Với sản
+   * phẩm có nhiều biến thể lệch giá (ví dụ iPhone 17 Pro Max: 15 biến thể từ 61.000.000
+   * đến 65.000.002), số tiền trưng ra KHÔNG phải số tiền sẽ trả, và màu khách chọn ở
+   * khung mua cũng bị bỏ qua.
+   */
+  mainSelectedVariant?: { variantId?: string; price: number } | null;
 }
 
-export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) => {
+export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct, mainSelectedVariant }) => {
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selections, setSelections] = useState<Record<string, Record<string, string>>>({});
@@ -107,6 +138,14 @@ export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) =
       // nếu sản phẩm không có options hoặc không tìm thấy variant phù hợp.
       const resolveVariantId = (product: any): string | undefined => {
         if (!product?.variants || !Array.isArray(product.variants)) return undefined;
+
+        // Wiki 0104 (đợt 4): sản phẩm CHÍNH lấy đúng biến thể khách đang chọn ở khung mua.
+        // Trước đây rơi xuống nhánh `variants[0]` bên dưới, nên khách chọn màu "xanh" mà
+        // giỏ lại nhận biến thể đầu danh sách — sai cả giá lẫn màu.
+        if (product.id === mainProduct?.id && mainSelectedVariant?.variantId) {
+          return mainSelectedVariant.variantId;
+        }
+
         const sel = selections[product.id];
         if (!sel || Object.keys(sel).length === 0) return product.variants[0]?.id;
         const match = product.variants.find((v: any) => {
@@ -138,7 +177,13 @@ export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) =
             productId: product.id,
             productVariantId: resolveVariantId(product),
             name: product.name,
-            price: Number(product.price) || 0,
+            // Wiki 0104 (đợt 4): sản phẩm chính đẩy giá của BIẾN THỂ đang chọn, để con số
+            // trong giỏ khớp với "Tổng tiền" vừa hiển thị. (Giá cuối vẫn do BE chốt lại
+            // theo `productVariantId` — đây chỉ là giá hiển thị phía client.)
+            price:
+              product.id === mainProduct?.id
+                ? mainPrice
+                : Number(product.price) || 0,
             imageUrl,
             shopId: product.shopId || product.shop?.id,
             shopName: product.shopName || product.shop?.name,
@@ -155,22 +200,39 @@ export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) =
     }
   };
 
+  /**
+   * Giá dùng cho sản phẩm chính.
+   *
+   * Wiki 0104 (đợt 4): ưu tiên giá của BIẾN THỂ khách đang chọn ở khung mua. Dùng
+   * `mainProduct.price` (giá gốc) là sai khi sản phẩm có nhiều biến thể lệch giá — đó
+   * chính là lúc màn hình hiện "65.000.000" ở khối này còn khung mua hiện "62.000.000".
+   */
+  const mainPrice = Number(
+    mainSelectedVariant?.price && mainSelectedVariant.price > 0
+      ? mainSelectedVariant.price
+      : mainProduct?.price || 0,
+  );
+
   const { totalPrice, totalSavings, totalItems } = useMemo(() => {
     const allItems = [mainProduct, ...relatedProducts];
     const selectedItems = allItems.filter((p) => p && selectedIds.includes(p.id));
-    
+
     const isCombo = selectedItems.length >= 2;
     const discountRate = isCombo ? 0.05 : 0;
 
-    const rawTotal = selectedItems.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+    const rawTotal = selectedItems.reduce((sum, p) => {
+      // Sản phẩm chính lấy giá biến thể đang chọn; các sản phẩm mua kèm giữ giá của chúng.
+      const unit = p.id === mainProduct?.id ? mainPrice : Number(p.price) || 0;
+      return sum + unit;
+    }, 0);
     const finalTotal = rawTotal * (1 - discountRate);
-    
+
     return {
       totalPrice: finalTotal,
       totalSavings: rawTotal * discountRate,
       totalItems: selectedItems.length
     };
-  }, [mainProduct, relatedProducts, selectedIds]);
+  }, [mainProduct, relatedProducts, selectedIds, mainPrice]);
 
   if (!relatedProducts || relatedProducts.length === 0) return null;
 
@@ -190,17 +252,20 @@ export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) =
                 {/* 1. Main Product */}
                 <div className="w-40 shrink-0">
                     <div className="aspect-square relative rounded-md overflow-hidden border border-orange-500 bg-gray-50 mb-2">
-                        <img 
-                            src={mainProduct.imageUrl || '/placeholder.png'} 
-                            alt={mainProduct.name} 
+                        <img
+                            src={mainProduct.imageUrl || FALLBACK_IMAGE}
+                            alt={mainProduct.name}
                             className="object-cover w-full h-full"
+                            onError={handleImageError}
                         />
                         <div className="absolute bottom-0 w-full bg-orange-500 text-white text-[10px] text-center py-0.5 font-bold">
                             Đang xem
                         </div>
                     </div>
                     <p className="text-xs font-medium line-clamp-2 h-8 mb-1" title={mainProduct.name}>{mainProduct.name}</p>
-                    <p className="text-brand-orange font-bold text-sm">{formatCurrency(Number(mainProduct.price))}</p>
+                    {/* Wiki 0104 (đợt 4): giá của biến thể đang chọn, không phải giá gốc —
+                        nếu không thì thẻ này ghi 65.000.000 trong khi khung mua ghi 62.000.000. */}
+                    <p className="text-brand-orange font-bold text-sm">{formatCurrency(mainPrice)}</p>
                 </div>
 
                 <div className="h-32 flex items-center justify-center text-gray-300">
@@ -219,11 +284,12 @@ export const BoughtTogether: React.FC<BoughtTogetherProps> = ({ mainProduct }) =
                             </div>
 
                             <div className="aspect-square relative rounded-md overflow-hidden border border-gray-200 bg-gray-50 mb-2">
-                                <img 
+                                <img
                                     // Xử lý ảnh an toàn: string hoặc object
-                                    src={product.images && product.images[0] ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].url) : '/placeholder.png'} 
-                                    alt={product.name} 
+                                    src={product.images && product.images[0] ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].url) : FALLBACK_IMAGE}
+                                    alt={product.name}
                                     className={`object-cover w-full h-full transition-opacity ${!selectedIds.includes(product.id) ? 'opacity-50 grayscale' : ''}`}
+                                    onError={handleImageError}
                                 />
                             </div>
                             

@@ -25,6 +25,8 @@ interface StickyBuyBoxProps {
   shopProfile: ShopProfileData | null;
   vouchers: any[];
   onHoverVariant?: (image: string | null) => void;
+  /** Wiki 0104 (đợt 4): thông báo biến thể + giá đang chọn cho trang cha. */
+  onVariantChange?: (info: { variantId?: string; price: number }) => void;
 }
 
 export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
@@ -32,6 +34,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
   shopProfile,
   vouchers,
   onHoverVariant,
+  onVariantChange,
 }) => {
   const router = useRouter();
   const { user } = useUserStore();
@@ -99,6 +102,25 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
     : product.stock || product.stockTotal || 0;
 
   const subtotal = Number(finalPrice || 0) * quantity;
+
+  // Wiki 0104 (đợt 4): báo biến thể + giá đang chọn RA NGOÀI cho trang cha.
+  //
+  // Vì sao cần: khối "Thường được mua cùng" nằm ở cột khác, không thấy được state này,
+  // nên nó hiển thị `product.price` (giá GỐC) trong khi khách đang chọn một biến thể có
+  // giá khác — hai con số cãi nhau trên cùng một màn hình, và "Tổng tiền (3 món)" được
+  // tính từ giá không phải giá sẽ trả.
+  //
+  // Chỉ THÊM một lời gọi ra ngoài, KHÔNG sửa gì trong luồng thêm-giỏ/mua-ngay của khung
+  // này — đây là đường đi của tiền, không refactor khi chưa có cách kiểm chứng trực quan.
+  // Deps là `currentVariant?.id` + `finalPrice` (giá trị nguyên thuỷ) nên dù trang cha
+  // re-render, effect không chạy lại ⇒ không có vòng lặp set-state.
+  useEffect(() => {
+    if (!onVariantChange) return;
+    onVariantChange({
+      variantId: currentVariant?.id,
+      price: Number(finalPrice || 0),
+    });
+  }, [onVariantChange, currentVariant?.id, finalPrice]);
 
   const formatPrice = (p: number | string | undefined | null) => {
     if (p === undefined || p === null) return "Liên hệ";
