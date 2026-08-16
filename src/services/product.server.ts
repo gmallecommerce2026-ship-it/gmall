@@ -85,6 +85,15 @@ export function mapProductDetail(raw: RawProductDetail): Product {
       : {},
 
     brand: raw.brand || 'No Brand',
+
+    // wiki 0105 — affiliate sản phẩm. `affiliateRate` đã được BE ép về số ở
+    // findOnePublic; ép thêm một lần ở đây để phòng đường dữ liệu khác (cache cũ,
+    // endpoint khác) còn trả chuỗi Decimal.
+    affiliateEnabled: !!(raw as any).affiliateEnabled,
+    affiliateRate:
+      (raw as any).affiliateRate === null || (raw as any).affiliateRate === undefined
+        ? null
+        : Number((raw as any).affiliateRate),
   } as Product;
 }
 

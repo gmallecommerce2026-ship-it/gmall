@@ -347,4 +347,21 @@ export const AdminService = {
   deleteAllProducts: async () => {
     return await apiClient.delete('/admin/products/delete-all/cleanup');
   },
+
+  // ===== wiki 0105 — Tiếp thị liên kết =====
+  // Dùng `apiClient` (fetch) nên trả THẲNG body JSON, KHÔNG bọc `.data` như axios.
+  // Đọc `res.data` ở đây là lớp bug đã xảy ra ba lần (wiki 0095/0099/0103).
+
+  listAffiliateAccounts: async (status = 'PENDING', page = 1) =>
+    apiClient.get(`/admin/affiliate/accounts?status=${encodeURIComponent(status)}&page=${page}`),
+
+  reviewAffiliateAccount: async (
+    id: string,
+    body: { status: 'APPROVED' | 'REJECTED' | 'SUSPENDED'; rejectReason?: string },
+  ) => apiClient.patch(`/admin/affiliate/accounts/${id}`, body),
+
+  listAffiliateCommissions: async (status = 'ALL', page = 1) =>
+    apiClient.get(`/admin/affiliate/commissions?status=${encodeURIComponent(status)}&page=${page}`),
+
+  settleAffiliateNow: async () => apiClient.post('/admin/affiliate/settle', {}),
 };

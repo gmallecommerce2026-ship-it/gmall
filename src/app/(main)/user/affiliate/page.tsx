@@ -6,52 +6,66 @@
  * TRƯỚC ĐÂY trang này chỉ có nội dung giới thiệu bạn bè (link `/register?ref=<userId>`),
  * trùng mục đích với `/user/invite` — khách nhận xét đúng là "hơi giống tính năng mời bạn
  * bè". Nội dung cũ được GIỮ NGUYÊN, chuyển thành tab "Giới thiệu bạn bè"; affiliate SẢN
- * PHẨM (chọn hàng của các shop, chia sẻ link từng sản phẩm, ăn hoa hồng tiền mặt) là tab
- * chính.
+ * PHẨM (chọn hàng của các shop, chia sẻ link từng sản phẩm, ăn hoa hồng tiền mặt) là
+ * phần chính.
  *
  * Vì sao referral và affiliate không gộp làm một: referral gắn vào NGƯỜI
  * (`User.referredById`, quan hệ 1-1 vĩnh viễn, thưởng đúng một lần), affiliate gắn vào
  * GIAO DỊCH (link → click → dòng hàng → hoa hồng, lặp vô hạn). Hai mô hình dữ liệu khác
  * hẳn nhau nên là hai hệ chạy song song, chỉ dùng chung một trang.
  *
- * GĐ1 mới có hai tab. Các tab "Chọn sản phẩm" / "Link của tôi" / "Hoa hồng" /
- * "Ví & rút tiền" lên ở GĐ3–4.
+ * Tab hiển thị theo TRẠNG THÁI hồ sơ: chưa được duyệt thì chỉ thấy tab đăng ký — bày ra
+ * "Chọn sản phẩm" rồi chặn ở nút "Lấy link" là cách chắc chắn làm người dùng bực.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AffiliateService, type AffiliateMe } from '@/services/AffiliateService';
 import AffiliateRegisterTab from '@/modules/affiliate/components/AffiliateRegisterTab';
+import AffiliateProductsTab from '@/modules/affiliate/components/AffiliateProductsTab';
+import AffiliateLinksTab from '@/modules/affiliate/components/AffiliateLinksTab';
+import AffiliateEarningsTab from '@/modules/affiliate/components/AffiliateEarningsTab';
 import ReferralTab from '@/modules/affiliate/components/ReferralTab';
 
-type TabKey = 'product' | 'referral';
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'product', label: 'Tiếp thị sản phẩm' },
-  { key: 'referral', label: 'Giới thiệu bạn bè' },
-];
+type TabKey = 'register' | 'products' | 'links' | 'earnings' | 'referral';
 
 export default function AffiliatePage() {
-  const [tab, setTab] = useState<TabKey>('product');
   const [me, setMe] = useState<AffiliateMe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<TabKey>('register');
+
+  const approved = me?.status === 'APPROVED';
+
+  const tabs = useMemo(() => {
+    const base: { key: TabKey; label: string }[] = approved
+      ? [
+          { key: 'products', label: 'Chọn sản phẩm' },
+          { key: 'links', label: 'Link của tôi' },
+          { key: 'earnings', label: 'Hoa hồng & Ví' },
+          { key: 'register', label: 'Hồ sơ' },
+        ]
+      : [{ key: 'register', label: 'Tiếp thị sản phẩm' }];
+    return [...base, { key: 'referral' as TabKey, label: 'Giới thiệu bạn bè' }];
+  }, [approved]);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await AffiliateService.getMe();
+      if (res) {
+        setMe(res);
+        // Đã được duyệt thì mở thẳng tab chọn sản phẩm — đó là việc họ vào đây để làm.
+        if (res.status === 'APPROVED') setTab((t) => (t === 'register' ? 'products' : t));
+      }
+    } catch (e) {
+      // Không chặn trang: tab "Giới thiệu bạn bè" vẫn dùng được kể cả khi API này lỗi.
+      console.error('[affiliate] không tải được hồ sơ tiếp thị:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await AffiliateService.getMe();
-        if (!cancelled && res) setMe(res);
-      } catch (e) {
-        // Không chặn trang: tab "Giới thiệu bạn bè" vẫn dùng được kể cả khi API này lỗi.
-        console.error('[affiliate] không tải được hồ sơ tiếp thị:', e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   const handleRegistered = useCallback((next: AffiliateMe) => setMe(next), []);
 
@@ -61,8 +75,8 @@ export default function AffiliatePage() {
         Tiếp thị liên kết
       </h1>
 
-      <div className="mb-6 flex gap-1 border-b border-gray-200" role="tablist">
-        {TABS.map((t) => (
+      <div className="mb-6 flex flex-wrap gap-1 border-b border-gray-200" role="tablist">
+        {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -80,14 +94,19 @@ export default function AffiliatePage() {
         ))}
       </div>
 
-      {tab === 'product' &&
-        (loading ? (
-          <div className="text-sm text-gray-400">Đang tải…</div>
-        ) : (
-          <AffiliateRegisterTab me={me} onRegistered={handleRegistered} />
-        ))}
-
-      {tab === 'referral' && <ReferralTab />}
+      {loading && tab !== 'referral' ? (
+        <div className="text-sm text-gray-400">Đang tải…</div>
+      ) : (
+        <>
+          {tab === 'register' && (
+            <AffiliateRegisterTab me={me} onRegistered={handleRegistered} />
+          )}
+          {tab === 'products' && <AffiliateProductsTab />}
+          {tab === 'links' && <AffiliateLinksTab />}
+          {tab === 'earnings' && <AffiliateEarningsTab balance={me?.balance} />}
+          {tab === 'referral' && <ReferralTab />}
+        </>
+      )}
     </div>
   );
 }

@@ -25,6 +25,17 @@ export const ProductService = {
     const res = await api.patch(`/seller/products/${productId}/discount`, data);
     return res;
   },
+
+  /**
+   * wiki 0105 — bật/tắt tiếp thị liên kết cho một sản phẩm.
+   *
+   * `rate` là tỉ lệ THẬP PHÂN (0.08 = 8%). Giao diện nhập theo phần trăm rồi chia 100 —
+   * BE nhận thập phân và chặn ở trần `AFFILIATE_MAX_RATE`.
+   */
+  updateAffiliate: async (productId: string, data: { enabled: boolean; rate?: number }) => {
+    const res = await api.patch(`/seller/products/${productId}/affiliate`, data);
+    return res;
+  },
   
   // 2. More from this Shop
   getMoreFromShop: async (id: string) => {

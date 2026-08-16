@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { api } from '@/services/api';
 import DiscountConfigModal from './components/DiscountConfigModal';
 import { toast } from 'react-hot-toast'; // [OPTIONAL] Nếu bạn có dùng toast
+import SellerAffiliateCell from '@/modules/seller/products/SellerAffiliateCell'; // wiki 0105
 
 // ... (Giữ nguyên các hàm helper getImageUrl, parsePrice và các component con TabItem, FilterInput, FilterDropdown, PriceDisplay)
 const getImageUrl = (imgData: any): string => {
@@ -614,15 +615,17 @@ const ProductManagementPage = () => {
                 <th className="px-4 py-4 text-left text-sm font-medium text-gray-700">Giá</th>
                 <th className="px-4 py-4 text-left text-sm font-medium text-gray-700">Kho hàng</th>
                 <th className="px-4 py-4 text-left text-sm font-medium text-gray-700">Trạng thái</th>
+                {/* wiki 0105 — tiếp thị liên kết: seller tự bật và tự đặt %. */}
+                <th className="px-4 py-4 text-left text-sm font-medium text-gray-700 min-w-[200px]">Tiếp thị</th>
                 <th className="px-4 py-4 text-center text-sm font-medium text-gray-700 w-[140px]">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="py-20 text-center"><div className="flex justify-center items-center gap-2 text-gray-500"><Loader2 className="animate-spin" /> Đang tải dữ liệu...</div></td></tr>
+                <tr><td colSpan={7} className="py-20 text-center"><div className="flex justify-center items-center gap-2 text-gray-500"><Loader2 className="animate-spin" /> Đang tải dữ liệu...</div></td></tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-20 text-center">
+                  <td colSpan={7} className="py-20 text-center">
                     {/* ... (Empty state) */}
                     <div className="flex flex-col items-center justify-center text-gray-400 gap-3">
                       <Search size={40} strokeWidth={1} className="text-gray-300" />
@@ -689,6 +692,24 @@ const ProductManagementPage = () => {
                                         </>
                                     )}
                                 </div>
+                            </td>
+
+                            {/* wiki 0105 — tiếp thị liên kết. Mặc định TẮT: hoa hồng trừ
+                                thẳng vào doanh thu của chính seller nên không ai được bật
+                                thay họ. Component tự lo gọi API + chặn nổi bọt sự kiện
+                                (hàng của bảng có onClick chọn dòng). */}
+                            <td className="px-4 py-4 align-top">
+                                <SellerAffiliateCell
+                                    productId={product.id}
+                                    price={Number((product as any).price) || 0}
+                                    enabled={(product as any).affiliateEnabled}
+                                    rate={
+                                        (product as any).affiliateRate === null ||
+                                        (product as any).affiliateRate === undefined
+                                            ? null
+                                            : Number((product as any).affiliateRate)
+                                    }
+                                />
                             </td>
 
                             <td className="px-4 py-4 text-center align-top">

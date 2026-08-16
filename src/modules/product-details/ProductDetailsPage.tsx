@@ -15,6 +15,9 @@ import ProductReviews from "@/modules/product-details/components/ProductReviews"
 import ProductDetailBanner from "@/modules/product-details/components/ProductDetailBanner";
 import RelatedBrands from "@/modules/product-details/components/RelatedBrands";
 import { StickyBuyBox } from "@/modules/product-details/components/StickyBuyBox";
+// wiki 0105 — affiliate sản phẩm: bắt `?aff=` để quy đổi, và nút chia sẻ kiếm hoa hồng.
+import AffiliateCapture from "@/modules/affiliate/components/AffiliateCapture";
+import ShareToEarnButton from "@/modules/affiliate/components/ShareToEarnButton";
 
 import { ProductService } from "@/services/product.service";
 import { CategoryService } from "@/services/category.service";
@@ -186,6 +189,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
 
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 min-h-screen pb-12">
+      {/* wiki 0105: bắt `?aff=<code>` để ghi cookie quy đổi + báo lượt bấm. Không render
+          gì, chỉ có tác dụng phụ — đặt sớm để chạy ngay khi trang mở. */}
+      <AffiliateCapture productId={product.id} />
       <div className="w-full max-w-[1340px] mx-auto px-4 py-6">
         {/* Breadcrumb & Banners */}
         <div className="mb-4">
@@ -223,6 +229,16 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
 
                 <div className="w-full md:w-[52%] lg:flex-1">
                   <ProductInfo product={product} />
+                  {/* wiki 0105: nút chia sẻ đặt NGAY DƯỚI khối thông tin sản phẩm — đây
+                      là lúc người xem đang cân nhắc món hàng nên cũng là lúc dễ nghĩ tới
+                      việc giới thiệu nó nhất. Component tự ẩn nếu SP chưa bật affiliate. */}
+                  <ShareToEarnButton
+                    productId={product.id}
+                    productName={product.title}
+                    affiliateEnabled={product.affiliateEnabled}
+                    affiliateRate={product.affiliateRate}
+                    price={selectedVariantInfo?.price ?? product.price}
+                  />
                 </div>
               </div>
             </div>

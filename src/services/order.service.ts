@@ -1,5 +1,6 @@
 import { OrderStatus } from '@/types/admin';
 import { api } from './api';
+import { affiliateRefsFor, forgetAffiliates } from '@/lib/affiliate/attribution'; // wiki 0105
 
 // ==========================================
 // 1. DTOs CHO TÍNH NĂNG CHECKOUT & PREVIEW
@@ -38,6 +39,10 @@ export interface CreateOrderPayload {
   paymentMethod: 'cod'; // [wiki 0093] TẮT momo+pay2s → chỉ 'cod' (BE whitelist @IsIn(['cod'])). [wiki 0091] đã bỏ 'banking'.
   useCoins?: boolean; 
   appliedCoins?: number; // Số xu muốn áp dụng
+  // wiki 0105 — quy đổi affiliate, tự gắn trong `createOrder` từ cookie `gm_aff`.
+  // Không cần chỗ gọi tự truyền: quên truyền = mất trắng hoa hồng của người đã dẫn
+  // khách tới, mà đó là loại lỗi không ai phát hiện được vì chẳng có gì báo sai.
+  affiliate?: { productId: string; code: string }[];
 }
 
 // [round15 FIX preview-shape] BE /orders/preview trả về cấu trúc LỒNG NHAU
@@ -163,7 +168,18 @@ export const OrderService = {
    * Gọi khi user bấm nút "Đặt hàng"
    */
   createOrder: async (payload: CreateOrderPayload): Promise<CreateOrderResponse> => {
-    return api.post('/orders', payload);
+    // wiki 0105 — gắn quy đổi affiliate NGAY TẠI ĐÂY thay vì bắt từng màn checkout tự
+    // nhớ. Cookie `gm_aff` được ghi lúc người mua bấm link `?aff=`; ở đây chỉ lọc lấy
+    // đúng những sản phẩm có trong đơn. BE kiểm lại toàn bộ nên dữ liệu này không cần
+    // tin cậy, chỉ cần có mặt.
+    const productIds = (payload.items ?? []).map((i) => i.productId).filter(Boolean);
+    const affiliate = affiliateRefsFor(productIds);
+    const res = await api.post('/orders', affiliate.length ? { ...payload, affiliate } : payload);
+
+    // Đặt xong thì quên quy đổi của những SP đã mua — nếu giữ lại, đơn SAU của cùng
+    // sản phẩm vẫn bị gán cho người tiếp thị cũ dù khách tự quay lại mua.
+    if (affiliate.length) forgetAffiliates(affiliate.map((a) => a.productId));
+    return res as CreateOrderResponse;
   },
 
   // --- [EXISTING] CÁC HÀM CŨ GIỮ NGUYÊN ---
