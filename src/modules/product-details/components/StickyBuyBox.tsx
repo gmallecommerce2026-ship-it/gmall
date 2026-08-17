@@ -228,11 +228,27 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
   const handleGiftNow = () => {
     if (!validateSelection()) return;
     setIsGifting(true);
+    // wiki 0108: gói dữ liệu này phải ĐỦ như `handleBuyNow` ngay phía trên.
+    //
+    // Trước đây chỗ này chỉ nhét `productId/variantId/quantity/selectedOptions` — thiếu
+    // `price`, `title`, `imageUrl`, `shopId`. `/gift-payment` dựng thẳng danh sách hàng
+    // từ gói này (không gọi API lấy thêm), rồi đọc `item.price.toLocaleString()` không
+    // chặn null ⇒ TypeError ⇒ React tháo cả cây ⇒ **trang trắng tinh**. Nghĩa là nút
+    // "Tặng người thân" trên trang sản phẩm — một trong hai đường vào nghiệp vụ tặng quà
+    // của cả sàn — chết hẳn. (Đường từ `/cart` vẫn chạy vì giỏ có sẵn đủ trường.)
     const checkoutData = {
+      id: `gift-${Date.now()}`,
       productId: product.id,
       productVariantId: currentVariant?.id,
       variantId: currentVariant?.id,
+      title: product.title,
+      imageUrl: currentVariant?.imageUrl || product.imageUrl,
+      price: Number(finalPrice),
       quantity: quantity,
+      stock: displayStock,
+      shopId: product.shopId || product.sellerId || 'unknown-shop',
+      shopName: product.shopName || 'Cửa hàng',
+      variantName: getVariantName(),
       selectedOptions: product.tiers
         ? selections.map((s, i) => ({
             name: product.tiers![i].name,

@@ -228,7 +228,8 @@ const GiftPaymentPage: React.FC = () => {
         let subtotal = 0; let totalShipping = 0; let localShopDiscount = 0;
 
         groupedItems.forEach((group) => {
-            const groupSum = group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            // wiki 0108: thiếu price thì coi như 0 thay vì để NaN lan ra toàn bộ tổng tiền.
+            const groupSum = group.items.reduce((sum, item) => sum + (Number(item.price ?? 0) * Number(item.quantity ?? 0)), 0);
             subtotal += groupSum;
             totalShipping += SHIPPING_FEE_PER_SHOP;
             localShopDiscount += computeShopVoucherVnd(shopVouchers[group.shopId], groupSum);
@@ -582,7 +583,11 @@ const GiftPaymentPage: React.FC = () => {
                                                 <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{item.title || item.name}</h4>
                                                 <p className="text-xs text-gray-500 mt-1">{item.variantName || 'Mặc định'}</p>
                                                 <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-brand-orange font-bold text-sm">{(item.price).toLocaleString('vi-VN')} đ</span>
+                                                    {/* wiki 0108: `?? 0` là lưới an toàn. Một `item` thiếu `price`
+                                                        (link `?data=` cũ/hỏng/người dùng sửa tay) từng làm
+                                                        `undefined.toLocaleString()` ném lỗi và tháo cả cây React
+                                                        → trang trắng tinh, không một chữ nào giải thích. */}
+                                                    <span className="text-brand-orange font-bold text-sm">{Number(item.price ?? 0).toLocaleString('vi-VN')} đ</span>
                                                     <span className="text-sm text-gray-600">x{item.quantity}</span>
                                                 </div>
                                             </div>
