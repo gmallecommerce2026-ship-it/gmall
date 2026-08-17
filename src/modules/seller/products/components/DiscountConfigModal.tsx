@@ -37,6 +37,11 @@ interface DiscountFormValues {
 const DiscountConfigModal: React.FC<DiscountConfigModalProps> = ({
   isOpen, onClose, product, onSuccess
 }) => {
+  // Chấp nhận cả hai hình dạng (`name` của kênh người bán, `title` của cửa hàng) thay vì
+  // ép một phía đổi theo phía kia — modal này có thể được dùng lại ở chỗ khác, và một
+  // tiêu đề rỗng trên hộp thoại đổi GIÁ là thứ không được phép xảy ra lần nữa.
+  const productName = (product as any)?.name || product?.title || '(không rõ tên)';
+
   const { register, handleSubmit, watch, setValue, control, reset, formState: { isSubmitting, errors } } = useForm<DiscountFormValues>({
     defaultValues: {
       isDiscountActive: false,
@@ -169,8 +174,14 @@ const DiscountConfigModal: React.FC<DiscountConfigModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white rounded-t-xl z-10">
           <div>
             <h3 className="text-lg font-bold text-gray-900">Cài đặt giảm giá</h3>
-            <p className="text-sm text-gray-500 max-w-[400px] truncate" title={product.title}>
-                Sản phẩm: <span className="font-medium text-gray-700">{product.title}</span>
+            {/* Tên sản phẩm đến từ HAI nguồn có hình dạng KHÁC NHAU:
+                  - Kênh người bán: lấy thẳng `/seller/products` → trường là `name`
+                  - Cửa hàng      : qua `mapProductDetail` → đổi thành `title`
+                Modal này chỉ đọc `title` nên ở kênh người bán luôn ra RỖNG — hộp thoại
+                đổi GIÁ mà không cho biết đang sửa sản phẩm nào. TypeScript không bắt được
+                vì `selectedProductForDiscount` khai kiểu `any`. */}
+            <p className="text-sm text-gray-500 max-w-[400px] truncate" title={productName}>
+                Sản phẩm: <span className="font-medium text-gray-700">{productName}</span>
             </p>
           </div>
           <button 
