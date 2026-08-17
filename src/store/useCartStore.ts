@@ -200,11 +200,28 @@ const useCartStoreBase = create<CartState & CartActions>()(
       updateQuantity: async (itemId, newQuantity) => {
         if (newQuantity < 1) return;
         const prevItems = get().items;
-        const newItems = prevItems.map(item => 
+        const newItems = prevItems.map(item =>
           item.id === itemId ? { ...item, quantity: newQuantity } : item
         );
         set({ items: newItems, ...calculateSummary(newItems, get().selectedIds) });
-        // Optional: debounce update to server here
+
+        // wiki 0108: PHẢI đồng bộ lên server. Trước đây chỗ này chỉ đổi state trong máy
+        // và để lại ghi chú "Optional: debounce update to server here" — nên bấm "+" rồi
+        // F5 là số lượng quay về cũ (`[2,2,2]` → `[1,2,2]`), và tệ hơn: ĐƠN HÀNG được
+        // dựng từ giỏ trên server, tức là khách thấy một tổng tiền còn hệ thống tính
+        // theo số lượng cũ.
+        //
+        // `PATCH /store/cart/:itemId` đã có sẵn ở BE và nhận số lượng TUYỆT ĐỐI (`hset`).
+        // `item.id` là composite field `${productId}:${variantId}` — phải gửi nguyên nó,
+        // giống `removeItem` (gửi productId sẽ không khớp field nào).
+        try {
+          await apiClient.patch(`/store/cart/${encodeURIComponent(itemId)}`, { quantity: newQuantity });
+        } catch (e) {
+          console.error(e);
+          // Trả lại đúng trạng thái cũ để màn hình không nói dối về số lượng/tổng tiền.
+          set({ items: prevItems, ...calculateSummary(prevItems, get().selectedIds) });
+          toast.error('Không cập nhật được số lượng, vui lòng thử lại');
+        }
       },
 
       toggleShopSelection: (itemIds, isSelected) => {
