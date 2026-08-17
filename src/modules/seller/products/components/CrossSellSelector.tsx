@@ -35,8 +35,12 @@ export const CrossSellSelector: React.FC<CrossSellSelectorProps> = ({ currentPro
                 const res = await api.get('/seller/products/my-products', { 
                     params: { search: searchTerm, limit: 5 } 
                 });
+                // [FIX wiki 0095/0099/0103] `(res.data || res || [])` ném TypeError nếu response
+                // là `null`/`undefined`, và nếu response là object thiếu khoá `data` thì rơi về
+                // chính object đó → `.filter is not a function`. Chuẩn hoá về mảng trước khi lọc.
+                const rows = Array.isArray(res) ? res : ((res as any)?.data ?? (res as any)?.items ?? []);
                 // Filter bỏ sản phẩm hiện tại và sản phẩm đã chọn
-                const list = (res.data || res || []).filter((p: any) => 
+                const list = (Array.isArray(rows) ? rows : []).filter((p: any) =>
                     p.id !== currentProductId && !selectedIds.includes(p.id)
                 );
                 

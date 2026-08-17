@@ -52,8 +52,14 @@ const AdvancedSearchBar = () => {
         params: { search: debouncedKeyword, limit: 6 },
         signal: controller.signal,
       })
-      .then((res) => {
-        setSuggestedProducts(res.data || []);
+      .then((res: any) => {
+        // [FIX wiki 0095/0099/0103] `apiClient` là fetch, KHÔNG bọc `{ data }` như axios và
+        // `request()` trả `null` ở nhánh 401-redirect + khi body không parse được JSON →
+        // `res.data` ném TypeError, làm chết luôn thanh gợi ý tìm kiếm ở Header.
+        // BE `/store/products` trả `{ data, meta }` nên `.data` đúng khoá; chuẩn hoá về mảng
+        // vì `suggestedProducts` được render bằng `.map`.
+        const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+        setSuggestedProducts(Array.isArray(list) ? list : []);
       })
       .catch((error) => {
         // axios cancellation: error.code === 'ERR_CANCELED' hoặc error.name === 'CanceledError'

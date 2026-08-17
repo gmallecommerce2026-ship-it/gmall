@@ -4,6 +4,7 @@ import Link from 'next/link';
 import AdminSidebar from '@/layout/admin/AdminSidebar'; // Đảm bảo đường dẫn đúng
 import { FiBell } from 'react-icons/fi'; // Thêm icon cho header
 import AdminSearchBox from './components/AdminSearchBox';
+import RoleGuard from '@/components/auth/RoleGuard';
 import type { Metadata } from 'next';
 
 // Wiki 0104: các trang admin tự viết hậu tố "| Admin Portal" / "| Admin" / "| Admin
@@ -20,7 +21,20 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Guard phân quyền (wiki 0108): trước đây KHÔNG có lớp nào chặn ở FE — buyer thật
+  // mở `/admin/dashboard` là thấy nguyên khung Admin Portal (sidebar "Tổng quan",
+  // "Quản lý người dùng"...), dữ liệu không lộ vì API đều qua `RolesGuard` của BE,
+  // nhưng khung quản trị hiện ra là sai ý định thiết kế. Chặn PHẢI ở client chứ
+  // không ở `src/proxy.tsx`: cookie `accessToken` thuộc host của BE, khác host FE →
+  // proxy đọc cookie luôn ra undefined nên chặn ở server sẽ đá cả admin thật ra
+  // ngoài. Xem giải thích đầy đủ trong `components/auth/RoleGuard.tsx`.
+  //
+  // Bọc TOÀN BỘ vỏ layout (sidebar + header + footer), không chỉ `children`, vì
+  // chính bộ khung điều hướng mới là thứ bị lộ. Layout giữ nguyên Server Component
+  // để `metadata` ở trên còn hiệu lực; phần guard nằm trong Client Component riêng.
+  // `/admin/login` ở `app/admin/login` — NGOÀI group `(admin)` — nên không bị chặn.
   return (
+    <RoleGuard allow={['ADMIN']} redirectTo="/admin/login">
     <div className="min-h-screen bg-[#f5f5f5] flex">
       {/* Sidebar cố định */}
       <AdminSidebar />
@@ -69,5 +83,6 @@ export default function AdminLayout({
         </footer>
       </div>
     </div>
+    </RoleGuard>
   );
 }

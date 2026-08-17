@@ -28,7 +28,13 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
   // `?next=/foo` để page guard (voucher/gift) redirect về trang gốc sau login.
   // Chỉ chấp nhận path nội bộ (bắt đầu bằng `/`) để chống open-redirect.
-  const nextParam = searchParams?.get('next') || '';
+  //
+  // wiki 0108: đọc cả `?from=` làm phương án dự phòng. Trong repo tồn tại hai quy ước
+  // song song — wiki 0056 chốt `next=`, nhưng `src/proxy.tsx` lại phát ra `from=`. Kết
+  // quả là mọi ai bị đẩy về login từ giữa luồng thanh toán đều mất đích đến và bị ném
+  // về trang chủ sau khi đăng nhập. Chấp nhận cả hai tên thì bất kể nơi nào đẩy người
+  // dùng tới đây, họ cũng quay lại đúng chỗ đang dở.
+  const nextParam = searchParams?.get('next') || searchParams?.get('from') || '';
   // Open-redirect guard: chỉ chấp nhận path nội bộ bắt đầu `/` mà KHÔNG phải
   // `//` hoặc `/\` (backslash trên Windows IE/Edge cũ có thể parse như authority).
   const safeNext = nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/\\')

@@ -64,7 +64,9 @@ export default function ProfilePage() {
     try {
       // 1. Upload ảnh
       const res = await AuthService.uploadAvatar(file);
-      const avatarUrl = res.data?.url || res?.url; // Tùy cấu trúc trả về
+      // [FIX wiki 0095/0099/0103] `res?.` ở nhánh sau đã có, nhưng `res.data` phía trước thì
+      // chưa → response `null`/rỗng vẫn ném TypeError trước khi tới nhánh dự phòng.
+      const avatarUrl = res?.data?.url || res?.url; // Tùy cấu trúc trả về
       
       // 2. Update profile với avatar mới
       await AuthService.updateProfile({ avatar: avatarUrl });

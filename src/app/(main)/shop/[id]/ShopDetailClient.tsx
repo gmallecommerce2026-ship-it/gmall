@@ -89,8 +89,12 @@ export default function ShopDetailClient() {
 
       const res: any = await ShopService.getShopProducts(shopId, cleanFilters);
       
-      const rawProducts = res.data || [];
-      const meta = res.meta || {};
+      // [FIX wiki 0095/0099/0103] `res.data`/`res.meta` ném TypeError nếu response là
+      // `null`/`undefined`. BE `/shops/:id/products` trả `{ data, meta }` nên `.data` đúng
+      // khoá; chuẩn hoá về mảng vì bên dưới gọi `rawProducts.map`.
+      const rawList = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+      const rawProducts = Array.isArray(rawList) ? rawList : [];
+      const meta = res?.meta ?? {};
 
       const mappedProducts = rawProducts.map((p: any) => ({
          id: p.id,

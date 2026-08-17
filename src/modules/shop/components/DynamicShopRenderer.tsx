@@ -73,9 +73,13 @@ const ProductHighlightSection = ({ shopId, config, title }: { shopId: string, co
         if (config.type === 'manual' && Array.isArray(config.productIds) && config.productIds.length > 0) {
           // Gọi API lấy danh sách sản phẩm (có thể dùng search để filter nhanh)
           const res: any = await ShopService.getShopProducts(shopId, { limit: 50 });
-          const allProducts = res.data || res;
+          // [FIX wiki 0095/0099/0103] `res.data || res` ném TypeError nếu response là
+          // `null`/`undefined`, và trả về chính object response nếu thiếu khoá `data`
+          // → `.filter` bên dưới "is not a function". BE `/shops/:id/products` trả
+          // `{ data, meta }` nên `.data` đúng khoá; chuẩn hoá để LUÔN có mảng.
+          const allProducts = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
           // Lọc client-side những ID được chọn
-          rawData = allProducts.filter((p: any) => config.productIds.includes(p.id));
+          rawData = (Array.isArray(allProducts) ? allProducts : []).filter((p: any) => config.productIds.includes(p.id));
         }
         // CASE B: Tự động (Newest / Best Seller)
         else {
@@ -85,7 +89,10 @@ const ProductHighlightSection = ({ shopId, config, title }: { shopId: string, co
             page: 1
           };
           const res: any = await ShopService.getShopProducts(shopId, params);
-          rawData = res.data || [];
+          // [FIX wiki 0095/0099/0103] Cùng lý do: đọc `.data` không bảo vệ sẽ ném
+          // TypeError khi response `null`; `rawData.map` bên dưới cần chắc chắn là mảng.
+          const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+          rawData = Array.isArray(list) ? list : [];
         }
 
         // Map dữ liệu từ Backend sang format FE cần dùng

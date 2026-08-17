@@ -4,6 +4,7 @@ import SellerSidebar from '@/layout/seller/SellerSidebar';
 import SellerRightSidebar from '@/layout/seller/SellerRightSidebar'; // [MỚI]
 import ChatWindow from '@/components/chat/ChatWindow'; // [MỚI] Import ChatWindow
 import ChatSocketProvider from '@/components/chat/ChatSocketProvider'; // wiki 0067 - luôn mounted để nhận realtime ngay cả khi popup đóng
+import RoleGuard from '@/components/auth/RoleGuard';
 import type { Metadata } from 'next';
 
 // Wiki 0104: xem giải thích ở `(admin)/layout.tsx` — kênh người bán cũng là khu nội bộ,
@@ -18,7 +19,15 @@ export default function SellerLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Guard phân quyền (wiki 0108): xem giải thích ở `(admin)/layout.tsx` — buyer thật
+  // mở `/seller-dashboard` là thấy nguyên vỏ Kênh Người Bán. Chặn nằm ở client chứ
+  // không ở `src/proxy.tsx` vì cookie `accessToken` thuộc host của BE, khác host FE →
+  // proxy không bao giờ đọc được nó, chặn ở server sẽ đá cả seller thật ra ngoài.
+  // ADMIN cũng được vào để còn hỗ trợ/kiểm tra shop. Bọc cả sidebar + ChatSocketProvider
+  // để buyer không mở socket chat của kênh bán. `/seller/login` ở `app/seller/login`
+  // (ngoài group `(seller)`) nên không bị chặn.
   return (
+    <RoleGuard allow={['SELLER', 'ADMIN']} redirectTo="/seller/login">
     <div className="min-h-screen bg-gray-50 flex relative">
       {/* 1. Sidebar trái (Menu chính) */}
       <SellerSidebar />
@@ -42,5 +51,6 @@ export default function SellerLayout({
       <ChatSocketProvider />
       <ChatWindow />
     </div>
+    </RoleGuard>
   );
 }

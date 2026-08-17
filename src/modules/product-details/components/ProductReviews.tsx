@@ -20,10 +20,15 @@ export default function ProductReviews({ productId }: { productId: string }) {
         page,
         rating: filterRating || undefined
       });
-      setReviews(res.data);
+      // [FIX wiki 0095/0099/0103] Đẩy thẳng `res.data` vào state là không an toàn: nếu
+      // response rỗng/khác shape thì `reviews` thành `undefined` → `reviews.length` +
+      // `reviews.map` bên dưới ném TypeError. BE `/store/products/:id/reviews` trả
+      // `{ data, meta, distribution }` nên `.data` đúng khoá; chỉ chuẩn hoá về mảng.
+      const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+      setReviews(Array.isArray(list) ? list : []);
       if (!filterRating) {
         // Chỉ cập nhật distribution khi load tất cả, để số lượng tổng không bị đổi khi filter
-        setDistribution(res.distribution);
+        setDistribution(res?.distribution ?? {});
       }
     } catch (error) {
       console.error(error);

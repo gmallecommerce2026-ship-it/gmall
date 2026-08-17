@@ -37,8 +37,11 @@ const FlashSaleProductSelector = ({ isOpen, onClose, onConfirm, excludeIds = [] 
         keyword: debouncedSearch
       });
 
-      const data = res.data || (Array.isArray(res) ? res : []);
-      setProducts(data);
+      // [FIX wiki 0095/0099/0103] Đọc `.data` không bảo vệ sẽ ném TypeError nếu response là
+      // `null`/`undefined` (kể cả `api` axios khi body rỗng, và `apiClient` khi 401/không-JSON).
+      // Chuẩn hoá về mảng vì `products` được render bằng `.map`.
+      const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+      setProducts(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error(error);
     } finally {

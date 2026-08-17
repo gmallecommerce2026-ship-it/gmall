@@ -58,7 +58,10 @@ export const CategoryCascader: React.FC<CategoryCascaderProps> = ({
     try {
       setLoadingLevel(level);
       const res: any = await api.get('/categories', { params: { parentId } }); // API của bạn
-      const data = Array.isArray(res) ? res : res.data;
+      // [FIX wiki 0095/0099/0103] `res.data` ném TypeError nếu response là `null`/`undefined`.
+      // BE `/categories` trả MẢNG THẲNG nên nhánh `.data` chỉ là dự phòng; `Array.isArray`
+      // bên dưới đã lo phần còn lại.
+      const data = Array.isArray(res) ? res : (res?.data ?? res?.items);
       if (Array.isArray(data) && data.length > 0) {
         setCols(prev => {
           const newCols = [...prev].slice(0, level);

@@ -45,7 +45,11 @@ export default function BlogClient() {
       // bài viết VẪN hiện (trước đây Promise.all → categories reject → cả trang trống "Chưa có bài").
       try {
         const res: any = await blogService.getPublicBlogs({ page: 1, limit: 12 });
-        const latest: BlogPost[] = res.data || res.items || [];
+        // [FIX wiki 0095/0099/0103] `blogService` dùng `apiClient` (fetch) — `request()` trả
+        // `null` ở nhánh 401-redirect và khi body không parse được JSON → `res.data` ném
+        // TypeError, cả trang blog trắng. Chuẩn hoá về mảng vì bên dưới gọi `.slice`/`.map`.
+        const rawLatest = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+        const latest: BlogPost[] = Array.isArray(rawLatest) ? rawLatest : [];
         setHeroPosts(latest.slice(0, 5));
         setLatestPosts(latest);
       } catch (error) {
@@ -124,7 +128,10 @@ export default function BlogClient() {
           search: search,
           category: selectedCategory,
         });
-        setFilterResult(res.data || res.items || []);
+        // [FIX wiki 0095/0099/0103] Cùng lý do: `apiClient` trả `null` khi 401 / body rỗng →
+        // `res.data` ném TypeError. `filterResult` được render bằng `.map` nên phải là mảng.
+        const filtered = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+        setFilterResult(Array.isArray(filtered) ? filtered : []);
       } catch (error) { console.error(error); } 
       finally { setLoading(false); }
     };
