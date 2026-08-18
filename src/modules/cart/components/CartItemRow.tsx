@@ -62,8 +62,16 @@ const CartItemRow: React.FC<CartItemRowProps> = ({
              </h3>
           </Link>
           <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+             {/* wiki 0108: khối này vốn ĐÃ biết vẽ `variantName`, nhưng `/store/cart` chưa
+                 bao giờ trả trường đó nên nó luôn rơi xuống `color`/`size` — hai trường
+                 cũng không có — và dòng giỏ hàng chẳng nói gì về lựa chọn của khách.
+                 BE nay trả `variantName` (dựng từ giá trị phân loại thật) và `sku` riêng.
+                 Không dựng được tên thì hiện mã SKU: không đẹp, nhưng ít nhất hai dòng
+                 cùng một sản phẩm còn phân biệt được với nhau. */}
              {item.variantName ? (
-                <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600">{item.variantName}</span>
+                <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600">Phân loại: {item.variantName}</span>
+             ) : item.sku ? (
+                <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600">Mã: {item.sku}</span>
              ) : (
                 <>
                     {item.color && <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600">Màu: {item.color}</span>}
