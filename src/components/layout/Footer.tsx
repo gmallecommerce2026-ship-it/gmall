@@ -101,7 +101,12 @@ const Footer = async () => {
         <div className="bg-gray-50 rounded-lg p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="md:w-1/2">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Đăng ký nhận bản tin</h3>
-            <p className="text-gray-500 text-sm">Nhận ngay mã giảm giá 10% cho đơn hàng đầu tiên và cập nhật các ưu đãi mới nhất.</p>
+            {/* wiki 0108: bỏ lời hứa "mã giảm giá 10% cho đơn hàng đầu tiên". Không hề tồn
+                tại voucher nào như vậy trong DB (đã tra: không có mã NEWUSER/FIRST/ĐẦU nào,
+                và cũng không có cờ đánh dấu đơn đầu tiên). Đăng ký nhận bản tin xong thì
+                không có mã nào tới — đó là hứa suông với mọi khách mới.
+                Nếu kinh doanh muốn có ưu đãi này thật thì tạo voucher rồi khôi phục câu chữ. */}
+            <p className="text-gray-500 text-sm">Đăng ký để nhận thông tin ưu đãi và sản phẩm mới sớm nhất.</p>
           </div>
           <NewsletterForm sourceTag="footer" />
         </div>

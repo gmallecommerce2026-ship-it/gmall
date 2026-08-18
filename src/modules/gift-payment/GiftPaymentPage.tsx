@@ -19,9 +19,17 @@ import AddressFormModal from '../payment/components/AddressFormModal';
 import AddressSelectionModal from '../payment/components/AddressSelectionModal';
 
 // --- CONSTANTS ---
+// wiki 0108: chỉ còn COD, đồng bộ với `/payment`.
+//
+// Trước đây trang này vẫn mời "Chuyển khoản ngân hàng" và "Thanh toán qua PayPal" như
+// bình thường — không mờ, không ghi "đang bảo trì" — nhưng cả hai đều bị BE chặn
+// (`@IsIn(['cod'])` trong `create-order.dto`, xem wiki 0093). Người dùng chọn xong, điền
+// hết thông tin, bấm đặt hàng rồi mới bị từ chối. `/payment` đã bỏ hẳn hai lựa chọn đó;
+// hai trang cùng một luồng mua mà nói hai điều khác nhau.
+//
+// Khi nào bật lại cổng thanh toán thì mở whitelist trong `create-order.dto.ts` TRƯỚC,
+// rồi mới thêm lại vào đây — đừng làm ngược.
 const PAYMENT_METHODS = [
-    { id: 'bank', name: 'Chuyển khoản ngân hàng', icon: '/assets-gift-payment/ImageAsset5.png' },
-    { id: 'paypal', name: 'Thanh toán qua PayPal', icon: '/assets-gift-payment/ImageAsset7.png' },
     { id: 'cod', name: 'Thanh toán khi nhận hàng', icon: '/assets-gift-payment/ImageAsset8.png' },
 ];
 
