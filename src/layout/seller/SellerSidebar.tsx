@@ -7,7 +7,7 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { 
   FiHome, FiBox, FiShoppingBag, 
   FiChevronDown, FiLogOut, FiTruck, FiClipboard, 
-  FiGift
+  FiGift, FiDollarSign
 } from 'react-icons/fi';
 import { HelpCircle, Settings } from 'lucide-react';
 import classNames from 'classnames';
@@ -47,6 +47,16 @@ const SELLER_MENU: MenuItem[] = [
     label: 'Cài đặt vận chuyển',
     icon: <FiTruck size={20} />,
     path: '/seller-dashboard/shipping/settings',
+  },
+  // wiki 0108: TRƯỚC ĐÂY menu người bán KHÔNG hề có mục tài chính, và
+  // `/seller-dashboard/finance` cũng không tồn tại (404) — dù backend đã có đủ
+  // `/seller/finance/wallet`, `/payouts`, `POST /payout` và chạy đúng. Nghĩa là người
+  // bán thấy tiền về ví nhưng không có bất kỳ đường nào rút ra.
+  {
+    id: 'finance',
+    label: 'Tài chính',
+    icon: <FiDollarSign size={20} />,
+    path: '/seller-dashboard/finance',
   },
   {
     id: 'products',
