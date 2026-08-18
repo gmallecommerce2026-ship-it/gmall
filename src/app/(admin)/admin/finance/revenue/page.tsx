@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AdminService } from '@/services/AdminService';
 import { formatCurrency } from '@/lib/utils'; // Sử dụng utils có sẵn hoặc thay bằng hàm format Intl
 import { FiDollarSign, FiTrendingUp, FiClock, FiSearch, FiFileText, FiCreditCard } from 'react-icons/fi';
@@ -109,9 +110,16 @@ export default function RevenuePage() {
                 </div>
                 <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><FiDollarSign size={24}/></div>
              </div>
-             <button className="text-sm text-[#E78720] font-medium mt-4 hover:underline">
+             {/* wiki 0108: trước đây là `<button>` không có `onClick` — bấm vào không đi đâu.
+                 Màn duyệt rút tiền `/admin/finance/payouts` đã tồn tại và gọi API thật
+                 (getPayoutRequests / approvePayout / rejectPayout), chỉ là không có đường
+                 dẫn nào tới. Nay là Link thật. */}
+             <Link
+                href="/admin/finance/payouts"
+                className="inline-block text-sm text-[#E78720] font-medium mt-4 hover:underline"
+             >
                 Xem yêu cầu rút tiền &rarr;
-             </button>
+             </Link>
           </div>
        </div>
 
