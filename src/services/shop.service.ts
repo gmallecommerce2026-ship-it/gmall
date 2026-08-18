@@ -37,8 +37,33 @@ export const ShopService = {
     }
   },
 
+  // wiki 0108: danh sách gian hàng công khai cho trang `/shop`.
+  // BE `GET /shops` trả `{ data: [{id,name,avatar,slug}], meta: {total,page,limit,totalPages} }`
+  // và ĐÃ lọc `status: 'ACTIVE'` phía server, nên FE không phải lọc lại.
+  getShops: async (params: { page?: number; limit?: number; search?: string } = {}) => {
+    try {
+      const res: any = await api.get('/shops', { params });
+      const list = Array.isArray(res) ? res : (res?.data ?? []);
+      return {
+        shops: (Array.isArray(list) ? list : []).map((s: any) => ({
+          id: s.id,
+          slug: s.slug,
+          name: s.name || 'Cửa hàng',
+          avatarUrl: s.avatarUrl || s.avatar || getFallbackAvatar(s.name || 'Shop'),
+          productCount: s.productCount ?? s._count?.products ?? null,
+          rating: s.rating ?? null,
+        })),
+        total: res?.meta?.total ?? 0,
+        totalPages: res?.meta?.totalPages ?? 1,
+      };
+    } catch (error) {
+      console.error('Error fetching shops', error);
+      return { shops: [], total: 0, totalPages: 1 };
+    }
+  },
+
   getMyShop: async () => {
-    return apiClient.get('/shops/me'); 
+    return apiClient.get('/shops/me');
   },
 
   getSellerDashboardStats: async () => {

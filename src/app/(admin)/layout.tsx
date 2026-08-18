@@ -4,6 +4,7 @@ import Link from 'next/link';
 import AdminSidebar from '@/layout/admin/AdminSidebar'; // Đảm bảo đường dẫn đúng
 import { FiBell } from 'react-icons/fi'; // Thêm icon cho header
 import AdminSearchBox from './components/AdminSearchBox';
+import AdminIdentity from './components/AdminIdentity';
 import RoleGuard from '@/components/auth/RoleGuard';
 import type { Metadata } from 'next';
 
@@ -58,15 +59,8 @@ export default function AdminLayout({
                  <FiBell size={20} />
                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                </Link>
-               <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs flex-shrink-0">
-                    AD
-                  </div>
-                  <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-700 leading-none">Admin User</p>
-                    <p className="text-[10px] text-gray-400">Super Admin</p>
-                  </div>
-               </div>
+               {/* wiki 0108: thay khối in cứng "Admin User / Super Admin" bằng danh tính THẬT. */}
+               <AdminIdentity />
              </div>
            </div>
         </header>

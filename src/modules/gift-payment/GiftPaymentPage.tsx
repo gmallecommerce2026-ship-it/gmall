@@ -626,7 +626,7 @@ const GiftPaymentPage: React.FC = () => {
                                     ${selectedGiftWrap === index ? 'ring-2 ring-brand-orange scale-105 shadow-md' : 'hover:opacity-80 opacity-70'}
                                 `}
                                     >
-                                        <GiftWrapCard {...item} />
+                                        <GiftWrapCard {...item} selected={selectedGiftWrap === index} />
                                     </div>
                                 ))}
                             </div>
