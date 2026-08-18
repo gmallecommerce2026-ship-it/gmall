@@ -94,8 +94,15 @@ export interface IOrder {
   id: string;
   status: OrderStatus;
   totalAmount: number;
-  shopName?: string; // Backend hiện tại chưa trả về, FE đang dùng fallback
+  // wiki 0108: chú thích cũ ("Backend hiện tại chưa trả về") ĐÃ SAI. `getUserOrders`
+  // include sẵn `shop: { id, name, avatar }` từ lâu — chỉ là giao diện đọc `shopName`
+  // phẳng nên không thấy, rồi rơi vào fallback và hiện "G-Mall Official" cho MỌI đơn,
+  // kể cả đơn mua của shop khác. Giữ `shopName` cho tương thích, thêm `shop` đúng hình dạng.
+  shopName?: string;
+  shop?: { id?: string; name?: string; avatar?: string | null };
   shopId?: string;
+  isGift?: boolean;
+  giftMessage?: string | null;
   isReviewed?: boolean;
   items: Array<{
     id: string;

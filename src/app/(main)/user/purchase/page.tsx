@@ -281,10 +281,22 @@ export default function PurchasePage() {
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 mb-3">
                         <div className="flex items-center gap-2">
                             <span className="bg-brand-orange text-white text-[10px] font-bold px-1 py-0.5 rounded">Mall</span>
+                            {/* wiki 0108: đọc `order.shop?.name` TRƯỚC. API vẫn luôn trả
+                                `shop: { id, name, avatar }`, nhưng chỗ này chỉ đọc `shopName`
+                                phẳng nên không bao giờ khớp và mọi đơn đều hiện
+                                "G-Mall Official" — kể cả đơn mua của shop khác. */}
                             <span className="font-bold text-gray-800 text-sm flex items-center gap-1">
                                 <Store size={14} className="text-gray-500"/> 
-                                {order.shopName || 'G-Mall Official'} 
+                                {order.shop?.name || order.shopName || 'G-Mall Official'} 
                             </span>
+                            {/* wiki 0108: đơn quà tặng phải phân biệt được với đơn mua thường.
+                                API trả sẵn `isGift` nhưng danh sách đơn không dùng, nên người
+                                mua không nhớ nổi đơn nào mình mua, đơn nào mình tặng ai. */}
+                            {order.isGift && (
+                                <span className="bg-pink-50 text-pink-600 border border-pink-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                    Quà tặng
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 text-brand-orange text-sm font-medium">
                             <Truck size={16} />
