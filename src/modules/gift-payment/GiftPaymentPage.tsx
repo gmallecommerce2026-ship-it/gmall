@@ -690,6 +690,32 @@ const GiftPaymentPage: React.FC = () => {
                                 );
                             })}
                         </div>
+
+                        {/* wiki 0108: Ô NHẬP LỜI CHÚC — trước đây KHÔNG hề tồn tại.
+                            Trang chọn được mẫu thiệp nhưng không có chỗ nào để viết chữ
+                            vào thiệp; ô "Lời nhắn" duy nhất trên trang là ghi chú gửi SHOP.
+                            Store đã có sẵn `senderInfo.message` và payload đã gửi trường đó
+                            đi từ lâu — chỉ thiếu đúng cái ô để người dùng gõ vào, và BE thì
+                            chưa lưu (nay lưu ở cột `giftMessage`).
+                            Giới hạn 500 khớp `VARCHAR(500)` của cột. */}
+                        <div className="px-6 pb-6">
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-gray-800">
+                                    Lời chúc gửi người nhận
+                                </span>
+                                <textarea
+                                    value={senderInfo.message || ''}
+                                    onChange={(e) => setSenderInfo({ ...senderInfo, message: e.target.value.slice(0, 500) })}
+                                    maxLength={500}
+                                    rows={3}
+                                    placeholder="Ví dụ: Chúc mừng sinh nhật cậu! Mong cậu luôn vui vẻ và mạnh khoẻ nhé."
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange resize-none"
+                                />
+                                <span className="text-xs text-gray-400 self-end">
+                                    {(senderInfo.message || '').length}/500
+                                </span>
+                            </label>
+                        </div>
                     </div>
 
                     {/* 5. VOUCHER & XU */}
