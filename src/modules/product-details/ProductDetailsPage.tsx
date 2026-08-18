@@ -277,9 +277,20 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
             </div>
           </div>
 
-          {/* CỘT PHẢI STICKY (CÓ `self-stretch` ĐỂ TẠO ĐƯỜNG TRƯỢT DÀI THEO TRANG) */}
-          <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 hidden lg:block self-stretch">
-            <div className="sticky top-24 z-20">
+          {/* CỘT PHẢI STICKY (CÓ `self-stretch` ĐỂ TẠO ĐƯỜNG TRƯỢT DÀI THEO TRANG)
+
+              wiki 0108 — BỎ `hidden lg:block`. Class đó ẩn TOÀN BỘ cột mua ở mọi màn hình
+              dưới 1024px, và **không có thanh mua thay thế nào cho điện thoại** ở bất kỳ đâu
+              trong trang. Hệ quả đo được trên prod ở khung 390x844 (iPhone 14): cả ba nút
+              "Mua Ngay", "Thêm vào giỏ", "Tặng người thân" đều tồn tại trong DOM nhưng
+              kích thước 0x0 — nghĩa là **không ai mua được gì trên điện thoại**. Với một
+              sàn thương mại điện tử Việt Nam thì đó là phần lớn khách.
+
+              Cha là `flex-col lg:flex-row` nên bỏ class đi là cột mua tự xếp xuống dưới
+              thư viện ảnh trên mobile — đúng thứ tự người dùng mong đợi. `sticky` đổi thành
+              `lg:sticky` để trên điện thoại nó nằm yên theo mạch đọc thay vì bám dính. */}
+          <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 self-stretch">
+            <div className="lg:sticky lg:top-24 z-20">
               <StickyBuyBox
                 product={product}
                 shopProfile={shopProfile}
