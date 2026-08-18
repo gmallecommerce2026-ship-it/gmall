@@ -111,9 +111,14 @@ export default function DashboardClient() {
           icon={FiDollarSign}
           color="bg-blue-500"
         />
+        {/* wiki 0108: thẻ này trước ghi "Đơn hàng mới" nhưng đổ vào `totalOrders` —
+            tức ĐẾM TẤT CẢ đơn từ trước tới nay (prod: 262), trong khi 30 ngày gần nhất
+            chỉ 17. BE nay trả thêm `newOrders30d`; dùng đúng nó và nói rõ khoảng thời
+            gian trên nhãn. Nếu BE chưa kịp deploy thì lùi về tổng và đổi luôn nhãn cho
+            khớp, chứ không hiển thị số tổng dưới cái tên "mới". */}
         <StatCard
-          title="Đơn hàng mới"
-          value={stats?.totalOrders != null ? stats.totalOrders : '—'}
+          title={stats?.newOrders30d != null ? 'Đơn hàng mới (30 ngày)' : 'Tổng đơn hàng'}
+          value={stats?.newOrders30d ?? (stats?.totalOrders != null ? stats.totalOrders : '—')}
           icon={FiPackage}
           color="bg-purple-500"
         />

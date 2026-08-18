@@ -54,20 +54,26 @@ export default function ApprovalsPage() {
     }
   };
 
-  // Hành động Từ chối (Placeholder logic)
+  // wiki 0108: TRƯỚC ĐÂY đây là nút giả. Lời gọi `AdminService.rejectShop` bị comment
+  // lại và thay bằng toast `"Đã từ chối hồ sơ (Demo)"` — admin bấm Từ chối, thấy báo
+  // thành công, đóng hộp thoại, nhưng shop **vẫn nguyên trạng thái PENDING** và vẫn nằm
+  // trong hàng chờ. Không ai biết cho tới khi đối chiếu DB.
+  //
+  // Cả hai đầu đều đã sẵn sàng từ lâu: FE có `AdminService.rejectShop` (PATCH
+  // `/admin/users/:id/reject`), BE có `@Patch(':id/reject')` → `rejectShop()` đặt
+  // `Shop.status = REJECTED` và ghi `banReason`. Chỉ thiếu đúng một dòng gọi.
   const handleReject = async () => {
     if (!selectedShop) return;
     const reason = prompt("Nhập lý do từ chối:");
     if (!reason) return;
 
     try {
-        // Giả sử có API reject
-        // await AdminService.rejectShop(selectedShop.id, reason);
-        toast.success("Đã từ chối hồ sơ (Demo)");
+        await AdminService.rejectShop(selectedShop.id, reason);
+        toast.success("Đã từ chối hồ sơ");
         setSelectedShop(null);
-        // fetchData();
-    } catch (err) {
-        toast.error("Lỗi khi từ chối");
+        fetchData();
+    } catch (err: any) {
+        toast.error(err?.message || "Lỗi khi từ chối");
     }
   }
 
