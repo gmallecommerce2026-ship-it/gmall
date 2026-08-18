@@ -1,13 +1,19 @@
 // src/services/product.service.ts
 import { api } from "./api";
 
+// wiki 0108: hình dạng này phải khớp `UpdateProductDiscountDto` của BE.
+// Trước đây nó khai `variations` trong khi DTO khai `variants` — TypeScript không thể
+// bắt được vì hai bên nằm ở hai repo, nên lỗi chỉ lộ ra lúc chạy: `whitelist: true`
+// cắt trường lạ đi trong im lặng, API vẫn trả 200 và giảm giá phân loại biến mất.
+// Ngày để `?:` vì khi TẮT giảm giá thì phải BỎ HẲN trường đi — gửi chuỗi rỗng sẽ
+// rơi vào `@IsDateString()` và bị 400.
 export interface DiscountPayload {
   isDiscountActive: boolean;
   discountType: 'PERCENT';
   discountValue: number;
-  discountStartDate: string;
-  discountEndDate: string;
-  variations?: {
+  discountStartDate?: string;
+  discountEndDate?: string;
+  variants?: {
     id: string; // Variant ID hoặc SKU ID
     discountValue: number;
   }[];

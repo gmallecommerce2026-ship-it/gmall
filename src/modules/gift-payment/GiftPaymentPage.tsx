@@ -599,6 +599,10 @@ const GiftPaymentPage: React.FC = () => {
                                     <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Lời nhắn:</span>
                                     <input
                                         type="text"
+                                        // wiki 0108: `Order.message` là VARCHAR(191). Không chặn ở đây thì
+                                        // người dùng gõ dài rồi mới ăn lỗi lúc bấm đặt hàng (trước đây còn
+                                        // là 500 chứ không phải thông báo tử tế).
+                                        maxLength={191}
                                         placeholder="Lưu ý cho cửa hàng (Ví dụ: Giao giờ hành chính)"
                                         className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-brand-orange"
                                         value={shopMessages[group.shopId] || ''}

@@ -142,13 +142,26 @@ const DiscountConfigModal: React.FC<DiscountConfigModalProps> = ({
     }
 
     try {
+      // wiki 0108 — hai lỗi cùng nằm ở khối này:
+      //
+      // 1. Trường phân loại phải tên `variants`, KHÔNG phải `variations`.
+      //    `UpdateProductDiscountDto` khai `variants`, mà `ValidationPipe` chạy
+      //    `whitelist: true` nên `variations` bị CẮT ÂM THẦM: API trả 200, giao diện
+      //    báo "Cập nhật giảm giá thành công", còn DB thì `discountValue` của mọi
+      //    phân loại vẫn nguyên 0. Người bán đặt giảm 50% rồi tin là đã xong.
+      //
+      // 2. Ngày rỗng phải BỎ HẲN khỏi payload, không gửi chuỗi ''.
+      //    Khi tắt giảm giá thì khối kiểm ở trên được bỏ qua, và `formatDate(null)`
+      //    trả '' → `@IsOptional()` chỉ bỏ qua `undefined`/`null` chứ KHÔNG bỏ qua
+      //    chuỗi rỗng, nên '' rơi vào `@IsDateString()` → 400 "phải là ngày hợp lệ".
+      //    Hậu quả: sản phẩm đã giảm giá thì KHÔNG TẮT ĐI ĐƯỢC nữa.
       const payload: DiscountPayload = {
         isDiscountActive: data.isDiscountActive,
         discountType: 'PERCENT',
-        discountStartDate: data.discountStartDate,
-        discountEndDate: data.discountEndDate,
+        ...(data.discountStartDate ? { discountStartDate: data.discountStartDate } : {}),
+        ...(data.discountEndDate ? { discountEndDate: data.discountEndDate } : {}),
         discountValue: data.applyToAll ? Number(data.commonDiscountValue) : 0,
-        variations: data.variants.map(v => ({
+        variants: data.variants.map(v => ({
           id: v.id,
           discountValue: data.applyToAll ? Number(data.commonDiscountValue) : Number(v.discountValue)
         }))

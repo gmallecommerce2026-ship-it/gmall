@@ -639,6 +639,8 @@ const PaymentPage = () => {
                          <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
                          <input 
                             type="text" 
+                            // wiki 0108: `Order.message` là VARCHAR(191) — chặn ngay tại ô nhập.
+                            maxLength={191}
                             placeholder="Lưu ý cho người bán..." 
                             onChange={(e) => setShopMessage(shopId, e.target.value)}
                             className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1" 
