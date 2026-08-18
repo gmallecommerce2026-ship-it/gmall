@@ -23,7 +23,8 @@ const CartPage = () => {
     removeItem, 
     toggleItemSelection, 
     toggleAllSelection, 
-    toggleShopSelection // Hàm này chỉ nhận (ids, checked)
+    toggleShopSelection, // Hàm này chỉ nhận (ids, checked)
+    removeMultipleItems
   } = useCartActions();
 
   // 2. Fetch dữ liệu khi vào trang
@@ -95,7 +96,8 @@ const CartPage = () => {
                 onToggleItem={toggleItemSelection}
                 onToggleAll={toggleAllSelection}
                 // Sử dụng hàm wrapper thay vì truyền trực tiếp
-                onToggleShop={handleToggleShop} 
+                onToggleShop={handleToggleShop}
+                onRemoveSelected={() => removeMultipleItems(selectedIds)} 
               />
             </div>
             

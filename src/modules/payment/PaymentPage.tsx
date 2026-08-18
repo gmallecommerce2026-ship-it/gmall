@@ -463,7 +463,14 @@ const PaymentPage = () => {
     }
 
     const payload = buildPayload();
-    if (!payload) return;
+    if (!payload) {
+      // wiki 0108: trước đây chỗ này chỉ `return;` — bấm "ĐẶT HÀNG" mà không có món nào
+      // được chọn thì KHÔNG có gì xảy ra: không gọi API, không thông báo, nút cũng không
+      // bị vô hiệu. Người mua đứng nhìn một nút bấm được nhưng bất động, không biết mình
+      // làm sai ở đâu. `buildPayload()` chỉ trả null khi `validPaymentItems` rỗng.
+      toast.error("Vui lòng chọn ít nhất một sản phẩm để đặt hàng.");
+      return;
+    }
 
     try {
       setIsProcessing(true);
@@ -715,6 +722,8 @@ const PaymentPage = () => {
                coinDiscount={frontendCalculations.coinDiscount} // [UPDATE] Truyền giá trị xu
                total={frontendCalculations.total}
                onPlaceOrder={handlePlaceOrder}
+               // wiki 0108: nút phải TRÔNG đúng như nó hành xử — không có gì để đặt thì mờ đi.
+               disabled={validPaymentItems.length === 0}
                loading={isLoading || isProcessing}
             />
          </div>
