@@ -19,6 +19,43 @@ export default function CategoriesClient() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // wiki 0108: nút "Thêm danh mục" trước đây KHÔNG có `onClick` — bấm vào không có gì
+  // xảy ra, không mở form, không báo lỗi. Đây là màn quản trị danh mục nên đó là chức
+  // năng chính của trang. Dựng một hộp thoại gọn: tên (bắt buộc) + danh mục cha (tuỳ chọn),
+  // đúng bằng `CreateCategoryDto` của BE (`name` bắt buộc, `slug`/`parentId` tuỳ chọn —
+  // BE tự sinh slug).
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newParentId, setNewParentId] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) {
+      setCreateError("Vui lòng nhập tên danh mục");
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await apiClient.post('/categories', {
+        name,
+        ...(newParentId ? { parentId: newParentId } : {}),
+      });
+      setShowCreate(false);
+      setNewName("");
+      setNewParentId("");
+      await fetchCategories();
+    } catch (err: any) {
+      // Nói ra lỗi thật thay vì im lặng — đây là màn quản trị, người dùng cần biết vì sao hỏng.
+      setCreateError(err?.message || "Không tạo được danh mục, vui lòng thử lại");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   // Hàm fetch data tách riêng để có thể gọi lại sau khi Thêm/Sửa/Xóa
   const fetchCategories = async () => {
     setLoading(true);
@@ -50,11 +87,69 @@ export default function CategoriesClient() {
             <Button variant="outline" onClick={fetchCategories} disabled={loading}>
                  <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+            <Button
+                onClick={() => { setShowCreate(true); setCreateError(null); }}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+            >
                 <Plus size={18} /> Thêm danh mục
             </Button>
         </div>
       </div>
+
+      {showCreate && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tao-danh-muc-title"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => !creating && setShowCreate(false)}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleCreate}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4"
+          >
+            <h2 id="tao-danh-muc-title" className="text-lg font-bold text-gray-900">Thêm danh mục</h2>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-gray-700">Tên danh mục</span>
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                maxLength={150}
+                placeholder="Ví dụ: Đồ chơi trẻ em"
+                className="h-10 px-3 rounded-lg border border-gray-300 text-sm outline-none focus:border-blue-500"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-gray-700">Danh mục cha (tuỳ chọn)</span>
+              <select
+                value={newParentId}
+                onChange={(e) => setNewParentId(e.target.value)}
+                className="h-10 px-3 rounded-lg border border-gray-300 text-sm outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="">— Danh mục gốc —</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+
+            {createError && <p className="text-sm text-red-600">{createError}</p>}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowCreate(false)} disabled={creating}>
+                Huỷ
+              </Button>
+              <Button type="submit" disabled={creating} className="bg-blue-600 hover:bg-blue-700 text-white">
+                {creating ? "Đang tạo…" : "Tạo danh mục"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Category List */}

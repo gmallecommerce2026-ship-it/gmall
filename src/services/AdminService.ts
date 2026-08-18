@@ -169,13 +169,18 @@ export const AdminService = {
   },
 
   // ================= CATEGORIES =================
+  // wiki 0108: đường dẫn thật là `/categories`, KHÔNG có tiền tố `/admin`.
+  // Ghi chú "TODO: Implement Backend: GET /admin/categories" ở đây là sai — backend đã
+  // có sẵn `@Controller('categories')` với đủ GET/POST/PATCH/DELETE từ lâu. Vì gọi sai
+  // đường dẫn nên màn Quản lý Danh mục nhận **404** và luôn rỗng, còn nút "Thêm danh mục"
+  // thì bấm xong không có gì xảy ra. Đã đo trên prod: `/admin/categories` → 404,
+  // `/categories` → 200.
   getAllCategories: async () => {
-      // TODO: Implement Backend: GET /admin/categories
-      return apiClient.get('/admin/categories');
+      return apiClient.get('/categories');
   },
 
   createCategory: async (data: FormData | any) => {
-      return apiClient.post('/admin/categories', data);
+      return apiClient.post('/categories', data);
   },
 
   // ================= ORDERS =================
@@ -240,12 +245,16 @@ export const AdminService = {
   
   // ================= CONTENT =================
   // CMS endpoints
+  // wiki 0108: đường dẫn thật là `/content/admin/banners` — controller là
+  // `@Controller('content')` với route con `admin/banners`, chứ không phải
+  // `/admin/content/...`. Đo trên prod: `/admin/content/banners` → 404,
+  // `/content/admin/banners` → 401 (tức là route CÓ thật, chỉ đòi đăng nhập).
   getBanners: async () => {
-      return apiClient.get('/admin/content/banners');
+      return apiClient.get('/content/admin/banners');
   },
-  
+
   updateBanner: async (id: string, data: any) => {
-      return apiClient.patch(`/admin/content/banners/${id}`, data);
+      return apiClient.patch(`/content/admin/banners/${id}`, data);
   },
 
   // ================= BLOGS =================
