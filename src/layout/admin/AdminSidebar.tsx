@@ -90,6 +90,10 @@ const ADMIN_MENU: MenuItem[] = [
     icon: <FiDollarSign size={20} />,
     children: [
       { id: 'revenue', label: 'Doanh thu sàn', path: '/admin/finance/revenue' },
+      // wiki 0109: màn duyệt rút tiền (seller + người tiếp thị) trước chỉ tới được qua
+      // link nhỏ trong card "Chờ thanh toán" ở trang Doanh thu (wiki 0108). Đưa lên menu
+      // vì đây là bước cuối của vòng tiền affiliate — admin phải tìm thấy mà không cần biết trước.
+      { id: 'payouts', label: 'Duyệt rút tiền', path: '/admin/finance/payouts' },
     ]
   },
   {
@@ -99,6 +103,10 @@ const ADMIN_MENU: MenuItem[] = [
     children: [
       { id: 'vouchers', label: 'Quản lý Vouchers', path: '/admin/marketing/vouchers' },
       { id: 'flash_sale', label: 'Flash Sale', path: '/admin/marketing/flash-sale' },
+      // wiki 0109: trang /admin/affiliate (duyệt hồ sơ người tiếp thị + đối soát + chốt sổ,
+      // wiki 0105) đã chạy trên prod từ 17/08 nhưng commit ce609a8 quên gắn vào menu → trang
+      // mồ côi, khách báo "không thấy nút duyệt". Sidebar là lối vào DUY NHẤT của khu admin.
+      { id: 'affiliate', label: 'Tiếp thị liên kết', path: '/admin/affiliate' },
     ]
   },
   {
