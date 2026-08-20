@@ -16,6 +16,19 @@ import {
 } from '@/types/admin';
 import { api } from './api';
 
+/**
+ * wiki 0111 — số việc đang chờ admin xử lý, dùng cho badge trên menu quản trị.
+ * Khoá ở đây phải khớp đúng khoá BE trả về (`DashboardService.getPendingCounts`).
+ */
+export interface PendingCounts {
+  affiliateAccounts: number;
+  sellerApprovals: number;
+  shopUpdates: number;
+  productApprovals: number;
+  payouts: number;
+  complaints: number;
+}
+
 
 
 export const AdminService = {
@@ -77,6 +90,12 @@ export const AdminService = {
   // phạm" đã được thay bằng màn Khiếu nại dựa trên `/admin/complaints` có thật. Xoá hẳn
   // thay vì để lại kèm TODO, vì một hàm sẵn-sàng-gọi trỏ vào route không tồn tại là cái
   // bẫy cho người viết màn hình tiếp theo.
+
+  // ================= VIỆC ĐANG CHỜ (wiki 0111) =================
+  // Một lượt gọi cho tất cả badge trên menu quản trị. BE: GET /admin/dashboard/pending-counts.
+  getPendingCounts: async () => {
+    return apiClient.get<PendingCounts>('/admin/dashboard/pending-counts');
+  },
 
   // ================= KHIẾU NẠI (wiki 0110) =================
   // BE: `AdminComplaintController` — `GET /admin/complaints`, `PATCH /admin/complaints/:id/status`.

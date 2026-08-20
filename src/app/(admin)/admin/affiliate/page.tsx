@@ -11,6 +11,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { AdminService } from '@/services/AdminService';
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 const formatVnd = (n: number) => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0));
 
@@ -93,6 +96,7 @@ export default function AdminAffiliatePage() {
       setBusyId(id);
       try {
         await AdminService.reviewAffiliateAccount(id, { status: next, rejectReason });
+        notifyPendingCountsChanged();
         toast.success(
           next === 'APPROVED' ? 'Đã duyệt hồ sơ.' : next === 'REJECTED' ? 'Đã từ chối.' : 'Đã đình chỉ.',
         );
@@ -112,6 +116,9 @@ export default function AdminAffiliatePage() {
     setSettling(true);
     try {
       const res: any = await AdminService.settleAffiliateNow();
+      // Cố ý KHÔNG báo cập nhật badge ở đây: chốt sổ chuyển hoa hồng sang trạng thái đã
+      // chi, nó không đụng tới hàng đợi "hồ sơ chờ duyệt" nào cả — gọi thêm ở đây chỉ tốn
+      // một lượt API mà không đổi con số nào.
       toast.success(
         `Đã chốt kỳ ${res?.period ?? ''}: ${res?.accounts ?? 0} người, ${formatVnd(res?.total ?? 0)}đ`,
       );

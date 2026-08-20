@@ -20,6 +20,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import { AdminService } from '@/services/AdminService';
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 // Bốn giá trị này do BE quy định (`VALID_STATUSES` trong complaint.service.ts). Đặt sai
 // một chữ là BE trả 400 "Trạng thái không hợp lệ", nên giữ nguyên chữ thường như BE.
@@ -92,6 +95,7 @@ export default function AdminComplaintsPage() {
       setBusyId(id);
       try {
         await AdminService.updateComplaintStatus(id, status, adminNote);
+        notifyPendingCountsChanged();
         toast.success(`Đã chuyển sang "${statusMeta(status)?.label ?? status}".`);
         setNoteFor(null);
         setNote('');

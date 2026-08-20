@@ -4,6 +4,9 @@ import { AdminService } from "@/services/AdminService";
 import { toast } from "react-hot-toast";
 import { FiRefreshCcw, FiFilter, FiSearch } from "react-icons/fi";
 import { SellerDossierModal } from "@/components/admin/approvals/SellerDossierModal"; // Import component mới
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 export default function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<'register' | 'update'>('register');
@@ -42,9 +45,11 @@ export default function ApprovalsPage() {
     try {
         if (activeTab === 'register') {
             await AdminService.approveShop(selectedShop.id);
+            notifyPendingCountsChanged();
             toast.success("Đã duyệt shop mới thành công");
         } else {
             await AdminService.approveShopUpdate(selectedShop.id);
+            notifyPendingCountsChanged();
             toast.success("Đã duyệt cập nhật thông tin thành công");
         }
         setSelectedShop(null);
@@ -69,6 +74,7 @@ export default function ApprovalsPage() {
 
     try {
         await AdminService.rejectShop(selectedShop.id, reason);
+        notifyPendingCountsChanged();
         toast.success("Đã từ chối hồ sơ");
         setSelectedShop(null);
         fetchData();

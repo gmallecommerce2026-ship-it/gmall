@@ -10,6 +10,9 @@ import classNames from "classnames";
 import { toast } from "react-hot-toast";
 
 import { AdminService } from "@/services/AdminService";
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 // Interface (Giữ nguyên)
 interface ProductListItem {
@@ -93,6 +96,7 @@ export default function ProductApprovalPage() {
     try {
       await AdminService.approveProduct(id, "ACTIVE");
       setProducts((prev) => prev.filter((p) => p.id !== id));
+      notifyPendingCountsChanged();
       toast.success("Đã duyệt thành công!");
     } catch (error) {
       toast.error("Lỗi khi duyệt sản phẩm.");
@@ -158,6 +162,7 @@ export default function ProductApprovalPage() {
       await AdminService.bulkApproveProducts(selectedIds, "ACTIVE");
       setProducts(prev => prev.filter(p => !selectedIds.includes(p.id)));
       setSelectedIds([]);
+      notifyPendingCountsChanged();
       toast.success(`Đã duyệt ${selectedIds.length} sản phẩm!`);
     } catch (error) {
       console.error(error);
@@ -172,10 +177,12 @@ export default function ProductApprovalPage() {
         await AdminService.bulkApproveProducts(selectedIds, "REJECTED", rejectReason);
         setProducts(prev => prev.filter(p => !selectedIds.includes(p.id)));
         setSelectedIds([]);
+        notifyPendingCountsChanged();
         toast.success(`Đã từ chối ${selectedIds.length} sản phẩm.`);
       } else if (rejectModal.productId) {
         await AdminService.approveProduct(rejectModal.productId, "REJECTED", rejectReason);
         setProducts(prev => prev.filter(p => p.id !== rejectModal.productId));
+        notifyPendingCountsChanged();
         toast.success("Đã từ chối sản phẩm.");
       }
       setRejectModal({ isOpen: false, productId: null, isBulk: false });

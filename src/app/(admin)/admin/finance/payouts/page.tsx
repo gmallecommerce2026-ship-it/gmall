@@ -6,6 +6,9 @@ import { PayoutRequest } from '@/types/admin';
 import { formatCurrency } from '@/lib/utils';
 import { FiCheck, FiX, FiInfo, FiCreditCard } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 type TabType = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -54,6 +57,7 @@ export default function PayoutsPage() {
     
     try {
         await AdminService.approvePayout(id);
+        notifyPendingCountsChanged();
         toast.success('Đã duyệt yêu cầu rút tiền!');
         // Refresh list
         setPayouts(prev => prev.filter(p => p.id !== id));
@@ -68,6 +72,7 @@ export default function PayoutsPage() {
 
     try {
         await AdminService.rejectPayout(id, reason);
+        notifyPendingCountsChanged();
         toast.success('Đã từ chối yêu cầu.');
         setPayouts(prev => prev.filter(p => p.id !== id));
     } catch (error) {
