@@ -13,8 +13,11 @@ const SellerRightSidebar = () => {
     return conversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
   }, [conversations]);
 
+  // wiki 0110: z-index hạ 40 → 35. Nền mờ của drawer menu (mobile) là z-40 và nằm SAU trong
+  // DOM, nên khi z bằng nhau thì nút chat nổi này vẫn đè lên nền mờ và bấm được trong lúc
+  // menu đang mở. Nó chỉ cần nổi trên nội dung trang, không cần nổi trên lớp phủ điều hướng.
   return (
-    <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[40] flex flex-col gap-3">
+    <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[35] flex flex-col gap-3">
        <div className="bg-white rounded-l-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-r-0 border-gray-100 p-2 flex flex-col gap-2">
         <button
           onClick={toggleChat} // Click vào đây sẽ set isOpen = !isOpen -> Mở/Đóng ChatWindow

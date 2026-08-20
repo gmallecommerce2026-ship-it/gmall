@@ -43,6 +43,17 @@ const TABS = [
     type: 'menu'
   },
   {
+    // wiki 0110: tab này trước nằm ở màn riêng `/admin/content/menus` — một trang mồ côi
+    // (không có trong sidebar) dùng CHÍNH `MenuConfigEditor` này cho cùng 4 key config.
+    // Hai màn hình sửa cùng một dữ liệu là mời gọi ghi đè lẫn nhau, nên gộp về đây và
+    // trang kia chuyển hướng sang. `HEADER_BLOG_TOPIC` là key duy nhất bên đó có mà đây thiếu.
+    id: 'blog_topic',
+    label: 'Menu Chủ Đề Blog',
+    icon: <FiMenu />,
+    key: SYSTEM_MENU_KEYS.BLOG,
+    type: 'menu'
+  },
+  {
     id: 'footer',
     label: 'Footer Links',
     icon: <FiLayout />,

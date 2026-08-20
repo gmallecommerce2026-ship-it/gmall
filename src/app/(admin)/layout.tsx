@@ -6,6 +6,10 @@ import { FiBell } from 'react-icons/fi'; // Thêm icon cho header
 import AdminSearchBox from './components/AdminSearchBox';
 import AdminIdentity from './components/AdminIdentity';
 import RoleGuard from '@/components/auth/RoleGuard';
+// wiki 0110: hamburger + drawer cho màn hình < lg (trước đây khu admin không có điều hướng
+// nào trên điện thoại). Provider là Client Component nhưng vẫn bọc được children là Server
+// Component, nên layout này giữ nguyên kiểu server và `metadata` bên dưới còn hiệu lực.
+import { PortalNavProvider, PortalNavToggle } from '@/layout/shared/PortalNavContext';
 import type { Metadata } from 'next';
 
 // Wiki 0104: các trang admin tự viết hậu tố "| Admin Portal" / "| Admin" / "| Admin
@@ -36,8 +40,9 @@ export default function AdminLayout({
   // `/admin/login` ở `app/admin/login` — NGOÀI group `(admin)` — nên không bị chặn.
   return (
     <RoleGuard allow={['ADMIN']} redirectTo="/admin/login">
+    <PortalNavProvider>
     <div className="min-h-screen bg-[#f5f5f5] flex">
-      {/* Sidebar cố định */}
+      {/* Sidebar: cố định từ lg trở lên, là drawer trượt bên dưới (wiki 0110) */}
       <AdminSidebar />
 
       {/* Main Content Area — mobile full-width; desktop (lg≥) margin 260px cho sidebar.
@@ -45,7 +50,11 @@ export default function AdminLayout({
       <div className="flex-1 lg:ml-[260px] min-w-0 flex flex-col transition-all duration-300 w-full">
 
         <header className="h-[70px] bg-white border-b border-gray-200 sticky top-0 z-40 px-4 md:px-6 lg:px-8 flex items-center justify-between shadow-sm">
-           <h2 className="text-base md:text-lg font-semibold text-gray-700 truncate">Bảng điều khiển</h2>
+           <div className="flex items-center gap-2 min-w-0">
+             {/* wiki 0110: lối vào DUY NHẤT của menu trên điện thoại. Trên lg tự ẩn vì sidebar đã hiện. */}
+             <PortalNavToggle label="Mở menu quản trị" />
+             <h2 className="text-base md:text-lg font-semibold text-gray-700 truncate">Bảng điều khiển</h2>
+           </div>
 
            <div className="flex items-center gap-3 md:gap-6">
              <AdminSearchBox />
@@ -77,6 +86,7 @@ export default function AdminLayout({
         </footer>
       </div>
     </div>
+    </PortalNavProvider>
     </RoleGuard>
   );
 }

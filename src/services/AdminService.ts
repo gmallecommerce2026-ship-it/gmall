@@ -70,14 +70,23 @@ export const AdminService = {
   },
 
   // ================= SHOPS =================
-  getShops: async (params?: PaginationParams & { status?: string }) => {
-    // TODO: Implement Backend: GET /admin/shops
-    return apiClient.get('/admin/shops', { params });
+  // wiki 0110: hai hàm `getShops` / `getShopViolations` từng nằm ở đây, gọi
+  // `/admin/shops` và `/admin/shops/violations`. Cả hai endpoint CHƯA BAO GIỜ tồn tại
+  // trên BE (đã kiểm: không có `@Controller('admin/shops')`) — gọi vào là 404. Không nơi
+  // nào còn dùng chúng: trang danh sách cửa hàng dùng thẳng `GET /shops`, còn trang "vi
+  // phạm" đã được thay bằng màn Khiếu nại dựa trên `/admin/complaints` có thật. Xoá hẳn
+  // thay vì để lại kèm TODO, vì một hàm sẵn-sàng-gọi trỏ vào route không tồn tại là cái
+  // bẫy cho người viết màn hình tiếp theo.
+
+  // ================= KHIẾU NẠI (wiki 0110) =================
+  // BE: `AdminComplaintController` — `GET /admin/complaints`, `PATCH /admin/complaints/:id/status`.
+  // Trạng thái hợp lệ do BE quy định: open | processing | resolved | rejected.
+  getComplaints: async (params?: { page?: number; limit?: number; status?: string }) => {
+    return apiClient.get('/admin/complaints', { params });
   },
 
-  getShopViolations: async (params?: PaginationParams) => {
-    // TODO: Implement Backend: GET /admin/shops/violations
-    return apiClient.get('/admin/shops/violations', { params });
+  updateComplaintStatus: async (id: string, status: string, adminNote?: string) => {
+    return apiClient.patch(`/admin/complaints/${id}/status`, { status, adminNote });
   },
 
   // ================= PRODUCTS =================

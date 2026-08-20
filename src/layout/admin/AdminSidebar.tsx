@@ -17,12 +17,17 @@ import {
   FiFileText,
   FiGift,
   FiMoon,
+  FiHeart,
+  FiAlertCircle,
+  FiX,
   FiTag // Thêm icon Tag
 } from 'react-icons/fi';
 import classNames from 'classnames';
 import { AdminService } from '@/services/AdminService';
 // [round15 FIX admin-logout-store] cần clear persisted Zustand "user-storage" khi admin logout
 import { useUserStore } from '@/store/useUserStore';
+// wiki 0110: drawer cho màn hình nhỏ — xem giải thích trong PortalNavContext.tsx
+import { usePortalNav, PortalNavOverlay, portalSidebarClass } from '@/layout/shared/PortalNavContext';
 
 interface MenuItem {
   id: string;
@@ -64,6 +69,10 @@ const ADMIN_MENU: MenuItem[] = [
     children: [
       { id: 'sellers', label: 'Danh sách người bán', path: '/admin/users/sellers' },
       { id: 'seller_approval', label: 'Duyệt người bán', path: '/admin/users/approvals' },
+      // wiki 0110: /admin/shops là danh sách CỬA HÀNG (khác "người bán" = tài khoản) và là
+      // cửa vào tự nhiên của /admin/shops/[id]; trước đây trang chi tiết chỉ tới được qua
+      // trang duyệt sản phẩm, còn trang danh sách thì không tới được từ đâu cả.
+      { id: 'shop_list', label: 'Danh sách cửa hàng', path: '/admin/shops', exact: true },
     ]
   },
   {
@@ -123,6 +132,27 @@ const ADMIN_MENU: MenuItem[] = [
     label: 'Bài viết',
     icon: <FiFileText size={20} />,
     path: '/admin/blogs',
+  },
+  {
+    // wiki 0110: BE có đủ CRUD quỹ + chiến dịch (`/admin/charity/*`) và trang thanh toán
+    // của khách ĐANG dùng `GET /charity/campaigns/active` để hiện ô quyên góp — nhưng
+    // không có mục menu nào, nên không ai tạo/sửa được chiến dịch đang chạy thật.
+    id: 'charity',
+    label: 'Từ thiện',
+    icon: <FiHeart size={20} />,
+    children: [
+      { id: 'charity_campaigns', label: 'Chiến dịch quyên góp', path: '/admin/charity/campaigns' },
+      { id: 'charity_funds', label: 'Quỹ từ thiện', path: '/admin/charity/funds' },
+    ]
+  },
+  {
+    // wiki 0110: seller gửi khiếu nại từ Kênh người bán → `POST /complaints`, BE lưu và mở
+    // sẵn `/admin/complaints`, nhưng FE chưa từng có màn hình admin nào → khiếu nại nằm
+    // trong DB không ai đọc. Đây là chiều NGƯỢC của bug 0109: API có, màn hình không có.
+    id: 'complaints',
+    label: 'Khiếu nại & Báo lỗi',
+    icon: <FiAlertCircle size={20} />,
+    path: '/admin/complaints',
   },
   {
     id: 'brand',
@@ -251,7 +281,10 @@ const AdminSidebar = () => {
   // điểm; đồng-loạt-mở gây cảm giác sidebar lộn xộn (#56). Group con sẽ tự
   // mở khi pathname match qua useEffect trong SidebarItem.
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
-  
+  // wiki 0110: khi không có PortalNavProvider (test render thẳng component), context trả về
+  // giá trị mặc định isOpen=false → sidebar giữ nguyên hành vi desktop, không sập.
+  const { isOpen: isNavOpen, close: closeNav } = usePortalNav();
+
   const toggleOpen = (id: string) => {
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -286,7 +319,10 @@ const AdminSidebar = () => {
   };
 
   return (
-    <aside className="hidden lg:flex fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex-col">
+    <>
+    {/* wiki 0110: nền mờ chỉ tồn tại dưới lg — trên desktop sidebar luôn hiện, không có gì để đóng. */}
+    <PortalNavOverlay />
+    <aside id="portal-sidebar" className={portalSidebarClass(isNavOpen)}>
       <div className="h-[80px] flex items-center px-6 border-b border-gray-100 gap-3">
         <div className="w-9 h-9 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-gray-300">
           <FiShield size={18}/>
@@ -295,8 +331,18 @@ const AdminSidebar = () => {
             <h1 className="font-bold text-lg text-gray-800 leading-none">GMall</h1>
             <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">Admin Portal</span>
         </div>
+        {/* Nút đóng chỉ có nghĩa khi đang là drawer. Overlay cũng đóng được, nhưng nút X là
+            thứ người dùng tìm trước, và là điểm dừng bàn phím rõ ràng. */}
+        <button
+          type="button"
+          onClick={closeNav}
+          aria-label="Đóng menu điều hướng"
+          className="lg:hidden ml-auto p-2 -mr-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <FiX size={20} />
+        </button>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto custom-scrollbar py-4 space-y-1">
         {ADMIN_MENU.map(item => (
           <SidebarItem 
@@ -314,6 +360,7 @@ const AdminSidebar = () => {
         </button>
       </div>
     </aside>
+    </>
   );
 };
 
