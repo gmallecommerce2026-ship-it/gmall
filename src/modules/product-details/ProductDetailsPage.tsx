@@ -296,7 +296,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
                 shopProfile={shopProfile}
                 vouchers={allVouchers}
                 onHoverVariant={(img) => setPreviewImage(img)}
-                // onVariantChange={setSelectedVariantInfo}
+                onVariantChange={setSelectedVariantInfo}
               />
             </div>
           </div>

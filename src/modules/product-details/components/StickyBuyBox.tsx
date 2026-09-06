@@ -18,12 +18,15 @@ import ProductVouchers from "./ProductVouchers";
 import { Product } from "@/types/product";
 import { CartItem } from "@/types/cart";
 import { ShopProfileData } from "./ShopInfo";
+import { applyVariantDisplayOrder } from "@/lib/variant-order";
 
 interface StickyBuyBoxProps {
   product: Product;
   shopProfile: ShopProfileData | null;
   vouchers: any[];
   onHoverVariant?: (image: string | null) => void;
+  /** Wiki 0104: bao bien the + gia dang chon cho trang cha. */
+  onVariantChange?: (info: { variantId?: string; price: number }) => void;
 }
 
 export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
@@ -31,6 +34,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
   shopProfile,
   vouchers,
   onHoverVariant,
+  onVariantChange,
 }) => {
   const router = useRouter();
   const { user } = useUserStore();
@@ -98,6 +102,19 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
     : product.stock || product.stockTotal || 0;
 
   const subtotal = Number(finalPrice || 0) * quantity;
+
+  // Wiki 0104 (khoi phuc 06/09): bao bien the + gia dang chon RA NGOAI cho trang cha.
+  // Khoi "Thuong duoc mua cung" nam o cot khac, khong thay state nay, nen no hien
+  // product.price (gia GOC) trong khi khach dang chon bien the co gia khac — hai con so
+  // cai nhau tren cung mot man hinh. Deps la currentVariant?.id + finalPrice (gia tri
+  // nguyen thuy) nen trang cha re-render cung khong tao vong lap set-state.
+  useEffect(() => {
+    if (!onVariantChange) return;
+    onVariantChange({
+      variantId: currentVariant?.id,
+      price: Number(finalPrice || 0),
+    });
+  }, [onVariantChange, currentVariant?.id, finalPrice]);
 
   const formatPrice = (p: number | string | undefined | null) => {
     if (p === undefined || p === null) return "Liên hệ";
@@ -205,11 +222,24 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
   const handleGiftNow = () => {
     if (!validateSelection()) return;
     setIsGifting(true);
+    // wiki 0108 (khoi phuc 06/09): goi du lieu nay phai DU nhu `handleBuyNow` phia tren.
+    // Neu chi nhet productId/variantId/quantity/selectedOptions — thieu price, title,
+    // imageUrl, shopId — thi /gift-payment (dung thang danh sach hang tu goi nay, khong
+    // goi API lay them) doc item.price.toLocaleString() khong chan null => TypeError =>
+    // React thao ca cay => TRANG TRANG TINH. Tuc la nut "Tang nguoi than" chet han.
     const checkoutData = {
+      id: `gift-${Date.now()}`,
       productId: product.id,
       productVariantId: currentVariant?.id,
       variantId: currentVariant?.id,
+      title: product.title,
+      imageUrl: currentVariant?.imageUrl || product.imageUrl,
+      price: Number(finalPrice),
       quantity: quantity,
+      stock: displayStock,
+      shopId: product.shopId || product.sellerId || 'unknown-shop',
+      shopName: product.shopName || 'Cua hang',
+      variantName: getVariantName(),
       selectedOptions: product.tiers
         ? selections.map((s, i) => ({
             name: product.tiers![i].name,
@@ -238,8 +268,8 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
         {/* <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0 bg-gray-50 flex items-center justify-center">
-              {shopProfile?.avatar ? (
-                <img src={shopProfile.avatar} alt={shopProfile.name} className="w-full h-full object-cover" />
+              {shopProfile?.avatarUrl ? (
+                <img src={shopProfile.avatarUrl} alt={shopProfile.name} className="w-full h-full object-cover" />
               ) : (
                 <span className="font-bold text-gray-500 text-sm">
                   {product.brand?.charAt(0) || "S"}
@@ -281,23 +311,15 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
         {product.tiers &&
           product.tiers.length > 0 &&
           product.tiers.map((tier, idx) => {
-            const mappedOptions = tier.options.map((opt: string, originalIdx: number) => ({
-              label: opt,
-              originalIdx,
-            }));
+            // wiki 0095 B2 (khoi phuc 06/09): sort bang localeCompare(numeric:true) chi so
+            // cum so dau, bo qua don vi => "1TB, 2TB, 256GB, 512GB". Ngoai ra `images` KHONG
+            // duoc sort kem nen anh swatch lech nhan. applyVariantDisplayOrder quy doi don vi
+            // ve gia tri nen, sap ca options lan images, va tra originalIndexes de giu dung
+            // mapping sang variants[].tierIndex.
+            const { tier: orderedTier, originalIndexes } =
+              applyVariantDisplayOrder(tier);
 
-            const sortedOptions = [...mappedOptions].sort((a, b) =>
-              a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" })
-            );
-
-            const orderedTier = {
-              ...tier,
-              options: sortedOptions.map((o) => o.label),
-            };
-
-            const selectedSortedIndex = sortedOptions.findIndex(
-              (o) => o.originalIdx === selections[idx]
-            );
+            const selectedSortedIndex = originalIndexes.indexOf(selections[idx]);
 
             return (
               <VariantSelector
@@ -305,8 +327,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
                 tier={orderedTier}
                 selectedIndex={selectedSortedIndex}
                 onSelect={(sortedIdx) => {
-                  const originalIndex = sortedOptions[sortedIdx].originalIdx;
-                  handleSelectOption(idx, originalIndex);
+                  handleSelectOption(idx, originalIndexes[sortedIdx]);
                 }}
                 onHoverOption={(img) => {
                   if (onHoverVariant) onHoverVariant(img);
