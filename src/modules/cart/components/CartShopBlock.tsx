@@ -41,10 +41,18 @@ const CartShopBlock: React.FC<CartShopBlockProps> = ({
         />
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          
+          {/* [LOGIC GỐC]: Link sang trang Shop
           <Link href={`/shop/${shopId}`} className="font-bold text-gray-800 hover:text-orange-600 transition-colors">
             {shopName}
           </Link>
           <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          */}
+
+          {/* [TẠM THỜI]: Chỉ hiển thị chữ tên GMall, không gắn link shop */}
+          <span className="font-bold text-gray-800">
+            {shopName}
+          </span>
         </div>
       </div>
 
@@ -63,16 +71,18 @@ const CartShopBlock: React.FC<CartShopBlockProps> = ({
         ))}
       </div>
 
-      {/* 3. Shop Voucher Section */}
+      {/* 3. Shop Voucher Section (Tạm ẩn nếu không dùng voucher riêng theo shop) */}
+      {/* 
       <div className="px-4 py-3 border-t border-dashed border-gray-200 flex items-center justify-between bg-[#FAFBFC] text-sm">
          <div className="flex items-center gap-2 text-orange-600">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
             <span className="font-medium">Shop Voucher</span>
          </div>
          <button className="text-blue-600 hover:underline cursor-pointer text-xs font-medium bg-blue-50 px-3 py-1 rounded-full">
-            Lưu mã giảm giá
+            Lấy mã giảm
          </button>
       </div>
+      */}
     </div>
   );
 };

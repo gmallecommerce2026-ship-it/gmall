@@ -25,11 +25,12 @@ const CartList: React.FC<CartListProps> = ({
   onToggleShop
 }) => {
   // Gom nhóm items theo ShopId
+  /* === [LOGIC GỐC - ĐA SHOP]: Mở comment đoạn này khi bật lại tính năng Shop ===
   const groupedItems = useMemo(() => {
     const groups: Record<string, { shopName: string; shopId: string; items: CartItem[] }> = {};
     
     items.forEach((item) => {
-      // Fallback shopId nếu backend trả về null
+      // Fallback shopId nếu backend trả null
       const sId = item.shopId || 'unknown-shop';
       if (!groups[sId]) {
         groups[sId] = {
@@ -42,6 +43,19 @@ const CartList: React.FC<CartListProps> = ({
     });
     
     return Object.values(groups);
+  }, [items]);
+  =========================================================================== */
+
+  // === [LOGIC TẠM THỜI]: Gộp toàn bộ sản phẩm vào 1 shop duy nhất "GMall" ===
+  const groupedItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    return [
+      {
+        shopId: 'gmall',
+        shopName: 'GMall',
+        items: items,
+      },
+    ];
   }, [items]);
 
   const isAllSelected = items.length > 0 && items.every((i) => selectedIds.includes(i.id));

@@ -199,6 +199,8 @@ const GiftPaymentPage: React.FC = () => {
         return cartItems.filter(item => selectedIds.includes(item.id));
     }, [parsedDataItems, isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
 
+    // 1. DATA SẢN PHẨM GROUP THEO SHOP
+    /* === [LOGIC GỐC - ĐA SHOP]: Mở comment đoạn này khi bật lại tính năng Shop ===
     const groupedItems = useMemo(() => {
         const groups: Record<string, { shopName: string, items: any[] }> = {};
         validPaymentItems.forEach((item: any) => {
@@ -209,6 +211,19 @@ const GiftPaymentPage: React.FC = () => {
             groups[sId].items.push(item);
         });
         return Object.entries(groups).map(([shopId, data]) => ({ shopId, ...data }));
+    }, [validPaymentItems]);
+    =========================================================================== */
+
+    // === [LOGIC TẠM THỜI]: Gộp toàn bộ sản phẩm vào 1 shop duy nhất "GMall" ===
+    const groupedItems = useMemo(() => {
+        if (!validPaymentItems || validPaymentItems.length === 0) return [];
+        return [
+            {
+                shopId: 'gmall',
+                shopName: 'GMall',
+                items: validPaymentItems,
+            }
+        ];
     }, [validPaymentItems]);
 
     const computeShopVoucherVnd = (v: any, shopSubtotal: number): number => {

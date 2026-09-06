@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Toaster, toast } from 'react-hot-toast';
 
 // Stores
-import { useCartData, useCartActions } from '@/store/useCartStore'; 
+import { useCartData, useCartActions } from '@/store/useCartStore';
 import { useCheckoutStore } from '@/store/useCheckoutStore';
 import { useUserStore } from '@/store/useUserStore';
 
@@ -34,14 +34,14 @@ const Icons = {
 };
 
 // --- SUB-COMPONENT: Coin Input ---
-const CoinInputBlock = ({ 
-  userPoints, 
-  appliedCoins, 
+const CoinInputBlock = ({
+  userPoints,
+  appliedCoins,
   onCoinChange,
-  orderTotal 
-}: { 
-  userPoints: number, 
-  appliedCoins: number, 
+  orderTotal
+}: {
+  userPoints: number,
+  appliedCoins: number,
   onCoinChange: (val: number) => void,
   orderTotal: number
 }) => {
@@ -65,7 +65,7 @@ const CoinInputBlock = ({
       onCoinChange(0);
       setInputValue('');
     } else {
-        // Mặc định focus vào input
+      // Mặc định focus vào input
     }
   };
 
@@ -80,78 +80,78 @@ const CoinInputBlock = ({
     // VÀ không quá tổng tiền đơn hàng (nếu muốn chặn ở UI)
     // Ở đây mình chặn theo userPoints trước
     if (val > userPoints) val = userPoints;
-    
+
     setInputValue(val === 0 ? '' : val.toString());
     onCoinChange(val);
   };
 
   const handleBlur = () => {
-      // Khi blur, nếu input rỗng hoặc 0 thì tắt toggle cho đẹp (tuỳ chọn)
-      if (inputValue === '' || inputValue === '0') {
-        // setIsEnabled(false);
-        // onCoinChange(0);
-      }
+    // Khi blur, nếu input rỗng hoặc 0 thì tắt toggle cho đẹp (tuỳ chọn)
+    if (inputValue === '' || inputValue === '0') {
+      // setIsEnabled(false);
+      // onCoinChange(0);
+    }
   };
 
   const handleUseMax = () => {
-      // Logic dùng tối đa: Min(UserPoint, OrderTotal)
-      // Giả sử 1 xu = 1đ. Nếu BE config khác thì cần logic khác.
-      // Tạm thời set max theo userPoints, BE sẽ cắt bớt nếu thừa.
-      let maxVal = userPoints; 
-      
-      // Nếu muốn UX tốt hơn: không nhập quá số tiền đơn hàng
-      // if (maxVal > orderTotal) maxVal = orderTotal; 
+    // Logic dùng tối đa: Min(UserPoint, OrderTotal)
+    // Giả sử 1 xu = 1đ. Nếu BE config khác thì cần logic khác.
+    // Tạm thời set max theo userPoints, BE sẽ cắt bớt nếu thừa.
+    let maxVal = userPoints;
 
-      setInputValue(maxVal.toString());
-      onCoinChange(maxVal);
-      setIsEnabled(true);
+    // Nếu muốn UX tốt hơn: không nhập quá số tiền đơn hàng
+    // if (maxVal > orderTotal) maxVal = orderTotal; 
+
+    setInputValue(maxVal.toString());
+    onCoinChange(maxVal);
+    setIsEnabled(true);
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-5">
       <div className="px-5 py-4 flex flex-col gap-3">
         <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-                <Icons.Coin />
-                <span className="font-medium text-gray-800">G-Mall Xu</span>
-                <span className="text-xs text-gray-500">(Dư: <span className="font-bold text-orange-500">{userPoints.toLocaleString()}</span>)</span>
-            </div>
-            
-            {/* Toggle Switch */}
-            <button 
-                onClick={handleToggle}
-                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 focus:outline-none ${isEnabled ? 'bg-orange-500' : 'bg-gray-300'}`}
-            >
-                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-            </button>
+          <div className="flex items-center gap-2">
+            <Icons.Coin />
+            <span className="font-medium text-gray-800">G-Mall Xu</span>
+            <span className="text-xs text-gray-500">(Dư: <span className="font-bold text-orange-500">{userPoints.toLocaleString()}</span>)</span>
+          </div>
+
+          {/* Toggle Switch */}
+          <button
+            onClick={handleToggle}
+            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 focus:outline-none ${isEnabled ? 'bg-orange-500' : 'bg-gray-300'}`}
+          >
+            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
         </div>
 
         {isEnabled && (
-            <div className="flex items-center gap-3 animate-fade-in-down">
-                <div className="flex-1 relative">
-                    <input 
-                        type="text" 
-                        value={inputValue}
-                        onChange={handleChangeInput}
-                        onBlur={handleBlur}
-                        placeholder="Nhập số xu..."
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-500 outline-none pr-16 font-medium text-gray-700"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">XU</span>
-                </div>
-                <button 
-                    onClick={handleUseMax}
-                    className="px-3 py-2 bg-orange-50 text-orange-600 text-xs font-bold rounded border border-orange-100 hover:bg-orange-100 whitespace-nowrap"
-                >
-                    Dùng tối đa
-                </button>
+          <div className="flex items-center gap-3 animate-fade-in-down">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={handleChangeInput}
+                onBlur={handleBlur}
+                placeholder="Nhập số xu..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-500 outline-none pr-16 font-medium text-gray-700"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">XU</span>
             </div>
+            <button
+              onClick={handleUseMax}
+              className="px-3 py-2 bg-orange-50 text-orange-600 text-xs font-bold rounded border border-orange-100 hover:bg-orange-100 whitespace-nowrap"
+            >
+              Dùng tối đa
+            </button>
+          </div>
         )}
-        
+
         {isEnabled && parseInt(inputValue || '0') > 0 && (
-             <p className="text-xs text-green-600 flex items-center gap-1">
-                ✅ Sẽ giảm trực tiếp {parseInt(inputValue || '0').toLocaleString()}đ vào đơn hàng.
-             </p>
+          <p className="text-xs text-green-600 flex items-center gap-1">
+            ✅ Sẽ giảm trực tiếp {parseInt(inputValue || '0').toLocaleString()}đ vào đơn hàng.
+          </p>
         )}
       </div>
     </div>
@@ -160,12 +160,12 @@ const CoinInputBlock = ({
 
 const PaymentPage = () => {
   const router = useRouter();
-  
+
   // Stores
   const { isAuthenticated, user } = useUserStore(); // [UPDATE] Lấy user để biết user.point
-  const { removeMultipleItems } = useCartActions(); 
-  const { items: cartItems, selectedIds } = useCartData(); 
-  
+  const { removeMultipleItems } = useCartActions();
+  const { items: cartItems, selectedIds } = useCartData();
+
   const {
     receiverInfo,
     senderInfo,
@@ -196,7 +196,7 @@ const PaymentPage = () => {
   const [charityFundId, setCharityFundId] = useState<string | null>(null);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [currentShopIdForVoucher, setCurrentShopIdForVoucher] = useState<string | null>(null);
-  
+
   // ADDRESS STATE
   const [addressList, setAddressList] = useState<IAddress[]>([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -214,7 +214,7 @@ const PaymentPage = () => {
   // --- LOGIC: Select Items Source (Cart vs Buy Now) ---
   const validPaymentItems = useMemo(() => {
     if (isBuyNowFlow && checkoutItems.length > 0) {
-       return checkoutItems;
+      return checkoutItems;
     }
     return cartItems.filter(item => selectedIds.includes(item.id));
   }, [isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
@@ -224,13 +224,13 @@ const PaymentPage = () => {
   useEffect(() => {
     fetchAddresses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []);
 
   useEffect(() => {
-     if(isAddressModalOpen) {
-         fetchAddresses();
-     }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isAddressModalOpen) {
+      fetchAddresses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAddressModalOpen]);
 
   const fetchAddresses = async () => {
@@ -240,18 +240,18 @@ const PaymentPage = () => {
       setAddressList(addresses);
 
       const isStoreEmpty = !receiverInfo.address || !receiverInfo.phone || !receiverInfo.name;
-      
+
       if (isStoreEmpty && addresses.length > 0) {
-          const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
-          handleSelectAddress(defaultAddr);
-      } 
+        const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+        handleSelectAddress(defaultAddr);
+      }
       else if (!isStoreEmpty && !selectedAddressId && addresses.length > 0) {
-          const matchedAddr = addresses.find(a => 
-              a.fullAddress === receiverInfo.address && a.phone === receiverInfo.phone
-          );
-          if (matchedAddr) {
-              setSelectedAddressId(matchedAddr.id);
-          }
+        const matchedAddr = addresses.find(a =>
+          a.fullAddress === receiverInfo.address && a.phone === receiverInfo.phone
+        );
+        if (matchedAddr) {
+          setSelectedAddressId(matchedAddr.id);
+        }
       }
     } catch (error) {
       console.error("Lỗi tải địa chỉ:", error);
@@ -260,128 +260,138 @@ const PaymentPage = () => {
   };
 
   const handleSelectAddress = (addr: IAddress) => {
-      setSelectedAddressId(addr.id);
-      setReceiverInfo({
-          name: addr.name,
-          phone: addr.phone,
-          address: addr.fullAddress,
-          // [round15 L2 FIX] propagate GHN keys để BE persist + seller request pickup được
-          provinceId: addr.provinceId,
-          districtId: addr.districtId,
-          wardCode: addr.wardCode,
-      });
-      setIsAddressModalOpen(false);
+    setSelectedAddressId(addr.id);
+    setReceiverInfo({
+      name: addr.name,
+      phone: addr.phone,
+      address: addr.fullAddress,
+      // [round15 L2 FIX] propagate GHN keys để BE persist + seller request pickup được
+      provinceId: addr.provinceId,
+      districtId: addr.districtId,
+      wardCode: addr.wardCode,
+    });
+    setIsAddressModalOpen(false);
   };
 
   const handleAddNewAddress = () => {
-      setEditingAddress(null);
-      setIsAddressModalOpen(false); 
-      setIsAddressFormOpen(true);   
+    setEditingAddress(null);
+    setIsAddressModalOpen(false);
+    setIsAddressFormOpen(true);
   };
 
   const handleEditAddress = (addr: IAddress) => {
-      setEditingAddress(addr);
-      setIsAddressModalOpen(false);
-      setIsAddressFormOpen(true);
+    setEditingAddress(addr);
+    setIsAddressModalOpen(false);
+    setIsAddressFormOpen(true);
   };
 
   const handleAddressFormSuccess = async () => {
-      setIsAddressFormOpen(false);
-      await fetchAddresses(); 
-      setIsAddressModalOpen(true); 
+    setIsAddressFormOpen(false);
+    await fetchAddresses();
+    setIsAddressModalOpen(true);
   };
 
   const displayAddress = useMemo(() => {
-    if(receiverInfo.name?.trim() && receiverInfo.address?.trim() && receiverInfo.phone?.trim()) {
-        return {
-            id: selectedAddressId || 'temp',
-            name: receiverInfo.name,
-            phone: receiverInfo.phone,
-            fullAddress: receiverInfo.address,
-            isDefault: false
-        };
+    if (receiverInfo.name?.trim() && receiverInfo.address?.trim() && receiverInfo.phone?.trim()) {
+      return {
+        id: selectedAddressId || 'temp',
+        name: receiverInfo.name,
+        phone: receiverInfo.phone,
+        fullAddress: receiverInfo.address,
+        isDefault: false
+      };
     }
     return null;
   }, [receiverInfo, selectedAddressId]);
 
+  /* === LOGIC GỐC ĐA SHOP ===
+   
+    // --- LOGIC 1: GROUP ITEMS BY SHOP ---
+    const groupedItems = useMemo(() => {
+      const itemsToProcess = validPaymentItems;
+      
+      const groups: Record<string, { shopName: string; items: CartItem[] }> = {};
+      itemsToProcess.forEach(item => {
+        const sId = item.shopId || 'unknown';
+        if (!groups[sId]) {
+          groups[sId] = { shopName: item.shopName || 'Cửa hàng', items: [] };
+        }
+        groups[sId].items.push(item);
+      });
+      return groups;
+    }, [validPaymentItems]);
+  
+    */
 
-  // --- LOGIC 1: GROUP ITEMS BY SHOP ---
+  // TẠM THỜI: Gộp thành 1 shop duy nhất
   const groupedItems = useMemo(() => {
-    const itemsToProcess = validPaymentItems;
-    
-    const groups: Record<string, { shopName: string; items: CartItem[] }> = {};
-    itemsToProcess.forEach(item => {
-      const sId = item.shopId || 'unknown';
-      if (!groups[sId]) {
-        groups[sId] = { shopName: item.shopName || 'Cửa hàng', items: [] };
-      }
-      groups[sId].items.push(item);
-    });
-    return groups;
+    if (!validPaymentItems || validPaymentItems.length === 0) return {};
+    return {
+      gmall: {
+        shopName: 'GMall',
+        items: validPaymentItems,
+      },
+    };
   }, [validPaymentItems]);
-
-  // [round15 FIX shop-voucher-vnd] Quy đổi voucher shop ra VND THỰC theo subtotal shop.
-  // VoucherSelectionModal map discountValue = amount; với PERCENTAGE amount là % (vd 10),
-  // KHÔNG phải VND → phải nhân với subtotal/100 (và cap maxDiscount) thay vì cộng raw 10đ.
   const computeShopVoucherVnd = (v: any, shopSubtotal: number): number => {
-      if (!v) return 0;
-      const raw = v.amount ?? v.discountValue ?? 0;
-      if (v.type === 'PERCENTAGE') {
-          let d = Math.floor((shopSubtotal * raw) / 100);
-          const cap = v.maxDiscount;
-          if (cap != null && cap > 0) d = Math.min(d, cap);
-          return d;
-      }
-      // FIXED_AMOUNT: raw đã là VND
-      return raw;
+    if (!v) return 0;
+    const raw = v.amount ?? v.discountValue ?? 0;
+    if (v.type === 'PERCENTAGE') {
+      let d = Math.floor((shopSubtotal * raw) / 100);
+      const cap = v.maxDiscount;
+      if (cap != null && cap > 0) d = Math.min(d, cap);
+      return d;
+    }
+    // FIXED_AMOUNT: raw đã là VND
+    return raw;
   };
 
   // --- [NEW] FRONTEND CALCULATIONS ---
   const frontendCalculations = useMemo(() => {
-      // [round15 FIX preview-shape] BE preview LỒNG NHAU là source-of-truth. Khi đã có
-      // previewData, lấy thẳng summary.* (đã cap xu, đã quy % ra VND, đã tính freeship)
-      // để hiển thị KHỚP số tiền BE thực thu, KHÔNG tự recompute total từ input thô.
-      const s = previewData?.summary;
+    // [round15 FIX preview-shape] BE preview LỒNG NHAU là source-of-truth. Khi đã có
+    // previewData, lấy thẳng summary.* (đã cap xu, đã quy % ra VND, đã tính freeship)
+    // để hiển thị KHỚP số tiền BE thực thu, KHÔNG tự recompute total từ input thô.
+    const s = previewData?.summary;
 
-      let subtotal = 0;
-      let totalShipping = 0;
-      let localShopDiscount = 0;
+    let subtotal = 0;
+    let totalShipping = 0;
+    let localShopDiscount = 0;
 
-      Object.entries(groupedItems).forEach(([shopId, group]) => {
-          const groupSum = group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-          subtotal += groupSum;
-          totalShipping += SHIPPING_FEE_PER_SHOP;
+    Object.entries(groupedItems).forEach(([shopId, group]) => {
+      const groupSum = group.items.reduce((sum: any, item: any) => sum + (item.price * item.quantity), 0);
+      subtotal += groupSum;
+      totalShipping += SHIPPING_FEE_PER_SHOP;
 
-          // [round15 FIX shop-voucher-vnd] cộng VND thực (PERCENTAGE → % * subtotal shop)
-          localShopDiscount += computeShopVoucherVnd(shopVouchers[shopId], groupSum);
-      });
+      // [round15 FIX shop-voucher-vnd] cộng VND thực (PERCENTAGE → % * subtotal shop)
+      localShopDiscount += computeShopVoucherVnd(shopVouchers[shopId], groupSum);
+    });
 
-      if (s) {
-          // Nguồn chân lý = BE preview.
-          const shopDiscount = s.discounts.shopVoucher || 0;
-          const systemDiscount = s.discounts.systemVoucher || 0;
-          const freeship = s.discounts.freeship || 0;
-          const coinDiscount = s.discounts.coin || 0;
-          return {
-              subtotal: s.subtotal ?? subtotal,
-              shippingFee: (s.shippingFee ?? totalShipping) - freeship, // ship hiển thị đã trừ freeship
-              shopDiscount,
-              systemDiscount,
-              coinDiscount,
-              total: Math.max(0, s.total ?? 0),
-          };
-      }
-
-      // Fallback khi preview chưa về: ước lượng client (chỉ để tránh nhấp nháy 0đ).
-      const fallbackTotal = subtotal + totalShipping - localShopDiscount - appliedCoins;
+    if (s) {
+      // Nguồn chân lý = BE preview.
+      const shopDiscount = s.discounts.shopVoucher || 0;
+      const systemDiscount = s.discounts.systemVoucher || 0;
+      const freeship = s.discounts.freeship || 0;
+      const coinDiscount = s.discounts.coin || 0;
       return {
-          subtotal,
-          shippingFee: totalShipping,
-          shopDiscount: localShopDiscount,
-          systemDiscount: 0,
-          coinDiscount: appliedCoins || 0,
-          total: fallbackTotal > 0 ? fallbackTotal : 0
+        subtotal: s.subtotal ?? subtotal,
+        shippingFee: (s.shippingFee ?? totalShipping) - freeship, // ship hiển thị đã trừ freeship
+        shopDiscount,
+        systemDiscount,
+        coinDiscount,
+        total: Math.max(0, s.total ?? 0),
       };
+    }
+
+    // Fallback khi preview chưa về: ước lượng client (chỉ để tránh nhấp nháy 0đ).
+    const fallbackTotal = subtotal + totalShipping - localShopDiscount - appliedCoins;
+    return {
+      subtotal,
+      shippingFee: totalShipping,
+      shopDiscount: localShopDiscount,
+      systemDiscount: 0,
+      coinDiscount: appliedCoins || 0,
+      total: fallbackTotal > 0 ? fallbackTotal : 0
+    };
     // hooks-fix wiki 0031: bỏ selectedSystemVoucher (unnecessary dep — không read trong body)
   }, [groupedItems, shopVouchers, previewData, appliedCoins]);
 
@@ -450,14 +460,14 @@ const PaymentPage = () => {
 
     const timer = setTimeout(fetchPreview, 500);
     return () => clearTimeout(timer);
-  // hooks-fix wiki 0031: dùng buildPayload memoized — đã capture các dep cần thiết
+    // hooks-fix wiki 0031: dùng buildPayload memoized — đã capture các dep cần thiết
   }, [validPaymentItems, isAuthenticated, buildPayload]);
 
   // --- LOGIC 4: HANDLE CHECKOUT ---
   const handlePlaceOrder = async () => {
     if (!receiverInfo.address?.trim() || !receiverInfo.phone?.trim() || !receiverInfo.name?.trim()) {
       toast.error("Vui lòng chọn hoặc thêm địa chỉ nhận hàng!");
-      fetchAddresses(); 
+      fetchAddresses();
       setIsAddressModalOpen(true);
       return;
     }
@@ -468,13 +478,13 @@ const PaymentPage = () => {
     try {
       setIsProcessing(true);
       const res = await OrderService.createOrder(payload);
-      
+
       toast.success("Đặt hàng thành công!");
 
       if (!isBuyNowFlow) {
-         await removeMultipleItems(selectedIds);
+        await removeMultipleItems(selectedIds);
       }
-      
+
       resetCheckout();
 
       if (res.paymentUrl) {
@@ -494,229 +504,229 @@ const PaymentPage = () => {
   };
 
   const handleOpenVoucherModal = (shopId: string | 'system') => {
-      setCurrentShopIdForVoucher(shopId);
-      setShowVoucherModal(true);
+    setCurrentShopIdForVoucher(shopId);
+    setShowVoucherModal(true);
   };
 
   const handleApplyVoucher = (voucher: any) => {
-      if (currentShopIdForVoucher === 'system') {
-          setSystemVoucher(voucher);
-      } else if (currentShopIdForVoucher) {
-          setShopVoucher(currentShopIdForVoucher, voucher);
-      }
-      setShowVoucherModal(false);
-      toast.success(`Đã áp dụng mã: ${voucher.code}`);
+    if (currentShopIdForVoucher === 'system') {
+      setSystemVoucher(voucher);
+    } else if (currentShopIdForVoucher) {
+      setShopVoucher(currentShopIdForVoucher, voucher);
+    }
+    setShowVoucherModal(false);
+    toast.success(`Đã áp dụng mã: ${voucher.code}`);
   };
 
   if (!isAuthenticated) return null;
 
   return (
     <div className="w-full max-w-[1200px] mx-auto py-8 px-4 bg-[#F8F9FA] min-h-screen font-sans">
-       <Toaster position="top-center" />
+      <Toaster position="top-center" />
 
-       <AddressSelectionModal 
-           isOpen={isAddressModalOpen}
-           onClose={() => setIsAddressModalOpen(false)}
-           addresses={addressList}
-           selectedId={selectedAddressId}
-           onSelect={handleSelectAddress}
-           onAddNew={handleAddNewAddress}
-           onEdit={handleEditAddress}
-       />
+      <AddressSelectionModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        addresses={addressList}
+        selectedId={selectedAddressId}
+        onSelect={handleSelectAddress}
+        onAddNew={handleAddNewAddress}
+        onEdit={handleEditAddress}
+      />
 
-       <AddressFormModal 
-           isOpen={isAddressFormOpen}
-           onClose={() => {
-               setIsAddressFormOpen(false);
-               setIsAddressModalOpen(true);
-           }}
-           onSuccess={handleAddressFormSuccess}
-           initialData={editingAddress}
-       />
+      <AddressFormModal
+        isOpen={isAddressFormOpen}
+        onClose={() => {
+          setIsAddressFormOpen(false);
+          setIsAddressModalOpen(true);
+        }}
+        onSuccess={handleAddressFormSuccess}
+        initialData={editingAddress}
+      />
 
-       {showVoucherModal && (
-          <VoucherSelectionModal
-             isOpen={true}
-             onClose={() => setShowVoucherModal(false)}
-             onSelect={handleApplyVoucher}
-             shopId={currentShopIdForVoucher !== 'system' ? currentShopIdForVoucher || undefined : undefined}
-             isSystem={currentShopIdForVoucher === 'system'}
-             subtotal={frontendCalculations.subtotal}
+      {showVoucherModal && (
+        <VoucherSelectionModal
+          isOpen={true}
+          onClose={() => setShowVoucherModal(false)}
+          onSelect={handleApplyVoucher}
+          shopId={currentShopIdForVoucher !== 'system' ? currentShopIdForVoucher || undefined : undefined}
+          isSystem={currentShopIdForVoucher === 'system'}
+          subtotal={frontendCalculations.subtotal}
+        />
+      )}
+
+      <div className="flex items-center gap-2 text-sm mb-6 text-gray-500 select-none">
+        <span className="cursor-pointer" onClick={() => router.push('/')}>Trang chủ</span> /
+        <span className="cursor-pointer" onClick={() => router.push('/cart')}>Giỏ hàng</span> /
+        <span className="text-gray-800 font-medium">Thanh toán</span>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 items-start relative">
+        <div className="flex-1 flex flex-col gap-5 w-full min-w-0">
+
+          <div className="bg-white rounded-lg shadow-sm border border-orange-200 overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-[repeating-linear-gradient(45deg,#F2542D,#F2542D_30px,#ffffff_30px,#ffffff_60px,#1b64da_60px,#1b64da_90px,#ffffff_90px,#ffffff_120px)] opacity-80"></div>
+            <div className="p-5 pt-6">
+              <div className="flex items-center gap-2 mb-3 text-orange-600">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                <h3 className="font-bold text-base">Địa chỉ nhận hàng</h3>
+              </div>
+              <AddressInfo
+                address={displayAddress as any}
+                onClick={() => setIsAddressModalOpen(true)}
+              />
+            </div>
+          </div>
+
+          {Object.entries(groupedItems).map(([shopId, group]) => {
+            const currentVoucher = shopVouchers[shopId];
+            const displayShippingFee = SHIPPING_FEE_PER_SHOP;
+            const shopItemTotal = group.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+            // [round15 L2 FIX] Ưu tiên breakdown của BE cho dòng voucher/shop khi đã có preview
+            // (BE tính theo eligibleAmount của scope voucher, không Math.floor) → hiển thị KHỚP
+            // số BE thực trừ. computeShopVoucherVnd chỉ còn là fallback trước khi preview về.
+            const beShopDiscount = previewData?.breakdown?.find(b => b.shopId === shopId)?.shopDiscount;
+            const shopDiscountValue = beShopDiscount != null
+              ? beShopDiscount
+              : computeShopVoucherVnd(currentVoucher, shopItemTotal);
+            const displayShopTotal = shopItemTotal + displayShippingFee - shopDiscountValue;
+
+            return (
+              <div key={shopId} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
+                  <Icons.Store />
+                  <span className="font-bold text-gray-800">{group.shopName}</span>
+                </div>
+
+                <div className="px-5 py-2 divide-y divide-gray-50">
+                  {group.items.map((item) => (
+                    <div key={item.id} className="py-2">
+                      <OrderItem
+                        productId={String(item.productId)}
+                        name={item.title}
+                        imageUrl={item.imageUrl}
+                        price={item.price}
+                        quantity={item.quantity}
+                        color={item.color}
+                        size={item.size}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-dashed border-gray-200 bg-[#FDFDFD]">
+                  <div className="px-5 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 cursor-pointer group"
+                    onClick={() => handleOpenVoucherModal(shopId)}>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-orange-500"><Icons.Ticket /></span>
+                      <span className="text-sm font-medium">Voucher của Shop</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-600 text-sm group-hover:text-blue-700">
+                      {/* [round15 FIX shop-voucher-vnd] hiển thị VND thực đã quy đổi */}
+                      <span>{currentVoucher ? `Đã chọn: -${shopDiscountValue.toLocaleString()}đ` : 'Chọn voucher'}</span>
+                      <Icons.ChevronRight />
+                    </div>
+                  </div>
+
+                  <div className="px-5 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-gray-50 bg-blue-50/10">
+                    <div className="flex items-center gap-3 text-green-700">
+                      <Icons.Truck />
+                      <span className="text-sm font-medium">Đơn vị vận chuyển</span>
+                    </div>
+                    <div className="flex flex-col sm:items-end text-sm">
+                      <div className="font-bold text-gray-800 flex items-center gap-2">
+                        <span>Giao Hàng Nhanh</span>
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded border">Tiêu chuẩn</span>
+                      </div>
+                      <div className="text-orange-600 font-bold text-sm mt-1">
+                        {displayShippingFee.toLocaleString()} đ
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-5 py-4 flex items-center gap-3">
+                    <span className="text-gray-400"><Icons.Message /></span>
+                    <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
+                    <input
+                      type="text"
+                      placeholder="Lưu ý cho người bán..."
+                      onChange={(e) => setShopMessage(shopId, e.target.value)}
+                      className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1"
+                    />
+                  </div>
+
+                  <div className="px-5 py-3 flex justify-end items-center gap-2 border-t border-gray-100 bg-gray-50 text-sm">
+                    <span className="text-gray-500">Tổng số tiền ({group.items.length} sản phẩm):</span>
+                    <span className="text-lg font-bold text-orange-600">
+                      ₫{displayShopTotal.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-4 flex justify-between items-center border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+              onClick={() => handleOpenVoucherModal('system')}>
+              <div className="flex items-center gap-2 text-red-600 font-medium">
+                <Icons.Ticket />
+                <span>G-Mall Voucher</span>
+              </div>
+              <div className="flex items-center gap-2 text-blue-600 text-sm">
+                <span>{selectedSystemVoucher ? `Đã chọn: ${selectedSystemVoucher.code}` : 'Chọn hoặc nhập mã'}</span>
+                <Icons.ChevronRight />
+              </div>
+            </div>
+          </div>
+
+          {/* [NEW] Khối nhập xu - Đặt ngay sau Voucher */}
+          <CoinInputBlock
+            userPoints={user?.point || 0}
+            appliedCoins={appliedCoins}
+            onCoinChange={(val) => setAppliedCoins(val)}
+            orderTotal={frontendCalculations.subtotal}
           />
-       )}
 
-       <div className="flex items-center gap-2 text-sm mb-6 text-gray-500 select-none">
-         <span className="cursor-pointer" onClick={() => router.push('/')}>Trang chủ</span> / 
-         <span className="cursor-pointer" onClick={() => router.push('/cart')}>Giỏ hàng</span> / 
-         <span className="text-gray-800 font-medium">Thanh toán</span>
-       </div>
+          {/* Spec [0018]: chọn quỹ từ thiện cho 1% commission */}
+          <CharityCampaignSelect
+            selectedFundId={charityFundId}
+            onSelect={setCharityFundId}
+          />
 
-       <div className="flex flex-col lg:flex-row gap-6 items-start relative">
-         <div className="flex-1 flex flex-col gap-5 w-full min-w-0">
-           
-           <div className="bg-white rounded-lg shadow-sm border border-orange-200 overflow-hidden relative">
-             <div className="absolute top-0 left-0 w-full h-1 bg-[repeating-linear-gradient(45deg,#F2542D,#F2542D_30px,#ffffff_30px,#ffffff_60px,#1b64da_60px,#1b64da_90px,#ffffff_90px,#ffffff_120px)] opacity-80"></div>
-             <div className="p-5 pt-6">
-                <div className="flex items-center gap-2 mb-3 text-orange-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
-                    <h3 className="font-bold text-base">Địa chỉ nhận hàng</h3>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+            <h3 className="font-bold text-gray-800 mb-4">Phương thức thanh toán</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* [wiki 0093] TẮT Pay2S + MoMo: chỉ còn COD. Bật lại = thêm lại option + whitelist DTO BE. */}
+              {[
+                { id: 'cod', name: 'Thanh toán khi nhận hàng' }
+              ].map(method => (
+                <div key={method.id} onClick={() => setSelectedPayment(method.id as any)}
+                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${selectedPayment === method.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200'}`}>
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedPayment === method.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
+                    {selectedPayment === method.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                  </div>
+                  <span className="text-sm font-medium">{method.name}</span>
                 </div>
-                <AddressInfo 
-                    address={displayAddress as any} 
-                    onClick={() => setIsAddressModalOpen(true)} 
-                />
-             </div>
-           </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-           {Object.entries(groupedItems).map(([shopId, group]) => {
-              const currentVoucher = shopVouchers[shopId];
-              const displayShippingFee = SHIPPING_FEE_PER_SHOP;
-              const shopItemTotal = group.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-              // [round15 L2 FIX] Ưu tiên breakdown của BE cho dòng voucher/shop khi đã có preview
-              // (BE tính theo eligibleAmount của scope voucher, không Math.floor) → hiển thị KHỚP
-              // số BE thực trừ. computeShopVoucherVnd chỉ còn là fallback trước khi preview về.
-              const beShopDiscount = previewData?.breakdown?.find(b => b.shopId === shopId)?.shopDiscount;
-              const shopDiscountValue = beShopDiscount != null
-                  ? beShopDiscount
-                  : computeShopVoucherVnd(currentVoucher, shopItemTotal);
-              const displayShopTotal = shopItemTotal + displayShippingFee - shopDiscountValue;
-
-              return (
-                <div key={shopId} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                   <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
-                      <Icons.Store />
-                      <span className="font-bold text-gray-800">{group.shopName}</span>
-                   </div>
-
-                   <div className="px-5 py-2 divide-y divide-gray-50">
-                      {group.items.map((item) => (
-                         <div key={item.id} className="py-2">
-                             <OrderItem 
-                                productId={String(item.productId)}
-                                name={item.title}
-                                imageUrl={item.imageUrl}
-                                price={item.price}
-                                quantity={item.quantity}
-                                color={item.color}
-                                size={item.size}
-                             />
-                         </div>
-                      ))}
-                   </div>
-
-                   <div className="border-t border-dashed border-gray-200 bg-[#FDFDFD]">
-                      <div className="px-5 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 cursor-pointer group"
-                           onClick={() => handleOpenVoucherModal(shopId)}>
-                         <div className="flex items-center gap-3 text-gray-700">
-                            <span className="text-orange-500"><Icons.Ticket /></span>
-                            <span className="text-sm font-medium">Voucher của Shop</span>
-                         </div>
-                         <div className="flex items-center gap-2 text-blue-600 text-sm group-hover:text-blue-700">
-                            {/* [round15 FIX shop-voucher-vnd] hiển thị VND thực đã quy đổi */}
-                            <span>{currentVoucher ? `Đã chọn: -${shopDiscountValue.toLocaleString()}đ` : 'Chọn voucher'}</span>
-                            <Icons.ChevronRight />
-                         </div>
-                      </div>
-
-                      <div className="px-5 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-gray-50 bg-blue-50/10">
-                         <div className="flex items-center gap-3 text-green-700">
-                            <Icons.Truck />
-                            <span className="text-sm font-medium">Đơn vị vận chuyển</span>
-                         </div>
-                         <div className="flex flex-col sm:items-end text-sm">
-                             <div className="font-bold text-gray-800 flex items-center gap-2">
-                                 <span>Giao Hàng Nhanh</span>
-                                 <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded border">Tiêu chuẩn</span>
-                             </div>
-                             <div className="text-orange-600 font-bold text-sm mt-1">
-                                 {displayShippingFee.toLocaleString()} đ
-                             </div>
-                         </div>
-                      </div>
-
-                      <div className="px-5 py-4 flex items-center gap-3">
-                         <span className="text-gray-400"><Icons.Message /></span>
-                         <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
-                         <input 
-                            type="text" 
-                            placeholder="Lưu ý cho người bán..." 
-                            onChange={(e) => setShopMessage(shopId, e.target.value)}
-                            className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1" 
-                         />
-                      </div>
-
-                      <div className="px-5 py-3 flex justify-end items-center gap-2 border-t border-gray-100 bg-gray-50 text-sm">
-                         <span className="text-gray-500">Tổng số tiền ({group.items.length} sản phẩm):</span>
-                         <span className="text-lg font-bold text-orange-600">
-                             ₫{displayShopTotal.toLocaleString()}
-                         </span>
-                      </div>
-                   </div>
-                </div>
-              );
-           })}
-
-           <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-5 py-4 flex justify-between items-center border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                     onClick={() => handleOpenVoucherModal('system')}>
-                    <div className="flex items-center gap-2 text-red-600 font-medium">
-                       <Icons.Ticket />
-                       <span>G-Mall Voucher</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-blue-600 text-sm">
-                       <span>{selectedSystemVoucher ? `Đã chọn: ${selectedSystemVoucher.code}` : 'Chọn hoặc nhập mã'}</span>
-                       <Icons.ChevronRight />
-                    </div>
-                </div>
-           </div>
-            
-           {/* [NEW] Khối nhập xu - Đặt ngay sau Voucher */}
-           <CoinInputBlock
-               userPoints={user?.point || 0}
-               appliedCoins={appliedCoins}
-               onCoinChange={(val) => setAppliedCoins(val)}
-               orderTotal={frontendCalculations.subtotal}
-           />
-
-           {/* Spec [0018]: chọn quỹ từ thiện cho 1% commission */}
-           <CharityCampaignSelect
-              selectedFundId={charityFundId}
-              onSelect={setCharityFundId}
-           />
-
-           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-             <h3 className="font-bold text-gray-800 mb-4">Phương thức thanh toán</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* [wiki 0093] TẮT Pay2S + MoMo: chỉ còn COD. Bật lại = thêm lại option + whitelist DTO BE. */}
-                {[
-                  {id:'cod', name:'Thanh toán khi nhận hàng'}
-                ].map(method => (
-                   <div key={method.id} onClick={() => setSelectedPayment(method.id as any)}
-                     className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${selectedPayment === method.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200'}`}>
-                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedPayment === method.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
-                        {selectedPayment === method.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                     </div>
-                     <span className="text-sm font-medium">{method.name}</span>
-                   </div>
-                ))}
-             </div>
-           </div>
-         </div>
-
-         <div className="w-full lg:w-[380px] flex-shrink-0 lg:sticky lg:top-4 z-10 h-fit">
-            <PaymentSummary 
-               subtotal={frontendCalculations.subtotal}
-               shopDiscount={frontendCalculations.shopDiscount}
-               systemDiscount={frontendCalculations.systemDiscount}
-               shippingFee={frontendCalculations.shippingFee}
-               shippingDiscount={0} 
-               coinDiscount={frontendCalculations.coinDiscount} // [UPDATE] Truyền giá trị xu
-               total={frontendCalculations.total}
-               onPlaceOrder={handlePlaceOrder}
-               loading={isLoading || isProcessing}
-            />
-         </div>
-       </div>
+        <div className="w-full lg:w-[380px] flex-shrink-0 lg:sticky lg:top-4 z-10 h-fit">
+          <PaymentSummary
+            subtotal={frontendCalculations.subtotal}
+            shopDiscount={frontendCalculations.shopDiscount}
+            systemDiscount={frontendCalculations.systemDiscount}
+            shippingFee={frontendCalculations.shippingFee}
+            shippingDiscount={0}
+            coinDiscount={frontendCalculations.coinDiscount} // [UPDATE] Truyền giá trị xu
+            total={frontendCalculations.total}
+            onPlaceOrder={handlePlaceOrder}
+            loading={isLoading || isProcessing}
+          />
+        </div>
+      </div>
     </div>
   );
 };

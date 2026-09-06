@@ -221,9 +221,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
             </div>
 
             {/* Thông tin Shop */}
-            <div>
+            {/* <div>
               {isLoading && !shopProfile ? <ShopInfoSkeleton /> : <ShopInfo shop={shopProfile} />}
-            </div>
+            </div> */}
 
             {/* Mua kèm deal sốc */}
             <div>

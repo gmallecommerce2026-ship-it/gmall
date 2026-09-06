@@ -1,16 +1,16 @@
-// src/app/(blog)/blog/blogClient.tsx
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation'; // IMPORT MỚI
+import * as React from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { blogService, BlogCategory } from '@/services/blog.service';
 import { BlogPost } from '@/types/blog';
 
 // --- Components ---
-// XÓA IMPORT BlogHeader, BlogFooter
 import { HeroSection } from '@/modules/blog/components/HeroSection';
 import { CategoryBlock, CategoryLayoutType } from '@/modules/blog/components/CategoryBlock';
 import { BlogSidebar } from '@/modules/blog/components/BlogSidebar';
+import { BlogCategoryMenu, CategoryItem } from '../components/BlogCategoryMenu';
 
 // --- CONSTANTS ---
 const LAYOUT_CYCLE: CategoryLayoutType[] = ['layout-A', 'layout-B', 'layout-E', 'layout-D', 'layout-C'];
@@ -22,16 +22,12 @@ const COLOR_CYCLE: string[] = [
 export default function BlogClient() {
   const searchParams = useSearchParams();
   
-  // 1. Lấy State từ URL thay vì useState cục bộ
   const selectedCategory = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
 
   // State dữ liệu
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [heroPosts, setHeroPosts] = useState<BlogPost[]>([]);
-  // [FIX wiki 0092] "Bài mới nhất" — list MỌI bài published mới nhất, KHÔNG phụ thuộc category.
-  // Trước đây trang chủ chỉ render hero(5) + section theo root-category (slice 8) → bài ở danh mục
-  // gốc thứ 9+ / hoặc khi /blog-categories lỗi → KHÔNG hiện. Mục này đảm bảo bài mới luôn hiện.
   const [latestPosts, setLatestPosts] = useState<BlogPost[]>([]);
   const [sectionPostsMap, setSectionPostsMap] = useState<Record<string, BlogPost[]>>({});
   const [filterResult, setFilterResult] = useState<BlogPost[]>([]);
@@ -41,18 +37,16 @@ export default function BlogClient() {
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
-      // [FIX wiki 0092] Tách 2 fetch ĐỘC LẬP: nếu /blog-categories lỗi (vd schema drift) thì
-      // bài viết VẪN hiện (trước đây Promise.all → categories reject → cả trang trống "Chưa có bài").
       try {
         const res: any = await blogService.getPublicBlogs({ page: 1, limit: 12 });
-        const latest: BlogPost[] = res.data || res.items || [];
+        const latest: BlogPost[] = res?.data || res?.items || [];
         setHeroPosts(latest.slice(0, 5));
         setLatestPosts(latest);
       } catch (error) {
         console.error("Latest posts fetch error:", error);
       }
       try {
-        const cats = await blogService.getCategories();
+        const cats: any = await blogService.getCategories();
         setCategories(cats || []);
       } catch (error) {
         console.error("Categories fetch error:", error);
@@ -62,30 +56,45 @@ export default function BlogClient() {
     initData();
   }, []);
 
-  // --- LOGIC MAP DANH MỤC (Giữ nguyên) ---
-  const categoryMap = useMemo(() => {
-    if (!categories.length) return new Map<string, BlogCategory>();
-    const nodes = categories.map(c => ({ ...c, children: [] as BlogCategory[] }));
-    const idMap = new Map<string, typeof nodes[0]>();
-    nodes.forEach(node => idMap.set(node.id, node));
+  // --- DỰNG CÂY DANH MỤC NHIỀU CẤP ---
+  const categoryTree = useMemo(() => {
+    if (!categories.length) return [];
+    
+    // Clone nodes kèm mảng children
+    const nodes: CategoryItem[] = categories.map((c: any) => ({
+      ...c,
+      children: [],
+    }));
+
+    const idMap = new Map<string, CategoryItem>();
+    nodes.forEach(node => idMap.set(String(node.id), node));
+
+    const tree: CategoryItem[] = [];
     nodes.forEach(node => {
-      if (node.parentId && idMap.has(node.parentId)) {
-        idMap.get(node.parentId)!.children!.push(node);
+      if (node.parentId && idMap.has(String(node.parentId))) {
+        idMap.get(String(node.parentId))!.children!.push(node);
+      } else {
+        tree.push(node);
       }
     });
+
+    return tree;
+  }, [categories]);
+
+  // Map slug -> Category
+  const categoryMap = useMemo(() => {
     const slugMap = new Map<string, BlogCategory>();
-    nodes.forEach(node => slugMap.set(node.slug, node));
+    categories.forEach(node => slugMap.set(node.slug, node));
     return slugMap;
   }, [categories]);
 
   const rootCategories = useMemo(() => {
-    return categories.filter(c => !c.parentId).slice(0, 8);
+    return categories.filter((c: any) => !c.parentId).slice(0, 8);
   }, [categories]);
 
-  // --- FETCH POSTS CHO SECTIONS (Chỉ chạy khi KHÔNG filter/search) ---
+  // --- FETCH POSTS CHO SECTIONS ---
   useEffect(() => {
     if (rootCategories.length === 0) return;
-    // Nếu đang có search hoặc category trên URL thì không fetch section lẻ tẻ
     if (selectedCategory || search) return;
 
     const fetchSectionPosts = async () => {
@@ -93,7 +102,7 @@ export default function BlogClient() {
         blogService.getPublicBlogs({ category: cat.slug, limit: 6 })
           .then(res => ({ 
             slug: cat.slug, 
-            posts: (res as any).data || (res as any).items || [] 
+            posts: (res as any)?.data || (res as any)?.items || [] 
           }))
           .catch(() => ({ slug: cat.slug, posts: [] }))
       );
@@ -107,82 +116,88 @@ export default function BlogClient() {
     };
 
     fetchSectionPosts();
-  }, [rootCategories, selectedCategory, search]); // Dependency thay đổi theo URL
+  }, [rootCategories, selectedCategory, search]);
 
-  // --- FETCH KHI SEARCH / FILTER (React theo URL) ---
+  // --- FETCH KHI SEARCH / FILTER ---
   useEffect(() => {
     if (!selectedCategory && !search) {
-        setFilterResult([]); // Clear kết quả nếu về trang chủ
-        return;
+      setFilterResult([]);
+      return;
     }
 
     const fetchFiltered = async () => {
       setLoading(true);
       try {
         const res: any = await blogService.getPublicBlogs({
-          page: 1, limit: 20, 
+          page: 1, 
+          limit: 20, 
           search: search,
           category: selectedCategory,
         });
-        setFilterResult(res.data || res.items || []);
-      } catch (error) { console.error(error); } 
-      finally { setLoading(false); }
+        setFilterResult(res?.data || res?.items || []);
+      } catch (error) { 
+        console.error(error); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetchFiltered();
-  }, [search, selectedCategory]); // Dependency thay đổi theo URL
+  }, [search, selectedCategory]);
 
   return (
-    // Xóa min-h-screen và bg-white ở đây vì layout đã lo rồi
     <div className="font-sans text-gray-900">
-      {/* XÓA BlogHeader */}
+      <div className="container mx-auto px-4 mt-4 pb-20">
+        {/* Menu danh mục nhiều cấp */}
+        {categoryTree.length > 0 && (
+          <div className="mb-6">
+            <BlogCategoryMenu 
+              categories={categoryTree} 
+              selectedCategory={selectedCategory} 
+            />
+          </div>
+        )}
 
-      <div className="container mx-auto px-4 mt-6 pb-20">
         {loading && rootCategories.length === 0 ? (
           <div className="h-96 flex flex-col items-center justify-center">
-             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p className="text-gray-500 font-medium">Đang tải nội dung...</p>
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-500 font-medium">Đang tải nội dung...</p>
           </div>
         ) : !loading && rootCategories.length === 0 && heroPosts.length === 0 ? (
-          // Defensive empty state — tránh user nhìn page trắng tưởng 404 khi
-          // BE blog endpoint chưa có data hoặc fetch fail im lặng.
           <div className="h-96 flex flex-col items-center justify-center text-center">
-             <p className="text-gray-700 font-semibold text-lg mb-2">Chưa có bài viết nào</p>
-             <p className="text-gray-500 text-sm">Hãy quay lại sau, đội ngũ nội dung đang chuẩn bị bài mới.</p>
+            <p className="text-gray-700 font-semibold text-lg mb-2">Chưa có bài viết nào</p>
+            <p className="text-gray-500 text-sm">Hãy quay lại sau, đội ngũ nội dung đang chuẩn bị bài mới.</p>
           </div>
         ) : (
           <main>
-            {/* HERO: Chỉ hiện khi không filter */}
             {!selectedCategory && !search && <HeroSection posts={heroPosts} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
               <div className="col-span-12 lg:col-span-8 space-y-2">
 
-                {/* TRƯỜNG HỢP 1: Filter/Search -> Hiện list kết quả */}
+                {/* Filter/Search List */}
                 {selectedCategory || search ? (
-                   <div className="animate-fade-in">
-                       <h3 className="text-xl font-bold mb-6 border-b pb-2">
-                          {selectedCategory 
-                            ? `Danh mục: ${categoryMap.get(selectedCategory)?.name || selectedCategory}`
-                            : `Tìm kiếm: "${search}"`}
-                       </h3>
-                       {filterResult.length > 0 ? (
-                           <CategoryBlock 
-                              category={categoryMap.get(selectedCategory) || { id: 'search', name: 'Kết quả', slug: '' }} 
-                              posts={filterResult} 
-                              layout="layout-A"
-                           />
-                       ) : (
-                           <div className="text-center py-10 text-gray-500">Không tìm thấy bài viết nào.</div>
-                       )}
-                   </div>
+                  <div className="animate-fade-in">
+                    <h3 className="text-xl font-bold mb-6 border-b pb-2">
+                      {selectedCategory 
+                        ? `Danh mục: ${categoryMap.get(selectedCategory)?.name || selectedCategory}`
+                        : `Tìm kiếm: "${search}"`}
+                    </h3>
+                    {filterResult.length > 0 ? (
+                      <CategoryBlock 
+                        category={(categoryMap.get(selectedCategory) || { id: 'search', name: 'Kết quả', slug: '' }) as any} 
+                        posts={filterResult} 
+                        layout="layout-A"
+                      />
+                    ) : (
+                      <div className="text-center py-10 text-gray-500">Không tìm thấy bài viết nào.</div>
+                    )}
+                  </div>
                 ) : (
-                  /* TRƯỜNG HỢP 2: Trang chủ -> Render Sections */
+                  /* Sections Trang chủ */
                   <>
-                    {/* [FIX wiki 0092] "Bài mới nhất" — luôn hiện mọi bài published mới nhất, KHÔNG phụ
-                        thuộc category (đảm bảo bài ở danh mục gốc thứ 9+ / khi categories lỗi vẫn hiện) */}
                     {latestPosts.length > 0 && (
                       <CategoryBlock
-                        category={{ id: 'latest', name: 'Bài mới nhất', slug: '' }}
+                        category={{ id: 'latest', name: 'Bài mới nhất', slug: '' } as any}
                         posts={latestPosts}
                         layout="layout-A"
                         color="bg-slate-700"
@@ -198,16 +213,16 @@ export default function BlogClient() {
                       const enhancedCategory = categoryMap.get(cat.slug) || cat;
 
                       return (
-                        <React.Fragment key={cat.id}>
+                        <React.Fragment key={String(cat.id)}>
                           <CategoryBlock 
-                            category={enhancedCategory} 
+                            category={enhancedCategory as any} 
                             posts={posts} 
                             layout={layout} 
                             color={color}
                           />
                           {showBanner && (
                             <div className="w-full h-24 md:h-32 bg-gray-100 rounded-[3px] flex items-center justify-center text-xs text-gray-400 mb-10 border border-dashed border-gray-300">
-                               ADVERTISEMENT
+                              ADVERTISEMENT
                             </div>
                           )}
                         </React.Fragment>
@@ -217,7 +232,7 @@ export default function BlogClient() {
                 )}
               </div>
 
-              {/* Sidebar: Giữ nguyên trong Page vì mỗi trang có thể cần Sidebar khác nhau, hoặc move ra layout nếu muốn cố định */}
+              {/* Sidebar */}
               <aside className="hidden lg:block lg:col-span-4 h-fit sticky top-20 pl-4 border-l border-gray-100">
                 <BlogSidebar /> 
               </aside>
@@ -225,7 +240,6 @@ export default function BlogClient() {
           </main>
         )}
       </div>
-      {/* XÓA BlogFooter */}
     </div>
   );
 }

@@ -235,7 +235,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
       {/* Box Mua Hàng Chính */}
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col gap-4">
         {/* Header Shop / Thương hiệu */}
-        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        {/* <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0 bg-gray-50 flex items-center justify-center">
               {shopProfile?.avatar ? (
@@ -272,7 +272,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
           >
             <MessageSquare size={18} />
           </button>
-        </div>
+        </div> */}
 
         {/* Voucher */}
         <ProductVouchers vouchers={vouchers} />
