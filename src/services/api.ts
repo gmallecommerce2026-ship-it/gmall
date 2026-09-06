@@ -41,14 +41,19 @@ _rawApi.interceptors.response.use(
 
              // Các logic logout cũ giữ nguyên
              await _rawApi.post('/auth/logout').catch(() => {});
-             useUserStore.getState().logout();
-             
+             // wiki 0108: `redirect: false` — khối dưới đây tự chọn trang đăng nhập theo
+             // vai trò. Trước đây `logout()` tự bắn về `/` ngay tại đây và THẮNG cuộc đua,
+             // nên người dùng hết phiên ở `/admin/dashboard` hay `/cart` đều bị bỏ ở trang
+             // chủ, mất luôn chỗ đang dở. Đo được 3/3 trên prod.
+             useUserStore.getState().logout({ redirect: false });
+
+             const back = encodeURIComponent(pathname + window.location.search);
              if (pathname.startsWith('/admin')) {
-                 if (!pathname.includes('/admin/login')) window.location.href = '/admin/login';
+                 if (!pathname.includes('/admin/login')) window.location.href = `/admin/login?next=${back}`;
              } else if (pathname.startsWith('/seller') || pathname.includes('/seller-dashboard')) {
-                 if (!pathname.includes('/seller/login')) window.location.href = '/seller/login';
+                 if (!pathname.includes('/seller/login')) window.location.href = `/seller/login?next=${back}`;
              } else {
-                 if (!pathname.includes('/login') && !pathname.includes('/register')) window.location.href = '/login';
+                 if (!pathname.includes('/login') && !pathname.includes('/register')) window.location.href = `/login?next=${back}`;
              }
         }
     }

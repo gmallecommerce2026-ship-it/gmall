@@ -473,7 +473,14 @@ const PaymentPage = () => {
     }
 
     const payload = buildPayload();
-    if (!payload) return;
+    if (!payload) {
+      // wiki 0108: trước đây chỗ này chỉ `return;` — bấm "ĐẶT HÀNG" mà không có món nào
+      // được chọn thì KHÔNG có gì xảy ra: không gọi API, không thông báo, nút cũng không
+      // bị vô hiệu. Người mua đứng nhìn một nút bấm được nhưng bất động, không biết mình
+      // làm sai ở đâu. `buildPayload()` chỉ trả null khi `validPaymentItems` rỗng.
+      toast.error("Vui lòng chọn ít nhất một sản phẩm để đặt hàng.");
+      return;
+    }
 
     try {
       setIsProcessing(true);
@@ -581,7 +588,7 @@ const PaymentPage = () => {
           {Object.entries(groupedItems).map(([shopId, group]) => {
             const currentVoucher = shopVouchers[shopId];
             const displayShippingFee = SHIPPING_FEE_PER_SHOP;
-            const shopItemTotal = group.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+            const shopItemTotal = group.items.reduce((acc: any, i: any) => acc + i.price * i.quantity, 0);
             // [round15 L2 FIX] Ưu tiên breakdown của BE cho dòng voucher/shop khi đã có preview
             // (BE tính theo eligibleAmount của scope voucher, không Math.floor) → hiển thị KHỚP
             // số BE thực trừ. computeShopVoucherVnd chỉ còn là fallback trước khi preview về.
@@ -644,16 +651,18 @@ const PaymentPage = () => {
                     </div>
                   </div>
 
-                  <div className="px-5 py-4 flex items-center gap-3">
-                    <span className="text-gray-400"><Icons.Message /></span>
-                    <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
-                    <input
-                      type="text"
-                      placeholder="Lưu ý cho người bán..."
-                      onChange={(e) => setShopMessage(shopId, e.target.value)}
-                      className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1"
-                    />
-                  </div>
+                      <div className="px-5 py-4 flex items-center gap-3">
+                         <span className="text-gray-400"><Icons.Message /></span>
+                         <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
+                         <input 
+                            type="text" 
+                            // wiki 0108: `Order.message` là VARCHAR(191) — chặn ngay tại ô nhập.
+                            maxLength={191}
+                            placeholder="Lưu ý cho người bán..." 
+                            onChange={(e) => setShopMessage(shopId, e.target.value)}
+                            className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1" 
+                         />
+                      </div>
 
                   <div className="px-5 py-3 flex justify-end items-center gap-2 border-t border-gray-100 bg-gray-50 text-sm">
                     <span className="text-gray-500">Tổng số tiền ({group.items.length} sản phẩm):</span>
@@ -713,20 +722,22 @@ const PaymentPage = () => {
           </div>
         </div>
 
-        <div className="w-full lg:w-[380px] flex-shrink-0 lg:sticky lg:top-4 z-10 h-fit">
-          <PaymentSummary
-            subtotal={frontendCalculations.subtotal}
-            shopDiscount={frontendCalculations.shopDiscount}
-            systemDiscount={frontendCalculations.systemDiscount}
-            shippingFee={frontendCalculations.shippingFee}
-            shippingDiscount={0}
-            coinDiscount={frontendCalculations.coinDiscount} // [UPDATE] Truyền giá trị xu
-            total={frontendCalculations.total}
-            onPlaceOrder={handlePlaceOrder}
-            loading={isLoading || isProcessing}
-          />
-        </div>
-      </div>
+         <div className="w-full lg:w-[380px] flex-shrink-0 lg:sticky lg:top-4 z-10 h-fit">
+            <PaymentSummary 
+               subtotal={frontendCalculations.subtotal}
+               shopDiscount={frontendCalculations.shopDiscount}
+               systemDiscount={frontendCalculations.systemDiscount}
+               shippingFee={frontendCalculations.shippingFee}
+               shippingDiscount={0} 
+               coinDiscount={frontendCalculations.coinDiscount} // [UPDATE] Truyền giá trị xu
+               total={frontendCalculations.total}
+               onPlaceOrder={handlePlaceOrder}
+               // wiki 0108: nút phải TRÔNG đúng như nó hành xử — không có gì để đặt thì mờ đi.
+               disabled={validPaymentItems.length === 0}
+               loading={isLoading || isProcessing}
+            />
+         </div>
+       </div>
     </div>
   );
 };

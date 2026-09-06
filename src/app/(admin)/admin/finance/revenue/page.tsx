@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AdminService } from '@/services/AdminService';
 import { formatCurrency } from '@/lib/utils'; // Sử dụng utils có sẵn hoặc thay bằng hàm format Intl
-import { FiDollarSign, FiTrendingUp, FiClock, FiSearch, FiFileText, FiArrowUpRight, FiCreditCard } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiClock, FiSearch, FiFileText, FiCreditCard } from 'react-icons/fi';
 
 // --- Types Mock cho giao diện này ---
 interface Transaction {
@@ -77,9 +78,11 @@ export default function RevenuePage() {
                 </div>
                 <div className="bg-white/20 p-2 rounded-lg"><FiDollarSign size={24}/></div>
              </div>
-             <div className="mt-4 flex items-center gap-2 text-sm bg-white/10 w-fit px-3 py-1 rounded-full">
-                <FiArrowUpRight/> +15.3% (Demo)
-             </div>
+             {/* wiki 0108: ĐÃ BỎ huy hiệu "+15.3% (Demo)". Đó là con số bịa cứng trong mã,
+                 nằm ngay cạnh doanh thu THẬT trên màn hình quản trị — người đọc không có
+                 cách nào biết một con số là thật còn con số kia là giả. Chưa có dữ liệu
+                 tăng trưởng theo kỳ thì thà không hiện gì. Khi nào BE trả % tăng trưởng
+                 thật thì dựng lại huy hiệu này. */}
           </div>
 
           {/* Card 2: Lợi nhuận sàn */}
@@ -91,7 +94,11 @@ export default function RevenuePage() {
                 </div>
                 <div className="bg-green-100 text-green-600 p-2 rounded-lg"><FiCreditCard size={24}/></div>
              </div>
-             <p className="text-sm text-gray-400 mt-4">Phí giao dịch trung bình: 5-8%</p>
+             {/* wiki 0108: trước ghi "5-8%" — cũng là số bịa. Phí sàn thật là MỘT mức phẳng,
+                 đọc từ `ORDER_PLATFORM_FEE_RATE` (mặc định 0.05) trong `order.service`, và
+                 `finance.service` tính lợi nhuận bằng đúng 0.05. Đã kiểm chứng đầu-cuối
+                 trên prod: ví người bán được cộng đúng 95% giá trị đơn. */}
+             <p className="text-sm text-gray-400 mt-4">Phí giao dịch: 5% giá trị đơn hàng</p>
           </div>
 
           {/* Card 3: Payout */}
@@ -103,9 +110,16 @@ export default function RevenuePage() {
                 </div>
                 <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><FiDollarSign size={24}/></div>
              </div>
-             <button className="text-sm text-[#E78720] font-medium mt-4 hover:underline">
+             {/* wiki 0108: trước đây là `<button>` không có `onClick` — bấm vào không đi đâu.
+                 Màn duyệt rút tiền `/admin/finance/payouts` đã tồn tại và gọi API thật
+                 (getPayoutRequests / approvePayout / rejectPayout), chỉ là không có đường
+                 dẫn nào tới. Nay là Link thật. */}
+             <Link
+                href="/admin/finance/payouts"
+                className="inline-block text-sm text-[#E78720] font-medium mt-4 hover:underline"
+             >
                 Xem yêu cầu rút tiền &rarr;
-             </button>
+             </Link>
           </div>
        </div>
 

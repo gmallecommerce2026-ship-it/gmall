@@ -43,6 +43,17 @@ const TABS = [
     type: 'menu'
   },
   {
+    // wiki 0110: tab này trước nằm ở màn riêng `/admin/content/menus` — một trang mồ côi
+    // (không có trong sidebar) dùng CHÍNH `MenuConfigEditor` này cho cùng 4 key config.
+    // Hai màn hình sửa cùng một dữ liệu là mời gọi ghi đè lẫn nhau, nên gộp về đây và
+    // trang kia chuyển hướng sang. `HEADER_BLOG_TOPIC` là key duy nhất bên đó có mà đây thiếu.
+    id: 'blog_topic',
+    label: 'Menu Chủ Đề Blog',
+    icon: <FiMenu />,
+    key: SYSTEM_MENU_KEYS.BLOG,
+    type: 'menu'
+  },
+  {
     id: 'footer',
     label: 'Footer Links',
     icon: <FiLayout />,
@@ -50,13 +61,33 @@ const TABS = [
     type: 'footer'
   },
 ];
+// Wiki 0094 — DANH SÁCH DUY NHẤT các vị trí banner. Phải khớp CHÍNH XÁC những `location`
+// mà FE thực sự đọc, nếu không admin tạo banner xong sẽ không bao giờ hiện:
+//   HERO_MAIN / HERO_SUB → useContentStore.fetchAllGlobalContent()  (trang chủ)
+//   PRODUCT_DETAIL       → ProductDetailBanner
+//   CATEGORY             → PromoBanner (trang danh sách SP)
+//   BLOG_DETAIL          → BlogContentWithAds (chèn giữa nội dung bài viết)
+// Trước đây danh sách này có 'HOMEPAGE' (và còn là giá trị MẶC ĐỊNH của form) trong khi
+// KHÔNG trang nào đọc → banner tạo mặc định vô hình; đồng thời THIẾU 'BLOG_DETAIL' → không
+// tạo được banner cho trang tin tức. Thêm/bớt vị trí ở đây phải đi kèm chỗ đọc bên FE.
 export const BANNER_LOCATION_MAP: Record<string, string> = {
-  HOMEPAGE: 'Trang chủ — banner chính',
-  HERO_MAIN: 'Banner chính (To, trên cùng) trang chủ',
-  HERO_SUB: 'Banner phụ trang chủ',
+  HERO_MAIN: 'Trang chủ — banner chính (to, trên cùng)',
+  HERO_SUB: 'Trang chủ — banner phụ',
   PRODUCT_DETAIL: 'Trang chi tiết sản phẩm',
-  CATEGORY: 'Trang danh mục',
+  CATEGORY: 'Trang danh mục / danh sách sản phẩm',
+  BLOG_DETAIL: 'Trang tin tức — chèn giữa bài viết',
 };
+
+// Dữ liệu CŨ đã lỡ lưu bằng 'HOMEPAGE'. Giữ nhãn để admin nhận ra và chọn lại; phía đọc
+// (useContentStore) cũng gộp HOMEPAGE vào HERO_MAIN nên banner cũ vẫn hiện, không mất dữ liệu.
+export const BANNER_LOCATION_LEGACY: Record<string, string> = {
+  HOMEPAGE: '⚠ Giá trị cũ (HOMEPAGE) — nên đổi sang "Trang chủ — banner chính"',
+};
+export const BANNER_LOCATION_LABELS: Record<string, string> = {
+  ...BANNER_LOCATION_MAP,
+  ...BANNER_LOCATION_LEGACY,
+};
+export const DEFAULT_BANNER_LOCATION = 'HERO_MAIN';
 export default function ContentClient() {
   const [activeTabId, setActiveTabId] = useState('banners');
   const [loading, setLoading] = useState(false);
@@ -145,7 +176,7 @@ export default function ContentClient() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
       <button type="button"
         className="border-2 border-dashed border-gray-300 rounded-xl h-40 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-orange-500 hover:text-orange-500 transition-colors bg-gray-50 hover:bg-white"
-        onClick={() => setEditingBanner({ location: 'HOMEPAGE', isActive: true, order: banners.length })}>
+        onClick={() => setEditingBanner({ location: DEFAULT_BANNER_LOCATION, isActive: true, order: banners.length })}>
         <FiPlus size={32} />
         <span className="mt-2 text-sm font-medium">Thêm Banner Mới</span>
       </button>
@@ -167,7 +198,7 @@ export default function ContentClient() {
             <div className="mt-1 flex items-center justify-between">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-gray-800 bg-gray-200 px-2 py-0.5 rounded font-medium w-fit">
-                  {BANNER_LOCATION_MAP[b.location] || b.location}
+                  {BANNER_LOCATION_LABELS[b.location] || b.location}
                 </span>
               </div>
               <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${b.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
@@ -204,7 +235,7 @@ export default function ContentClient() {
         return;
       }
       const payload: Partial<Banner> = {
-        location: form.location || 'HOMEPAGE',
+        location: form.location || DEFAULT_BANNER_LOCATION,
         src,
         title: form.title || '',
         description: form.description || '',
@@ -314,12 +345,9 @@ interface BannerFormModalProps {
   onSave: (form: Partial<Banner>, file?: File | null) => void | Promise<void>;
 }
 
-const BANNER_LOCATIONS = [
-  { value: 'HOMEPAGE', label: 'Trang chủ — banner chính' },
-  { value: 'HERO_SUB', label: 'Banner phụ trang chủ' },
-  { value: 'PRODUCT_DETAIL', label: 'Trang chi tiết sản phẩm' },
-  { value: 'CATEGORY', label: 'Trang danh mục' },
-];
+// Wiki 0094: đã xoá mảng BANNER_LOCATIONS thứ hai ở đây — nó KHÔNG được dùng ở đâu (select
+// đọc BANNER_LOCATION_MAP) nhưng lại là danh sách THỨ HAI, lệch với danh sách thật, nên ai
+// đọc code sẽ tưởng đó là nguồn chân lý. Một danh sách duy nhất = BANNER_LOCATION_MAP.
 
 const BannerFormModal: React.FC<BannerFormModalProps> = ({ initial, saving, onCancel, onSave }) => {
   const [form, setForm] = useState<Partial<Banner>>(initial);
@@ -393,7 +421,7 @@ const BannerFormModal: React.FC<BannerFormModalProps> = ({ initial, saving, onCa
             <label className="block">
               <span className="block text-sm font-medium text-gray-700 mb-1">Vị trí</span>
               <select
-                value={form.location || 'HOMEPAGE'}
+                value={form.location || DEFAULT_BANNER_LOCATION}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-200 outline-none text-sm bg-white"
               >
@@ -402,6 +430,13 @@ const BannerFormModal: React.FC<BannerFormModalProps> = ({ initial, saving, onCa
                     {label}
                   </option>
                 ))}
+                {/* Banner cũ đang giữ location đã bỏ (vd HOMEPAGE): vẫn hiện làm option để
+                    mở form ra KHÔNG âm thầm đổi vị trí của nó sang HERO_MAIN khi bấm Lưu. */}
+                {form.location && !BANNER_LOCATION_MAP[form.location] && (
+                  <option value={form.location}>
+                    {BANNER_LOCATION_LEGACY[form.location] || form.location}
+                  </option>
+                )}
               </select>
             </label>
           </div>

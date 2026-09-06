@@ -46,6 +46,26 @@ export const useContentStore = create<ContentState>((set, get) => ({
       get().fetchBanners('HERO_MAIN'),
       get().fetchBanners('HERO_SUB'),
     ]);
+
+    // Wiki 0094 — tương thích dữ liệu cũ: form admin từng MẶC ĐỊNH location = 'HOMEPAGE'
+    // trong khi không trang nào đọc giá trị đó → mọi banner lỡ lưu bằng 'HOMEPAGE' là vô hình.
+    // Gộp chúng vào HERO_MAIN để banner cũ hiện lại mà không phải sửa tay từng bản ghi.
+    // (Admin nay chỉ tạo được HERO_MAIN/HERO_SUB/PRODUCT_DETAIL/CATEGORY/BLOG_DETAIL, nên
+    //  nhánh này chỉ phục vụ dữ liệu tồn đọng — bỏ được sau khi đã dọn hết trong DB.)
+    try {
+      const legacy: any = await ContentService.getBanners('HOMEPAGE');
+      if (Array.isArray(legacy) && legacy.length > 0) {
+        set((state) => ({
+          banners: {
+            ...state.banners,
+            HERO_MAIN: [...(state.banners.HERO_MAIN || []), ...legacy],
+          },
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading legacy HOMEPAGE banners', error);
+    }
+
     set({ isLoading: false });
   },
   activeDropdown: null,

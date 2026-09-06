@@ -200,11 +200,28 @@ const useCartStoreBase = create<CartState & CartActions>()(
       updateQuantity: async (itemId, newQuantity) => {
         if (newQuantity < 1) return;
         const prevItems = get().items;
-        const newItems = prevItems.map(item => 
+        const newItems = prevItems.map(item =>
           item.id === itemId ? { ...item, quantity: newQuantity } : item
         );
         set({ items: newItems, ...calculateSummary(newItems, get().selectedIds) });
-        // Optional: debounce update to server here
+
+        // wiki 0108: PHẢI đồng bộ lên server. Trước đây chỗ này chỉ đổi state trong máy
+        // và để lại ghi chú "Optional: debounce update to server here" — nên bấm "+" rồi
+        // F5 là số lượng quay về cũ (`[2,2,2]` → `[1,2,2]`), và tệ hơn: ĐƠN HÀNG được
+        // dựng từ giỏ trên server, tức là khách thấy một tổng tiền còn hệ thống tính
+        // theo số lượng cũ.
+        //
+        // `PATCH /store/cart/:itemId` đã có sẵn ở BE và nhận số lượng TUYỆT ĐỐI (`hset`).
+        // `item.id` là composite field `${productId}:${variantId}` — phải gửi nguyên nó,
+        // giống `removeItem` (gửi productId sẽ không khớp field nào).
+        try {
+          await apiClient.patch(`/store/cart/${encodeURIComponent(itemId)}`, { quantity: newQuantity });
+        } catch (e) {
+          console.error(e);
+          // Trả lại đúng trạng thái cũ để màn hình không nói dối về số lượng/tổng tiền.
+          set({ items: prevItems, ...calculateSummary(prevItems, get().selectedIds) });
+          toast.error('Không cập nhật được số lượng, vui lòng thử lại');
+        }
       },
 
       toggleShopSelection: (itemIds, isSelected) => {
@@ -242,15 +259,34 @@ const useCartStoreBase = create<CartState & CartActions>()(
 
       // [NEW ACTION]
       removeMultipleItems: async (itemIds: string[]) => {
+        if (!itemIds.length) return;
         const prevItems = get().items;
         // Chỉ giữ lại những item KHÔNG nằm trong danh sách itemIds cần xóa
         const newItems = prevItems.filter(item => !itemIds.includes(item.id));
         const newSelectedIds = get().selectedIds.filter(id => !itemIds.includes(id));
-        
+
         set({ items: newItems, selectedIds: newSelectedIds, ...calculateSummary(newItems, newSelectedIds) });
-        
-        // Lưu ý: Việc xóa trên Server thường được BE xử lý tự động khi tạo Order thành công
-        // Nếu BE không tự xóa, cần loop gọi API delete ở đây (nhưng thường BE sẽ làm)
+
+        // wiki 0108: PHẢI xoá trên server, không chỉ trong máy.
+        //
+        // Ghi chú cũ ở đây là "BE thường tự xoá khi tạo Order thành công". Điều đó ĐÚNG
+        // cho luồng thanh toán (`order.service` gọi `cartService.removeItem` cho từng món
+        // đã mua), nhưng hàm này còn phục vụ nút **"Xoá mục đã chọn"** trong giỏ — ở đó
+        // không có đơn hàng nào được tạo, nên không ai xoá hộ: món biến mất trên màn hình
+        // rồi hiện lại nguyên vẹn sau khi tải lại trang.
+        //
+        // DELETE trên field đã biến mất là vô hại (Redis `hdel` trả 0), nên gọi lại sau
+        // khi đặt hàng cũng không sao.
+        const results = await Promise.allSettled(
+          itemIds.map((id) => apiClient.delete(`/store/cart/${encodeURIComponent(id)}`))
+        );
+
+        // Có cái nào hỏng thì ĐỌC LẠI giỏ từ server thay vì đoán — thà hiện đúng sự thật
+        // còn hơn để màn hình nói một đằng, server một nẻo.
+        if (results.some((r) => r.status === 'rejected')) {
+          toast.error('Một vài sản phẩm chưa xoá được, đang tải lại giỏ hàng…');
+          await get().fetchCart();
+        }
       },
 
       clearCart: () => set({ items: [], selectedIds: [], totalItems: 0, totalPrice: 0, totalSelectedPrice: 0 }),

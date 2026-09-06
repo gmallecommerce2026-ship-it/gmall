@@ -1,0 +1,7 @@
+<!-- wiki 0108: file này TRƯỚC ĐÂY không tồn tại. `admin/login/page.tsx` tham chiếu
+     `bg-[url('/assets/grid-pattern.svg')]` nên mỗi lần mở trang đăng nhập quản trị lại
+     có một request 404 — nền hoa văn không bao giờ hiện, và log máy chủ nhiễu vô ích.
+     Vẽ đúng thứ tên nó hứa: lưới mảnh, dùng currentColor để hoà theo nền. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <path d="M40 0H0V40" stroke="currentColor" stroke-width="1" stroke-opacity="0.35" fill="none"/>
+</svg>

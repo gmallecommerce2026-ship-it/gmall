@@ -17,6 +17,14 @@ import { useProductFilters } from "@/hooks/useProductFilters"; // Đã thêm imp
 
 interface SearchProductPageProps {
   initialCategorySlug?: string;
+  /**
+   * Tên danh mục lấy sẵn ở phía server (wiki 0104 đợt 2).
+   * Không có nó thì `categoryDisplayName` khởi tạo rỗng và chỉ được điền sau `useEffect`,
+   * nên tiêu đề trang hiện ra là **"DANH MỤC:"** cụt lủn — cả trong HTML SSR lẫn ở lần
+   * render đầu trên trình duyệt. Trang server vốn ĐÃ lấy tên này cho `generateMetadata`,
+   * và hàm lấy được bọc `cache()` của React nên truyền xuống đây không tốn thêm lượt gọi.
+   */
+  initialCategoryName?: string;
   initialKeyword?: string;
   initialTag?: string;
 }
@@ -25,6 +33,7 @@ const PAGE_SIZE = 20;
 
 const SearchProductPage: React.FC<SearchProductPageProps> = ({
   initialCategorySlug,
+  initialCategoryName,
   initialKeyword,
   initialTag
 }) => {
@@ -50,7 +59,7 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
   const [categoryBreadcrumbPath, setCategoryBreadcrumbPath] = useState<any[]>([]);
 
   // States cho Sidebar & Title
-  const [categoryDisplayName, setCategoryDisplayName] = useState("");
+  const [categoryDisplayName, setCategoryDisplayName] = useState(initialCategoryName || "");
   const [categoryFilterKeys, setCategoryFilterKeys] = useState<any[]>([]);
   const [currentCategory, setCurrentCategory] = useState<any>(null);
   const [childCategories, setChildCategories] = useState<any[]>([]);
@@ -197,8 +206,13 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, sort, page, tag, minPrice, maxPrice, rating, locations, categorySlug]);
 
+  // Lưới an toàn cuối: nếu vẫn chưa có tên thật (BE lỗi / vào thẳng bằng query string)
+  // thì suy tên từ slug thay vì để tiêu đề cụt thành "DANH MỤC:".
+  const categoryNameFallback =
+    categoryDisplayName || (categorySlug || '').replace(/-/g, ' ').trim();
+
   const pageTitle = categorySlug
-    ? `DANH MỤC: ${categoryDisplayName?.toUpperCase() || ''}`
+    ? `DANH MỤC: ${categoryNameFallback.toUpperCase()}`
     : (tag
       ? `TAG: ${tag.toUpperCase()}`
       : (query
@@ -212,7 +226,19 @@ const SearchProductPage: React.FC<SearchProductPageProps> = ({
       <div className="w-full max-w-[1440px] mx-auto px-4 py-6">
         <Breadcrumbs items={breadcrumbItems} />
         <div className="mb-6"><PromoBanner /></div>
-        <ProductSortBar title={pageTitle} />
+
+        {/* Wiki 0104 (đợt 2): `pageTitle` vốn ĐƯỢC TÍNH rồi truyền vào `ProductSortBar`,
+            nhưng component đó khai `title?: string` mà **không hề destructure/render** —
+            prop chết. Hệ quả: `/search` và MỌI trang `/category/*` không có tiêu đề hiển
+            thị nào, cũng không có `<h1>` (đo trên prod: h1 = 0). Người dùng bấm vào một
+            danh mục và không thấy dòng nào xác nhận mình đang ở đâu.
+            Dựng thành `<h1>` thật: vừa trả lại tiêu đề cho người xem, vừa cho Google và
+            trình đọc màn hình biết chủ đề trang. */}
+        <h1 className="mt-6 text-xl font-semibold tracking-tight text-gray-800 md:text-2xl">
+          {pageTitle}
+        </h1>
+
+        <ProductSortBar />
 
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           <div className="w-full lg:w-[250px] flex-shrink-0 hidden lg:block">

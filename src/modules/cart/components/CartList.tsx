@@ -13,6 +13,9 @@ interface CartListProps {
   onToggleItem: (id: string) => void;
   onToggleAll: (checked: boolean) => void;
   onToggleShop: (shopId: string, itemIds: string[], checked: boolean) => void;
+  // wiki 0108: nút "Xóa mục đã chọn" trước đây KHÔNG có `onClick` — bấm không xoá gì,
+  // không gọi API, không báo lỗi. Store đã sẵn `removeMultipleItems`, chỉ thiếu đường nối.
+  onRemoveSelected: () => void;
 }
 
 const CartList: React.FC<CartListProps> = ({
@@ -22,7 +25,8 @@ const CartList: React.FC<CartListProps> = ({
   onRemove,
   onToggleItem,
   onToggleAll,
-  onToggleShop
+  onToggleShop,
+  onRemoveSelected
 }) => {
   // Gom nhóm items theo ShopId
   /* === [LOGIC GỐC - ĐA SHOP]: Mở comment đoạn này khi bật lại tính năng Shop ===
@@ -74,8 +78,16 @@ const CartList: React.FC<CartListProps> = ({
         
         {/* Nút xóa nhanh các món đã chọn (Optional feature) */}
         {selectedIds.length > 0 && (
-            <button className="ml-auto text-red-500 text-sm hover:underline font-medium">
-                Xóa mục đã chọn
+            <button
+                onClick={() => {
+                    // Thao tác phá huỷ và không hoàn tác được → hỏi lại trước khi xoá.
+                    if (window.confirm(`Xoá ${selectedIds.length} sản phẩm đã chọn khỏi giỏ hàng?`)) {
+                        onRemoveSelected();
+                    }
+                }}
+                className="ml-auto text-red-500 text-sm hover:underline font-medium"
+            >
+                Xóa mục đã chọn ({selectedIds.length})
             </button>
         )}
       </div>

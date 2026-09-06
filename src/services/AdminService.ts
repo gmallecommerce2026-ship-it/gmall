@@ -16,6 +16,19 @@ import {
 } from '@/types/admin';
 import { api } from './api';
 
+/**
+ * wiki 0111 — số việc đang chờ admin xử lý, dùng cho badge trên menu quản trị.
+ * Khoá ở đây phải khớp đúng khoá BE trả về (`DashboardService.getPendingCounts`).
+ */
+export interface PendingCounts {
+  affiliateAccounts: number;
+  sellerApprovals: number;
+  shopUpdates: number;
+  productApprovals: number;
+  payouts: number;
+  complaints: number;
+}
+
 
 
 export const AdminService = {
@@ -70,14 +83,29 @@ export const AdminService = {
   },
 
   // ================= SHOPS =================
-  getShops: async (params?: PaginationParams & { status?: string }) => {
-    // TODO: Implement Backend: GET /admin/shops
-    return apiClient.get('/admin/shops', { params });
+  // wiki 0110: hai hàm `getShops` / `getShopViolations` từng nằm ở đây, gọi
+  // `/admin/shops` và `/admin/shops/violations`. Cả hai endpoint CHƯA BAO GIỜ tồn tại
+  // trên BE (đã kiểm: không có `@Controller('admin/shops')`) — gọi vào là 404. Không nơi
+  // nào còn dùng chúng: trang danh sách cửa hàng dùng thẳng `GET /shops`, còn trang "vi
+  // phạm" đã được thay bằng màn Khiếu nại dựa trên `/admin/complaints` có thật. Xoá hẳn
+  // thay vì để lại kèm TODO, vì một hàm sẵn-sàng-gọi trỏ vào route không tồn tại là cái
+  // bẫy cho người viết màn hình tiếp theo.
+
+  // ================= VIỆC ĐANG CHỜ (wiki 0111) =================
+  // Một lượt gọi cho tất cả badge trên menu quản trị. BE: GET /admin/dashboard/pending-counts.
+  getPendingCounts: async () => {
+    return apiClient.get<PendingCounts>('/admin/dashboard/pending-counts');
   },
 
-  getShopViolations: async (params?: PaginationParams) => {
-    // TODO: Implement Backend: GET /admin/shops/violations
-    return apiClient.get('/admin/shops/violations', { params });
+  // ================= KHIẾU NẠI (wiki 0110) =================
+  // BE: `AdminComplaintController` — `GET /admin/complaints`, `PATCH /admin/complaints/:id/status`.
+  // Trạng thái hợp lệ do BE quy định: open | processing | resolved | rejected.
+  getComplaints: async (params?: { page?: number; limit?: number; status?: string }) => {
+    return apiClient.get('/admin/complaints', { params });
+  },
+
+  updateComplaintStatus: async (id: string, status: string, adminNote?: string) => {
+    return apiClient.patch(`/admin/complaints/${id}/status`, { status, adminNote });
   },
 
   // ================= PRODUCTS =================
@@ -169,13 +197,18 @@ export const AdminService = {
   },
 
   // ================= CATEGORIES =================
+  // wiki 0108: đường dẫn thật là `/categories`, KHÔNG có tiền tố `/admin`.
+  // Ghi chú "TODO: Implement Backend: GET /admin/categories" ở đây là sai — backend đã
+  // có sẵn `@Controller('categories')` với đủ GET/POST/PATCH/DELETE từ lâu. Vì gọi sai
+  // đường dẫn nên màn Quản lý Danh mục nhận **404** và luôn rỗng, còn nút "Thêm danh mục"
+  // thì bấm xong không có gì xảy ra. Đã đo trên prod: `/admin/categories` → 404,
+  // `/categories` → 200.
   getAllCategories: async () => {
-      // TODO: Implement Backend: GET /admin/categories
-      return apiClient.get('/admin/categories');
+      return apiClient.get('/categories');
   },
 
   createCategory: async (data: FormData | any) => {
-      return apiClient.post('/admin/categories', data);
+      return apiClient.post('/categories', data);
   },
 
   // ================= ORDERS =================
@@ -240,12 +273,16 @@ export const AdminService = {
   
   // ================= CONTENT =================
   // CMS endpoints
+  // wiki 0108: đường dẫn thật là `/content/admin/banners` — controller là
+  // `@Controller('content')` với route con `admin/banners`, chứ không phải
+  // `/admin/content/...`. Đo trên prod: `/admin/content/banners` → 404,
+  // `/content/admin/banners` → 401 (tức là route CÓ thật, chỉ đòi đăng nhập).
   getBanners: async () => {
-      return apiClient.get('/admin/content/banners');
+      return apiClient.get('/content/admin/banners');
   },
-  
+
   updateBanner: async (id: string, data: any) => {
-      return apiClient.patch(`/admin/content/banners/${id}`, data);
+      return apiClient.patch(`/content/admin/banners/${id}`, data);
   },
 
   // ================= BLOGS =================
@@ -329,17 +366,39 @@ export const AdminService = {
       return apiClient.delete(`/admin/products/${id}`);
   },
 
-  getConversionRate: async () => {
-    const res = await apiClient.get('/points/rate');
-    return res.data; // Trả về { rate: 10000 }
+  // [wiki 0099 FIX apiClient-no-data-wrapper] apiClient (fetch) trả THẲNG body JSON,
+  // KHÔNG bọc { data } như axios. BE GET /points/rate trả { rate } (point.controller.ts:53).
+  // Đọc res.data ở đây luôn ra undefined -> màn hình cấu hình xu không bao giờ nhận được
+  // tỷ giá thật. Đọc res?.rate và trả về number (?. vì request() trả null khi 401/body rỗng).
+  getConversionRate: async (): Promise<number | undefined> => {
+    const res = await apiClient.get<{ rate: number }>('/points/rate');
+    return res?.rate; // BE: { rate: 10000 } -> trả về 10000
   },
 
-  // Cập nhật tỷ lệ
-  updateConversionRate: async (amount: number) => {
-    const res = await apiClient.post('/points/rate', { amount });
-    return res.data;
+  // Cập nhật tỷ lệ. BE trả { success: true, rate } (point.service.ts:109) -> trả về
+  // tỷ giá server đã thực sự lưu để caller đồng bộ lại state, không tin mù input local.
+  updateConversionRate: async (amount: number): Promise<number | undefined> => {
+    const res = await apiClient.post<{ success: boolean; rate: number }>('/points/rate', { amount });
+    return res?.rate;
   },
   deleteAllProducts: async () => {
     return await apiClient.delete('/admin/products/delete-all/cleanup');
   },
+
+  // ===== wiki 0105 — Tiếp thị liên kết =====
+  // Dùng `apiClient` (fetch) nên trả THẲNG body JSON, KHÔNG bọc `.data` như axios.
+  // Đọc `res.data` ở đây là lớp bug đã xảy ra ba lần (wiki 0095/0099/0103).
+
+  listAffiliateAccounts: async (status = 'PENDING', page = 1) =>
+    apiClient.get(`/admin/affiliate/accounts?status=${encodeURIComponent(status)}&page=${page}`),
+
+  reviewAffiliateAccount: async (
+    id: string,
+    body: { status: 'APPROVED' | 'REJECTED' | 'SUSPENDED'; rejectReason?: string },
+  ) => apiClient.patch(`/admin/affiliate/accounts/${id}`, body),
+
+  listAffiliateCommissions: async (status = 'ALL', page = 1) =>
+    apiClient.get(`/admin/affiliate/commissions?status=${encodeURIComponent(status)}&page=${page}`),
+
+  settleAffiliateNow: async () => apiClient.post('/admin/affiliate/settle', {}),
 };

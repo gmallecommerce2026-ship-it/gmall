@@ -32,7 +32,10 @@ interface UserState {
   _hasHydrated: boolean;
   setUser: (user: User | null) => void;
   updatePoint: (point: number) => void;
-  logout: () => void;
+  // wiki 0108: `redirect: false` cho nhung cho TU LO viec dieu huong (vd interceptor
+  // 401 trong `services/api.ts` biet phai ve /admin/login hay /seller/login hay /login).
+  // Khong co no thi `logout()` ban ngay ve `/` va nuot mat dich den cua nguoi dung.
+  logout: (options?: { redirect?: boolean }) => void;
   setHasHydrated: (state: boolean) => void;
 }
 
@@ -62,7 +65,11 @@ export const useUserStore = create<UserState>()(
       // trên máy → tab khác / refresh vẫn auto-auth qua axios `withCredentials`.
       // R3-6 (wiki 0045): nếu đang ở route protected, redirect về home để
       // tránh stuck ở `/user/profile` hiển thị data stale của user vừa logout.
-      logout: () => {
+      logout: (options?: { redirect?: boolean }) => {
+        // wiki 0108: mac dinh VAN dieu huong (giu nguyen hanh vi cu cho moi cho goi khac).
+        // Chi cho tat khi ben goi tu lo dieu huong — neu khong, hai cu dieu huong dua
+        // nhau va cu cua store (ve `/`) thang, lam mat dich den.
+        const allowRedirect = options?.redirect !== false;
         let needsRedirect = false;
         if (typeof window !== 'undefined') {
           // [FIX logout] Cookie accessToken là httpOnly → JS KHÔNG thể xoá bằng document.cookie.
@@ -122,9 +129,12 @@ export const useUserStore = create<UserState>()(
           needsRedirect = PROTECTED.some(p => path.startsWith(p)) && !path.endsWith('/login');
         }
         set({ user: null, isAuthenticated: false });
-        if (needsRedirect) {
-          // assign (không replace) để user có thể back lại nếu cần
-          window.location.assign('/');
+        if (needsRedirect && allowRedirect) {
+          // assign (không replace) để user có thể back lại nếu cần.
+          // wiki 0108: mang theo `?next=` để sau khi đăng nhập lại người dùng quay về
+          // đúng chỗ đang dở, thay vì bị bỏ ở trang chủ mà không hiểu vì sao.
+          const back = window.location.pathname + window.location.search;
+          window.location.assign(`/login?next=${encodeURIComponent(back)}`);
         }
       },
     }),

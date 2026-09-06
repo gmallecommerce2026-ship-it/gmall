@@ -16,7 +16,8 @@ export default function SellerAuthLayout({ children }: { children: React.ReactNo
             <span className="text-lg font-medium text-gray-700">Kênh Người Bán</span>
           </div>
           <div className="text-sm text-gray-500 hover:text-orange-600 transition-colors">
-            <Link href="/help">Bạn cần trợ giúp?</Link>
+            {/* Wiki 0104: `/help` chưa bao giờ tồn tại → 404. Trung tâm trợ giúp ở `/user/help`. */}
+            <Link href="/user/help">Bạn cần trợ giúp?</Link>
           </div>
         </div>
       </header>

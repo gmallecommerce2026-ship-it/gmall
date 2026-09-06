@@ -21,22 +21,14 @@ const safeString = (val: any): string => {
   return String(val);
 };
 
-// [FIX LOGIC V2]: Hàm sinh link thông minh & Debug
-    const getMenuLink = (item: any): string => {
+// Sinh link cho một mục menu theo thứ tự ưu tiên: link tĩnh → keywords → tag tự động.
+// Wiki 0104: bỏ toàn bộ console.group/log debug — chúng chạy cho MỌI mục menu trên
+// MỌI lượt render ở production, đổ hàng chục dòng vào console của khách.
+const getMenuLink = (item: any): string => {
     if (!item) return '/search';
-
-    // --- [DEBUG START] ---
-    console.group(`🔍 Menu Item Debug: ${item.name || item.label}`);
-    console.log("Raw Item:", item);
-    console.log("Keywords Type:", typeof item.keywords);
-    console.log("Keywords Value:", item.keywords);
-    console.log("Tag/Code:", item.tagCode || item.code);
-    // --- [DEBUG END] ---
 
     // 1. Link tĩnh
     if (item.link && typeof item.link === 'string' && item.link.trim() !== '' && !item.link.includes('undefined')) {
-        console.log("=> Result: Static Link", item.link); // Debug
-        console.groupEnd(); // End Debug
         return item.link.trim();
     }
 
@@ -49,23 +41,15 @@ const safeString = (val: any): string => {
     }
 
     if (keywordString && keywordString.trim().length > 0) {
-        const url = `/search?q=${encodeURIComponent(keywordString.trim())}`;
-        console.log("=> Result: Keyword Link", url); // Debug
-        console.groupEnd(); // End Debug
-        return url;
+        return `/search?q=${encodeURIComponent(keywordString.trim())}`;
     }
 
     // 3. Auto-Tag
     const autoTag = item.tagCode || item.code;
     if (autoTag && typeof autoTag === 'string' && autoTag.trim() !== '' && autoTag !== 'undefined') {
-        const url = `/search?tag=${autoTag.trim()}`;
-        console.log("=> Result: Tag Link", url); // Debug
-        console.groupEnd(); // End Debug
-        return url;
+        return `/search?tag=${autoTag.trim()}`;
     }
 
-    console.log("=> Result: Default /search"); // Debug
-    console.groupEnd(); // End Debug
     return '/search';
 };
 

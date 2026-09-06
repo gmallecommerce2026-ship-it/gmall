@@ -4,15 +4,45 @@ import Link from 'next/link';
 import AdminSidebar from '@/layout/admin/AdminSidebar'; // Đảm bảo đường dẫn đúng
 import { FiBell } from 'react-icons/fi'; // Thêm icon cho header
 import AdminSearchBox from './components/AdminSearchBox';
+import AdminIdentity from './components/AdminIdentity';
+import RoleGuard from '@/components/auth/RoleGuard';
+// wiki 0110: hamburger + drawer cho màn hình < lg (trước đây khu admin không có điều hướng
+// nào trên điện thoại). Provider là Client Component nhưng vẫn bọc được children là Server
+// Component, nên layout này giữ nguyên kiểu server và `metadata` bên dưới còn hiệu lực.
+import { PortalNavProvider, PortalNavToggle } from '@/layout/shared/PortalNavContext';
+import type { Metadata } from 'next';
+
+// Wiki 0104: các trang admin tự viết hậu tố "| Admin Portal" / "| Admin" / "| Admin
+// Dashboard" — ba kiểu cho cùng một khu vực. Đặt template ở layout nhóm route để mọi
+// trang con nhất quán mà không phải sửa từng file, và `noindex` để khu quản trị không
+// bao giờ lọt vào kết quả tìm kiếm (trước đây thừa hưởng `index: true` từ root).
+export const metadata: Metadata = {
+  title: { default: 'Quản trị GMall', template: '%s | Quản trị GMall' },
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Guard phân quyền (wiki 0108): trước đây KHÔNG có lớp nào chặn ở FE — buyer thật
+  // mở `/admin/dashboard` là thấy nguyên khung Admin Portal (sidebar "Tổng quan",
+  // "Quản lý người dùng"...), dữ liệu không lộ vì API đều qua `RolesGuard` của BE,
+  // nhưng khung quản trị hiện ra là sai ý định thiết kế. Chặn PHẢI ở client chứ
+  // không ở `src/proxy.tsx`: cookie `accessToken` thuộc host của BE, khác host FE →
+  // proxy đọc cookie luôn ra undefined nên chặn ở server sẽ đá cả admin thật ra
+  // ngoài. Xem giải thích đầy đủ trong `components/auth/RoleGuard.tsx`.
+  //
+  // Bọc TOÀN BỘ vỏ layout (sidebar + header + footer), không chỉ `children`, vì
+  // chính bộ khung điều hướng mới là thứ bị lộ. Layout giữ nguyên Server Component
+  // để `metadata` ở trên còn hiệu lực; phần guard nằm trong Client Component riêng.
+  // `/admin/login` ở `app/admin/login` — NGOÀI group `(admin)` — nên không bị chặn.
   return (
+    <RoleGuard allow={['ADMIN']} redirectTo="/admin/login">
+    <PortalNavProvider>
     <div className="min-h-screen bg-[#f5f5f5] flex">
-      {/* Sidebar cố định */}
+      {/* Sidebar: cố định từ lg trở lên, là drawer trượt bên dưới (wiki 0110) */}
       <AdminSidebar />
 
       {/* Main Content Area — mobile full-width; desktop (lg≥) margin 260px cho sidebar.
@@ -20,7 +50,11 @@ export default function AdminLayout({
       <div className="flex-1 lg:ml-[260px] min-w-0 flex flex-col transition-all duration-300 w-full">
 
         <header className="h-[70px] bg-white border-b border-gray-200 sticky top-0 z-40 px-4 md:px-6 lg:px-8 flex items-center justify-between shadow-sm">
-           <h2 className="text-base md:text-lg font-semibold text-gray-700 truncate">Bảng điều khiển</h2>
+           <div className="flex items-center gap-2 min-w-0">
+             {/* wiki 0110: lối vào DUY NHẤT của menu trên điện thoại. Trên lg tự ẩn vì sidebar đã hiện. */}
+             <PortalNavToggle label="Mở menu quản trị" />
+             <h2 className="text-base md:text-lg font-semibold text-gray-700 truncate">Bảng điều khiển</h2>
+           </div>
 
            <div className="flex items-center gap-3 md:gap-6">
              <AdminSearchBox />
@@ -34,15 +68,8 @@ export default function AdminLayout({
                  <FiBell size={20} />
                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                </Link>
-               <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs flex-shrink-0">
-                    AD
-                  </div>
-                  <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-700 leading-none">Admin User</p>
-                    <p className="text-[10px] text-gray-400">Super Admin</p>
-                  </div>
-               </div>
+               {/* wiki 0108: thay khối in cứng "Admin User / Super Admin" bằng danh tính THẬT. */}
+               <AdminIdentity />
              </div>
            </div>
         </header>
@@ -59,5 +86,7 @@ export default function AdminLayout({
         </footer>
       </div>
     </div>
+    </PortalNavProvider>
+    </RoleGuard>
   );
 }

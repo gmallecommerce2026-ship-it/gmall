@@ -36,6 +36,8 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  /** wiki 0095 B6: mã giới thiệu từ link affiliate `/register?ref=<id>`. */
+  ref?: string;
 }
 
 export interface LoginPayload {
@@ -64,9 +66,11 @@ export const AuthService = {
   async verifyOtp(email: string, otp: string) {
     const res = await api.post('/auth/verify-otp', { email, otp });
     
-    // API backend trả về data nằm trong res.data (nếu dùng axios standard)
-    // Tuy nhiên nếu bạn đã có interceptor response trả về data trực tiếp thì giữ nguyên res
-    const data = res.data || res;
+    // [FIX wiki 0095/0099/0103] `api` (axios) đã unwrap `res.data` ở interceptor nên `res`
+    // CHÍNH LÀ body — nhánh `.data` là dự phòng, và phải có `?.` vì body có thể là `null`
+    // (BE trả JSON `null`) hoặc rỗng → `res.data` ném TypeError trước cả khi gate `data?.user`
+    // kịp chạy. Giữ nguyên `||` để không đổi thứ tự ưu tiên cũ.
+    const data = res?.data || res;
 
     // [round15 FIX verifyotp-gate] BE giờ set httpOnly cookie + trả { user } (KHÔNG còn access_token).
     // Gate PHẢI dựa vào `user` — nếu vẫn check access_token sẽ throw "Xác thực thất bại" trên verify
@@ -102,7 +106,9 @@ export const AuthService = {
   // gọi /users/profile không tồn tại -> 404 -> FE hiển thị "có lỗi").
   updateProfile: async (data: UpdateProfilePayload) => {
     const res = await api.put('/auth/profile', data);
-    const updatedUser = res.data || res;
+    // [FIX wiki 0095/0099/0103] Cùng lý do: interceptor axios đã unwrap nên `res` là body;
+    // `.data` chỉ là dự phòng và cần `?.` vì body có thể `null`/rỗng → tránh TypeError.
+    const updatedUser = res?.data || res;
     useUserStore.getState().setUser(updatedUser);
     return updatedUser;
   },

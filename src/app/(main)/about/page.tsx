@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Về chúng tôi — GMall",
+  title: "Về chúng tôi",
   description:
     "GMall là nền tảng thương mại điện tử chuyên về quà tặng, kết hợp cộng đồng và quỹ từ thiện. Mua sắm — Tặng quà — Đóng góp.",
 };

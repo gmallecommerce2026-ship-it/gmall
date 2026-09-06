@@ -99,13 +99,22 @@ export default function AdminProductApprovalDetailPage() {
       try {
         setLoading(true);
         const res: any = await AdminService.getProductDetail(productId);
-        const rawData = res.data || res;
+        // [FIX wiki 0095/0099/0103] `AdminService.getProductDetail` chạy trên `apiClient`
+        // (fetch): `request()` trả `null` ở nhánh 401-redirect và khi body không parse được
+        // JSON → `res.data` ném TypeError. BE `/admin/products/:id` trả object sản phẩm ở
+        // top level (không bọc `data`) nên `res?.data ?? res` lấy đúng object.
+        const rawData = res?.data ?? res ?? null;
         const normalized = normalizeProduct(rawData);
         setProduct(normalized);
-        
-        // Set default active media
-        if (normalized.videoUrls.length > 0) setActiveMedia({ type: 'video', url: normalized.videoUrls[0] });
-        else setActiveMedia({ type: 'image', url: normalized.imageUrl });
+
+        // `normalizeProduct` trả lại nguyên input khi input falsy (xem helper ở đầu file),
+        // nên phải chặn `null` TRƯỚC khi đọc `.videoUrls` — nếu không lại ném TypeError
+        // đúng ngay chỗ vừa vá.
+        if (normalized) {
+          // Set default active media
+          if (normalized.videoUrls?.length > 0) setActiveMedia({ type: 'video', url: normalized.videoUrls[0] });
+          else setActiveMedia({ type: 'image', url: normalized.imageUrl });
+        }
 
       } catch (error) {
         console.error("Failed to fetch product:", error);

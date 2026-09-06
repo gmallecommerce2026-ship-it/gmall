@@ -51,8 +51,12 @@ export default function AdminShopDetailPage() {
     const fetchShop = async () => {
       try {
         setLoading(true);
-        const res: any = await ShopService.getShopProfile(shopId); 
-        setShop(res.data || res);
+        const res: any = await ShopService.getShopProfile(shopId);
+        // [FIX wiki 0095/0099/0103] `ShopService.getShopProfile` trả THẲNG `null` khi shop
+        // không tồn tại hoặc call lỗi (xem shop.service.ts), nên `res.data` ném TypeError.
+        // BE trả object shop ở top level (không bọc `data`) → `res?.data ?? res` lấy đúng
+        // object; `null` thì nhánh "Không tìm thấy Shop" bên dưới lo hiển thị.
+        setShop(res?.data ?? res ?? null);
       } catch (error) {
         console.error("Failed to fetch shop:", error);
         toast.error("Không thể tải thông tin Shop");

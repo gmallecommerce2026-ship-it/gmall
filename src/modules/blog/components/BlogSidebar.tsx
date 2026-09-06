@@ -39,7 +39,12 @@ export const BlogSidebar: React.FC<BlogSidebarProps> = ({ className, extraConten
     (async () => {
       try {
         const res: any = await blogService.getPublicBlogs({ page: 1, limit: 5 });
-        setLatest(res.data || res.items || []);
+        // [FIX wiki 0095/0099/0103] `blogService` chạy trên `apiClient` (fetch): `request()`
+        // trả `null` khi 401-redirect / body không phải JSON, nên `res.data` ném TypeError
+        // (cast `as Promise<PaginatedResponse>` trong service che mất `| null`, TS không cảnh báo).
+        // Chuẩn hoá về mảng vì `latest` được render bằng `.map`.
+        const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+        setLatest(Array.isArray(list) ? list : []);
       } catch (e) {
         console.error('Sidebar latest posts error', e);
       }

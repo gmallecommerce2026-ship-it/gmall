@@ -1,15 +1,14 @@
 // src/app/(admin)/admin/categories/page.tsx
-import React, { Suspense } from "react";
-import CategoriesClient from "./CategoriesClient";
+import { redirect } from 'next/navigation';
 
-// Chỉ thị này hoạt động tốt nhất ở Server Component
-export const dynamic = "force-dynamic";
-
-export default function AdminCategoriesPage() {
-  return (
-    // Suspense Boundary là bắt buộc khi Client Component có khả năng dùng useSearchParams
-    <Suspense fallback={<div className="p-6">Đang tải danh mục...</div>}>
-      <CategoriesClient />
-    </Suspense>
-  );
+// wiki 0110 — màn quản lý danh mục THẬT là `/admin/mega-menu`.
+//
+// Trang này là bản cũ, mồ côi (không có trong sidebar) và làm được ít hơn hẳn: chỉ liệt kê
+// danh mục dạng phẳng và tạo mới, còn hai nút "Sửa"/"Xoá" thì **không gắn onClick** — bấm
+// không có gì xảy ra. Trong khi `/admin/mega-menu` nhúng `CategoryTreeManager` với đủ cây
+// phân cấp, sửa, xoá và kéo-thả sắp xếp (`POST /categories/update-order`).
+//
+// Chuyển hướng thay vì xoá hẳn để URL cũ trong bookmark vẫn tới đúng chỗ.
+export default function AdminCategoriesRedirect() {
+  redirect('/admin/mega-menu');
 }

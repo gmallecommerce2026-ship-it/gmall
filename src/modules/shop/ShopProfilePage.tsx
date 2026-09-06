@@ -184,7 +184,12 @@ const ShopProfilePage = ({ shopData, shopId }: { shopData: any; shopId: string }
       const fetchProducts = async () => {
         setIsLoading(true);
         const res: any = await ShopService.getShopProducts(shopId, filters);
-        if (res) setProducts(res.items || []); 
+        // [FIX wiki 0095/0099/0103] `if (res)` đã chặn được null, nhưng khoá đọc thì SAI:
+        // BE `/shops/:id/products` trả `{ data, meta }` (xem shop.service.ts:113) — không có
+        // khoá `items` → `res.items || []` LUÔN ra `[]`, tab "Tất cả sản phẩm" rỗng vĩnh viễn.
+        // Chuẩn hoá theo cả hai shape để không phụ thuộc trí nhớ về client nào bọc `data`.
+        const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+        setProducts(Array.isArray(list) ? list : []);
         setIsLoading(false);
       };
       fetchProducts();

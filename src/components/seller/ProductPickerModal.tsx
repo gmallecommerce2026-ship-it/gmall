@@ -65,8 +65,10 @@ export default function ProductPickerModal({ isOpen, onClose, initialSelectedIds
         keyword: keyword 
       });
 
-      // Giả sử res trả về mảng sản phẩm trực tiếp hoặc res.data
-      const newProducts = Array.isArray(res) ? res : res.data || [];
+      // [FIX wiki 0095/0099/0103] `res.data` ném TypeError nếu response là `null`/`undefined`.
+      // Chuẩn hoá về mảng vì bên dưới dùng `.length` và spread vào state danh sách.
+      const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+      const newProducts = Array.isArray(list) ? list : [];
       
       if (isReset) {
         setProducts(newProducts);

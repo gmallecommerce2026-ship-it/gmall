@@ -37,25 +37,23 @@ const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
         let data: Voucher[] = [];
 
         if (isSystem) {
-            // Gọi API lấy voucher sàn (bạn cần đảm bảo method này tồn tại hoặc dùng getMyVouchers lọc scope GLOBAL)
-            const res = await VoucherService.getSystemVouchers();
-            // Nếu API trả về cấu trúc khác, hãy map lại ở đây. Ví dụ: res.data hoặc res
+            // wiki 0108: PHẢI gọi bản `public`. Trước đây chỗ này gọi
+            // `getSystemVouchers()` → `/promotions/admin/system-vouchers`, là route dành
+            // cho ADMIN, nên với người mua nó luôn trả **403**. Hệ quả: hộp thoại chọn mã
+            // ở trang thanh toán luôn báo "Chưa có voucher nào khả dụng" —
+            // **người mua chưa bao giờ dùng được voucher sàn**, dù voucher GLOBAL đang
+            // sống trong DB và `/promotions/public/system-vouchers` trả 200.
+            const res = await VoucherService.getPublicSystemVouchers();
             data = Array.isArray(res) ? res : [];
         } else if (shopId) {
-            // Gọi API lấy voucher shop
-            // Lưu ý: service getShopVouchersPublic của bạn đang trả về [], cần backend implement
-            // Tạm thời gọi getMyVouchers rồi lọc shopId để demo logic
             const allMyVouchers = await VoucherService.getMyVouchers();
-            // Mock logic lọc (sửa lại theo logic backend thực tế của bạn)
             data = allMyVouchers.filter(v => v.scope === 'SHOP' && v.seller?.shopName /* check shopId here */);
 
-            // Nếu chưa có backend, giả lập data để test UI:
-            if(data.length === 0) {
-               data = [
-                   { id: 'v1', code: 'SHOP50K', name: 'Giảm 50k shop', type: 'FIXED_AMOUNT', amount: 50000, minOrderValue: 0, isActive: true, startDate: '', endDate: '', usageLimit: 100, usageCount: 0, scope: 'SHOP' },
-                   { id: 'v2', code: 'SHOP10%', name: 'Giảm 10% shop', type: 'PERCENTAGE', amount: 10, minOrderValue: 100000, isActive: true, startDate: '', endDate: '', usageLimit: 100, usageCount: 0, scope: 'SHOP' }
-               ];
-            }
+            // wiki 0108: ĐÃ BỎ hai voucher giả `SHOP50K` / `SHOP10%` từng được nhồi vào
+            // đây khi danh sách rỗng. Chúng KHÔNG tồn tại trong DB (`SELECT ... WHERE code
+            // IN (...)` → 0 dòng), nhưng vẫn hiện ra cho người mua chọn và làm ĐỔI tổng
+            // tiền hiển thị — một khoản giảm giá mà backend không bao giờ chấp nhận.
+            // Thà hiện danh sách rỗng còn hơn hứa với khách một thứ không có thật.
         }
 
         // Map data để đảm bảo có field discountValue (fix lỗi 1 ở runtime)

@@ -53,6 +53,9 @@ const UserSidebar = () => {
         { label: 'Đánh giá sản phẩm', path: '/user/reviews' }, // MỚI
         { label: 'Quản lý bạn bè', path: '/user/friends' }, // MỚI
         { label: 'Mời bạn bè', path: '/user/invite' }, // MỚI
+        // wiki 0105: đổi nhãn từ "Link giới thiệu" → trang này giờ là affiliate SẢN PHẨM
+        // (chọn hàng của các shop, hoa hồng tiền mặt); phần giới thiệu bạn bè cũ thành 1 tab.
+        { label: 'Tiếp thị liên kết', path: '/user/affiliate' },
       ]
     },
     {

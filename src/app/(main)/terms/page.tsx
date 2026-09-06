@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Điều khoản dịch vụ — GMall',
+  title: 'Điều khoản dịch vụ',
   description: 'Điều khoản sử dụng nền tảng GMall.',
 };
 

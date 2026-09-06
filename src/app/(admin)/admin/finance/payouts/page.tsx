@@ -6,6 +6,9 @@ import { PayoutRequest } from '@/types/admin';
 import { formatCurrency } from '@/lib/utils';
 import { FiCheck, FiX, FiInfo, FiCreditCard } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 type TabType = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -13,23 +16,33 @@ export default function PayoutsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('PENDING');
   const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // hooks-fix wiki 0031: useCallback for fetchPayouts so effect deps are stable
+  //
+  // Wiki 0104: BỎ HẲN fallback dữ liệu giả. Bản cũ khi API lỗi (hoặc trả shape lạ)
+  // thì đổ vào 3 yêu cầu chi trả BỊA — kèm số tài khoản và tên chủ tài khoản bịa
+  // ("VCB - 1029384756 - NGUYEN VAN A", 5.000.000đ, trạng thái Chờ duyệt). Màn hình
+  // này có nút "Xác nhận đã chuyển khoản", nên một sự cố mạng có thể dẫn tới việc
+  // admin ngồi duyệt những lệnh chi không tồn tại. Phần mềm dính tiền phải BÁO LỖI,
+  // không được đoán: thà một màn hình trống có thông báo còn hơn một con số sai.
   const fetchPayouts = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      // Gọi API thực tế thông qua AdminService (đã cập nhật ở Phần 1)
       const res: any = await AdminService.getPayoutRequests({ status: activeTab });
+      const list = Array.isArray(res) ? res : res?.data;
 
-      if (res && (res.data || Array.isArray(res))) {
-          setPayouts(Array.isArray(res) ? res : res.data);
+      if (Array.isArray(list)) {
+        setPayouts(list);
       } else {
-          // Mock data fallback nếu API chưa chạy
-          setPayouts(getMockPayouts(activeTab));
+        setPayouts([]);
+        setLoadError('Máy chủ trả về dữ liệu không đúng định dạng. Chưa thể hiển thị danh sách.');
       }
     } catch (error) {
-      console.error(error);
-      setPayouts(getMockPayouts(activeTab)); // Fallback mock
+      console.error('[Payouts] Không tải được danh sách yêu cầu rút tiền:', error);
+      setPayouts([]);
+      setLoadError('Không tải được danh sách yêu cầu rút tiền. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -44,6 +57,7 @@ export default function PayoutsPage() {
     
     try {
         await AdminService.approvePayout(id);
+        notifyPendingCountsChanged();
         toast.success('Đã duyệt yêu cầu rút tiền!');
         // Refresh list
         setPayouts(prev => prev.filter(p => p.id !== id));
@@ -58,6 +72,7 @@ export default function PayoutsPage() {
 
     try {
         await AdminService.rejectPayout(id, reason);
+        notifyPendingCountsChanged();
         toast.success('Đã từ chối yêu cầu.');
         setPayouts(prev => prev.filter(p => p.id !== id));
     } catch (error) {
@@ -65,21 +80,32 @@ export default function PayoutsPage() {
     }
   };
 
-  // Helper Mock Data
-  const getMockPayouts = (status: TabType): PayoutRequest[] => {
-    const base = [
-        { id: 'PO-101', shopId: 'S1', shopName: 'Tech Store Official', amount: 5000000, bankInfo: 'VCB - 1029384756 - NGUYEN VAN A', status: 'PENDING', requestedAt: '2024-05-20T08:00:00Z' },
-        { id: 'PO-102', shopId: 'S2', shopName: 'Fashion Boutique', amount: 1200000, bankInfo: 'MB - 99998888 - LE THI B', status: 'PENDING', requestedAt: '2024-05-19T10:30:00Z' },
-        { id: 'PO-103', shopId: 'S3', shopName: 'Gia Dụng Thông Minh', amount: 8000000, bankInfo: 'TPB - 111222333 - PHAM VAN C', status: 'APPROVED', requestedAt: '2024-05-18T09:00:00Z', processedAt: '2024-05-18T14:00:00Z' },
-    ];
-    return base.filter(item => item.status === status) as any;
-  };
+  // Wiki 0104: `getMockPayouts()` đã bị XOÁ — xem giải thích ở `fetchPayouts`.
 
   return (
     <div className="space-y-6">
        <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Yêu cầu rút tiền</h1>
        </div>
+
+       {loadError && (
+         <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+           <FiInfo className="mt-0.5 shrink-0" />
+           <div className="flex-1">
+             <p className="font-medium">{loadError}</p>
+             <p className="mt-1 text-red-600/80">
+               Danh sách bên dưới đang để trống có chủ đích — hệ thống không hiển thị số liệu
+               phỏng đoán trên màn hình duyệt chi tiền.
+             </p>
+           </div>
+           <button
+             onClick={fetchPayouts}
+             className="shrink-0 rounded border border-red-300 bg-white px-3 py-1.5 font-medium text-red-700 hover:bg-red-100"
+           >
+             Thử lại
+           </button>
+         </div>
+       )}
 
        {/* Tabs Navigation */}
        <div className="bg-white rounded-lg border-b border-gray-200 px-6 pt-4 flex gap-8">

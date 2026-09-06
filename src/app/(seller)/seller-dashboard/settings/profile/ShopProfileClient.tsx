@@ -192,7 +192,9 @@ export default function ShopProfileClient() {
 
             // res chính là Shop entity trả về, KHÔNG có field "user" bọc ngoài
             // -> luôn đồng bộ store bằng dữ liệu vừa lưu, không gate theo res?.user
-            if (res) {
+            // Wiki 0094: cần cả `user` (setUser nhận User | null; spread `...user` khi user=null
+            // sinh object thiếu `id` → lỗi type, và ghi đè store bằng user rỗng lúc runtime).
+            if (res && user) {
                 setUser({
                     ...user,
                     shopName: res.name ?? data.shopName,          // Shop entity dùng field "name"

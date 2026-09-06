@@ -4,6 +4,9 @@ import { AdminService } from "@/services/AdminService";
 import { toast } from "react-hot-toast";
 import { FiRefreshCcw, FiFilter, FiSearch } from "react-icons/fi";
 import { SellerDossierModal } from "@/components/admin/approvals/SellerDossierModal"; // Import component mới
+// wiki 0111: báo cho menu quản trị cập nhật số việc đang chờ ngay sau khi xử lý,
+// vì trang này xử lý tại chỗ và KHÔNG điều hướng đi đâu cả.
+import { notifyPendingCountsChanged } from '@/lib/admin/pendingCounts';
 
 export default function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<'register' | 'update'>('register');
@@ -42,9 +45,11 @@ export default function ApprovalsPage() {
     try {
         if (activeTab === 'register') {
             await AdminService.approveShop(selectedShop.id);
+            notifyPendingCountsChanged();
             toast.success("Đã duyệt shop mới thành công");
         } else {
             await AdminService.approveShopUpdate(selectedShop.id);
+            notifyPendingCountsChanged();
             toast.success("Đã duyệt cập nhật thông tin thành công");
         }
         setSelectedShop(null);
@@ -54,20 +59,27 @@ export default function ApprovalsPage() {
     }
   };
 
-  // Hành động Từ chối (Placeholder logic)
+  // wiki 0108: TRƯỚC ĐÂY đây là nút giả. Lời gọi `AdminService.rejectShop` bị comment
+  // lại và thay bằng toast `"Đã từ chối hồ sơ (Demo)"` — admin bấm Từ chối, thấy báo
+  // thành công, đóng hộp thoại, nhưng shop **vẫn nguyên trạng thái PENDING** và vẫn nằm
+  // trong hàng chờ. Không ai biết cho tới khi đối chiếu DB.
+  //
+  // Cả hai đầu đều đã sẵn sàng từ lâu: FE có `AdminService.rejectShop` (PATCH
+  // `/admin/users/:id/reject`), BE có `@Patch(':id/reject')` → `rejectShop()` đặt
+  // `Shop.status = REJECTED` và ghi `banReason`. Chỉ thiếu đúng một dòng gọi.
   const handleReject = async () => {
     if (!selectedShop) return;
     const reason = prompt("Nhập lý do từ chối:");
     if (!reason) return;
 
     try {
-        // Giả sử có API reject
-        // await AdminService.rejectShop(selectedShop.id, reason);
-        toast.success("Đã từ chối hồ sơ (Demo)");
+        await AdminService.rejectShop(selectedShop.id, reason);
+        notifyPendingCountsChanged();
+        toast.success("Đã từ chối hồ sơ");
         setSelectedShop(null);
-        // fetchData();
-    } catch (err) {
-        toast.error("Lỗi khi từ chối");
+        fetchData();
+    } catch (err: any) {
+        toast.error(err?.message || "Lỗi khi từ chối");
     }
   }
 

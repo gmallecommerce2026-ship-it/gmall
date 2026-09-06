@@ -1,3 +1,8 @@
+// ⚠️ DEAD CODE — KHÔNG được render ở đâu (homeClient.tsx dùng GiftFinderFilter).
+// Giữ lại vì là bản UI cũ, nhưng nhãn ở đây LÀ NHÃN CŨ (Người nhận / Ngày lễ /
+// Nhân dịp / Sở thích / Khoảng giá / Người tặng / Tìm kiếm ngay).
+// Bộ lọc THẬT đã đổi theo chốt của khách — xem GiftFinderFilter.tsx (wiki 0095 B1).
+// Sửa nhãn bộ lọc thì sửa GiftFinderFilter.tsx, không phải file này.
 import dynamic from "next/dynamic";
 import React from "react";
 

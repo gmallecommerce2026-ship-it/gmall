@@ -3,6 +3,7 @@ import React from "react";
 import Link from "next/link";
 import NewsletterForm from "./NewsletterForm";
 import { ContentService } from "@/services/ContentService";
+import { normalizeCmsHref } from "@/lib/url-helper";
 
 // --- DATA DEFINITION ---
 
@@ -11,7 +12,7 @@ const DEFAULT_FOOTER_LINKS = {
   about: {
     title: "Về chúng tôi",
     links: [
-      { label: "Giới thiệu GMall", href: "/terms" },
+      { label: "Giới thiệu GMall", href: "/about" },
       { label: "Điều khoản dịch vụ", href: "/terms" },
       { label: "Chính sách bảo mật", href: "/privacy" },
       { label: "Trung tâm trợ giúp", href: "/user/help" },
@@ -31,7 +32,7 @@ const DEFAULT_FOOTER_LINKS = {
     links: [
       { label: "Điều khoản dịch vụ", href: "/terms" },
       { label: "Chính sách bảo mật", href: "/privacy" },
-      { label: "Trung tâm Affiliate", href: "/affiliate/dashboard" },
+      { label: "Trung tâm Affiliate", href: "/user/affiliate" },
       { label: "Tham gia bán hàng", href: "/seller/register" },
     ],
   },
@@ -59,10 +60,14 @@ const FooterTitle = ({ children }: { children: React.ReactNode }) => (
   </h3>
 );
 
+// Wiki 0104: footer render THẲNG href do admin gõ trong CMS, nên dữ liệu bẩn ra
+// thẳng production (đo được trên prod: `"/https://gmall.onrender.com/blog/..."` và
+// nhiều link trỏ domain Render CŨ đã chết). Chuẩn hoá nằm ở `@/lib/url-helper` để
+// dùng lại được cho mọi chỗ đọc đường dẫn từ CMS — và để có thể kiểm thử riêng.
 const FooterLinkItem = ({ label, href }: { label: string; href: string }) => (
   <li>
-    <Link 
-      href={href || "#"} 
+    <Link
+      href={normalizeCmsHref(href)}
       className="text-[13px] text-gray-500 hover:text-brand-orange hover:pl-1 transition-all duration-200 block py-1"
     >
       {label}
@@ -96,7 +101,12 @@ const Footer = async () => {
         <div className="bg-gray-50 rounded-lg p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="md:w-1/2">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Đăng ký nhận bản tin</h3>
-            <p className="text-gray-500 text-sm">Nhận ngay mã giảm giá 10% cho đơn hàng đầu tiên và cập nhật các ưu đãi mới nhất.</p>
+            {/* wiki 0108: bỏ lời hứa "mã giảm giá 10% cho đơn hàng đầu tiên". Không hề tồn
+                tại voucher nào như vậy trong DB (đã tra: không có mã NEWUSER/FIRST/ĐẦU nào,
+                và cũng không có cờ đánh dấu đơn đầu tiên). Đăng ký nhận bản tin xong thì
+                không có mã nào tới — đó là hứa suông với mọi khách mới.
+                Nếu kinh doanh muốn có ưu đãi này thật thì tạo voucher rồi khôi phục câu chữ. */}
+            <p className="text-gray-500 text-sm">Đăng ký để nhận thông tin ưu đãi và sản phẩm mới sớm nhất.</p>
           </div>
           <NewsletterForm sourceTag="footer" />
         </div>
@@ -191,7 +201,10 @@ const Footer = async () => {
          <div className="w-full max-w-[1340px] mx-auto px-4 lg:px-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-center md:text-left">
-                    <p className="text-[12px] text-gray-500 font-medium mb-1">© 2024 - Bản quyền thuộc về Công ty Cổ phần G-mall Việt Nam</p>
+                    {/* Wiki 0104: năm cứng "2024" đứng nguyên tới 2026 — footer là chỗ
+                        khách nhìn để đoán site còn sống hay bỏ hoang. Lấy năm hiện tại
+                        (Footer là server component nên không lệch hydrate). */}
+                    <p className="text-[12px] text-gray-500 font-medium mb-1">© {new Date().getFullYear()} - Bản quyền thuộc về Công ty Cổ phần G-mall Việt Nam</p>
                     <p className="text-[10px] text-gray-400">
                         Giấy CNĐKDN: 0101234567 do Sở KH & ĐT TP.HCM cấp lần đầu ngày 01/01/2024
                     </p>

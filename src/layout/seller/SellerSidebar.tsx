@@ -7,9 +7,12 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { 
   FiHome, FiBox, FiShoppingBag, 
   FiChevronDown, FiLogOut, FiTruck, FiClipboard, 
-  FiGift
+  FiGift, FiDollarSign, FiX
 } from 'react-icons/fi';
 import { HelpCircle, Settings } from 'lucide-react';
+// wiki 0110: kênh người bán cũng không có điều hướng nào trên điện thoại — dùng chung
+// drawer với khu admin (giải thích trong PortalNavContext.tsx).
+import { usePortalNav, PortalNavOverlay, portalSidebarClass } from '@/layout/shared/PortalNavContext';
 import classNames from 'classnames';
 import { SellerAuthService } from '@/services/SellerAuthService';
 import { useUserStore } from '@/store/useUserStore';
@@ -47,6 +50,16 @@ const SELLER_MENU: MenuItem[] = [
     label: 'Cài đặt vận chuyển',
     icon: <FiTruck size={20} />,
     path: '/seller-dashboard/shipping/settings',
+  },
+  // wiki 0108: TRƯỚC ĐÂY menu người bán KHÔNG hề có mục tài chính, và
+  // `/seller-dashboard/finance` cũng không tồn tại (404) — dù backend đã có đủ
+  // `/seller/finance/wallet`, `/payouts`, `POST /payout` và chạy đúng. Nghĩa là người
+  // bán thấy tiền về ví nhưng không có bất kỳ đường nào rút ra.
+  {
+    id: 'finance',
+    label: 'Tài chính',
+    icon: <FiDollarSign size={20} />,
+    path: '/seller-dashboard/finance',
   },
   {
     id: 'products',
@@ -217,6 +230,8 @@ const SellerSidebarContent = () => {
   // Endpoint /admin/dashboard/seller/stats trả `todo.pending` và `chart[6].revenue`
   // (phần tử cuối là ngày hôm nay).
   const [stats, setStats] = useState<{ pending: number; revenueToday: number } | null>(null);
+  // wiki 0110: thiếu Provider thì context trả mặc định isOpen=false → giữ nguyên desktop.
+  const { isOpen: isNavOpen, close: closeNav } = usePortalNav();
   useEffect(() => {
     let cancelled = false;
     const fetchStats = async () => {
@@ -265,7 +280,21 @@ const SellerSidebarContent = () => {
     }
   };
   return (
-    <aside className="hidden lg:flex fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 shadow-sm z-50 flex-col font-sans">
+    <>
+    <PortalNavOverlay />
+    <aside id="portal-sidebar" className={`${portalSidebarClass(isNavOpen)} font-sans`}>
+      {/* wiki 0110: nút đóng drawer — chỉ có nghĩa dưới lg. Đặt trên khối thông tin shop
+          để luôn nằm trong tầm ngón cái ở đầu danh sách. */}
+      <div className="lg:hidden flex justify-end px-2 pt-2">
+        <button
+          type="button"
+          onClick={closeNav}
+          aria-label="Đóng menu điều hướng"
+          className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <FiX size={20} />
+        </button>
+      </div>
       {/* Shop info block (B7.1, B7.2) — hiển thị seller đang ở shop nào.
           Trước đây sidebar chỉ có "Seller Hub" generic, seller login nhiều
           account không biết mình đang ở cái nào. */}
@@ -335,6 +364,7 @@ const SellerSidebarContent = () => {
         </button>
       </div>
     </aside>
+    </>
   );
 };
 
@@ -342,7 +372,7 @@ const SellerSidebarContent = () => {
 const SellerSidebar = () => {
   return (
     // Fallback UI đơn giản để tránh layout shift quá nhiều khi load
-    <Suspense fallback={<div className="hidden lg:block fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 z-50" />}>
+    <Suspense fallback={<div className="hidden lg:block fixed top-0 left-0 w-[260px] h-screen bg-white border-r border-gray-200 z-50" aria-hidden="true" />}>
       <SellerSidebarContent />
     </Suspense>
   );

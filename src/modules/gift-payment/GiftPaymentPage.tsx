@@ -19,9 +19,17 @@ import AddressFormModal from '../payment/components/AddressFormModal';
 import AddressSelectionModal from '../payment/components/AddressSelectionModal';
 
 // --- CONSTANTS ---
+// wiki 0108: chỉ còn COD, đồng bộ với `/payment`.
+//
+// Trước đây trang này vẫn mời "Chuyển khoản ngân hàng" và "Thanh toán qua PayPal" như
+// bình thường — không mờ, không ghi "đang bảo trì" — nhưng cả hai đều bị BE chặn
+// (`@IsIn(['cod'])` trong `create-order.dto`, xem wiki 0093). Người dùng chọn xong, điền
+// hết thông tin, bấm đặt hàng rồi mới bị từ chối. `/payment` đã bỏ hẳn hai lựa chọn đó;
+// hai trang cùng một luồng mua mà nói hai điều khác nhau.
+//
+// Khi nào bật lại cổng thanh toán thì mở whitelist trong `create-order.dto.ts` TRƯỚC,
+// rồi mới thêm lại vào đây — đừng làm ngược.
 const PAYMENT_METHODS = [
-    { id: 'bank', name: 'Chuyển khoản ngân hàng', icon: '/assets-gift-payment/ImageAsset5.png' },
-    { id: 'paypal', name: 'Thanh toán qua PayPal', icon: '/assets-gift-payment/ImageAsset7.png' },
     { id: 'cod', name: 'Thanh toán khi nhận hàng', icon: '/assets-gift-payment/ImageAsset8.png' },
 ];
 
@@ -243,7 +251,8 @@ const GiftPaymentPage: React.FC = () => {
         let subtotal = 0; let totalShipping = 0; let localShopDiscount = 0;
 
         groupedItems.forEach((group) => {
-            const groupSum = group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            // wiki 0108: thiếu price thì coi như 0 thay vì để NaN lan ra toàn bộ tổng tiền.
+            const groupSum = group.items.reduce((sum: any, item: any) => sum + (Number(item.price ?? 0) * Number(item.quantity ?? 0)), 0);
             subtotal += groupSum;
             totalShipping += SHIPPING_FEE_PER_SHOP;
             localShopDiscount += computeShopVoucherVnd(shopVouchers[group.shopId], groupSum);
@@ -597,7 +606,11 @@ const GiftPaymentPage: React.FC = () => {
                                                 <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{item.title || item.name}</h4>
                                                 <p className="text-xs text-gray-500 mt-1">{item.variantName || 'Mặc định'}</p>
                                                 <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-brand-orange font-bold text-sm">{(item.price).toLocaleString('vi-VN')} đ</span>
+                                                    {/* wiki 0108: `?? 0` là lưới an toàn. Một `item` thiếu `price`
+                                                        (link `?data=` cũ/hỏng/người dùng sửa tay) từng làm
+                                                        `undefined.toLocaleString()` ném lỗi và tháo cả cây React
+                                                        → trang trắng tinh, không một chữ nào giải thích. */}
+                                                    <span className="text-brand-orange font-bold text-sm">{Number(item.price ?? 0).toLocaleString('vi-VN')} đ</span>
                                                     <span className="text-sm text-gray-600">x{item.quantity}</span>
                                                 </div>
                                             </div>
@@ -609,6 +622,10 @@ const GiftPaymentPage: React.FC = () => {
                                     <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Lời nhắn:</span>
                                     <input
                                         type="text"
+                                        // wiki 0108: `Order.message` là VARCHAR(191). Không chặn ở đây thì
+                                        // người dùng gõ dài rồi mới ăn lỗi lúc bấm đặt hàng (trước đây còn
+                                        // là 500 chứ không phải thông báo tử tế).
+                                        maxLength={191}
                                         placeholder="Lưu ý cho cửa hàng (Ví dụ: Giao giờ hành chính)"
                                         className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-brand-orange"
                                         value={shopMessages[group.shopId] || ''}
@@ -636,7 +653,7 @@ const GiftPaymentPage: React.FC = () => {
                                     ${selectedGiftWrap === index ? 'ring-2 ring-brand-orange scale-105 shadow-md' : 'hover:opacity-80 opacity-70'}
                                 `}
                                     >
-                                        <GiftWrapCard {...item} />
+                                        <GiftWrapCard {...item} selected={selectedGiftWrap === index} />
                                     </div>
                                 ))}
                             </div>
@@ -687,6 +704,32 @@ const GiftPaymentPage: React.FC = () => {
                                     </div>
                                 );
                             })}
+                        </div>
+
+                        {/* wiki 0108: Ô NHẬP LỜI CHÚC — trước đây KHÔNG hề tồn tại.
+                            Trang chọn được mẫu thiệp nhưng không có chỗ nào để viết chữ
+                            vào thiệp; ô "Lời nhắn" duy nhất trên trang là ghi chú gửi SHOP.
+                            Store đã có sẵn `senderInfo.message` và payload đã gửi trường đó
+                            đi từ lâu — chỉ thiếu đúng cái ô để người dùng gõ vào, và BE thì
+                            chưa lưu (nay lưu ở cột `giftMessage`).
+                            Giới hạn 500 khớp `VARCHAR(500)` của cột. */}
+                        <div className="px-6 pb-6">
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-gray-800">
+                                    Lời chúc gửi người nhận
+                                </span>
+                                <textarea
+                                    value={senderInfo.message || ''}
+                                    onChange={(e) => setSenderInfo({ ...senderInfo, message: e.target.value.slice(0, 500) })}
+                                    maxLength={500}
+                                    rows={3}
+                                    placeholder="Ví dụ: Chúc mừng sinh nhật cậu! Mong cậu luôn vui vẻ và mạnh khoẻ nhé."
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange resize-none"
+                                />
+                                <span className="text-xs text-gray-400 self-end">
+                                    {(senderInfo.message || '').length}/500
+                                </span>
+                            </label>
                         </div>
                     </div>
 

@@ -2,23 +2,17 @@
 "use client";
 
 import React from "react";
-// 1. Bỏ dòng này: import OrderDashboardContainer from "@/modules/seller/orders/OrderDashboardContainer";
-// 2. Import component mới:
-import SellerOverview from "@/modules/seller/dashboard/SellerOverview"; 
-import SellerSidebar from "@/layout/seller/SellerSidebar";
+import SellerOverview from "@/modules/seller/dashboard/SellerOverview";
 
+// wiki 0110: trước đây file này render THÊM một <SellerSidebar /> nữa, trong khi
+// `(seller)/layout.tsx` đã render một cái rồi. Cả hai đều `position: fixed` cùng toạ độ
+// nên chồng khít lên nhau — nhìn không ra, nhưng mỗi lần vào trang là gọi đôi
+// `/admin/dashboard/seller/stats` và chạy đôi interval 60s. Kèm theo là
+// `<div className="flex-1 ml-[25px]">` với chú thích "giả định sidebar rộng 250px" —
+// thiếu một số 0, và dù có đúng 250 thì cũng thừa, vì layout đã đẩy nội dung bằng
+// `lg:ml-[260px]`. Nay trang chỉ còn phần nội dung của chính nó.
 const SellerDashboardClient = () => {
-  return (
-    <div className="flex bg-gray-50 min-h-screen">
-        {/* Sidebar giữ nguyên, bọc trong div flex để layout chuẩn */}
-        <SellerSidebar />
-        
-        {/* Phần nội dung chính */}
-        <div className="flex-1 ml-[25px]"> {/* Giả định sidebar rộng 250px fixed, hoặc dùng layout chuẩn của bạn */}
-            <SellerOverview />
-        </div>
-    </div>
-  );
+  return <SellerOverview />;
 };
 
 export default SellerDashboardClient;

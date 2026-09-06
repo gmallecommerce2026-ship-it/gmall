@@ -40,6 +40,24 @@ export default function AuthProvider({
   const isAuthenticated = useUserStore((state) => state.isAuthenticated);
   const pathname = usePathname();
 
+  // wiki 0108: KHÔNG dùng `AuthService.logout()` cho tình huống "khách lạc vào trang cần
+  // đăng nhập". Hàm đó là cho việc người dùng CHỦ ĐỘNG bấm Đăng xuất — nó kết thúc bằng
+  // `window.location.href = '/'`, hợp lý khi tự thoát nhưng sai ở đây: khách bị bỏ giữa
+  // trang chủ, không được mời đăng nhập, và mất luôn chỗ định vào. Đo trên prod: `/cart`,
+  // `/user/profile`, `/user/invite`, `/user/password`, `/user/help` đều rơi về `/`.
+  // Ở đây chỉ cần đưa họ tới trang đăng nhập kèm đường về.
+  const bounceToLogin = () => {
+    if (typeof window === 'undefined') return;
+    const back = window.location.pathname + window.location.search;
+    if (window.location.pathname.startsWith('/admin')) {
+      window.location.assign(`/admin/login?next=${encodeURIComponent(back)}`);
+    } else if (window.location.pathname.startsWith('/seller-dashboard')) {
+      window.location.assign(`/seller/login?next=${encodeURIComponent(back)}`);
+    } else {
+      window.location.assign(`/login?next=${encodeURIComponent(back)}`);
+    }
+  };
+
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -47,11 +65,11 @@ export default function AuthProvider({
         if (user) {
           setUser(user);
         } else if (isProtected(pathname)) {
-          AuthService.logout();
+          bounceToLogin();
         }
       } catch (error) {
         if (isProtected(pathname)) {
-          AuthService.logout();
+          bounceToLogin();
         }
         // Guest ở trang public: im lặng, không log để tránh nhiễu console
       }

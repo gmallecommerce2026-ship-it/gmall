@@ -42,9 +42,17 @@ export default function ProductReviewsPage() {
   const [loading, setLoading] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState<PendingOrder | null>(null);
 
+  // [FIX wiki 0095/0099/0103] `ReviewService` chạy trên `apiClient` (fetch), và
+  // `ApiClient.request` trả `null` ở nhánh 401-redirect + khi body không parse được
+  // JSON. Code cũ `res.data || res` đọc `.data` trên `null` → ném TypeError
+  // "Cannot read properties of null (reading 'data')" (đã tái hiện trên prod).
+  // BE `/reviews/pending` trả MẢNG THẲNG, nên chuẩn hoá về mảng: nhánh `.data`/`.items`
+  // chỉ là dự phòng nếu BE đổi sang shape phân trang. Phải LUÔN là mảng vì bên dưới
+  // render bằng `pendingOrders.map`.
   const refetchPending = async () => {
-    const res = await ReviewService.getToReview();
-    setPendingOrders((res.data || res) as PendingOrder[]);
+    const res: any = await ReviewService.getToReview();
+    const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+    setPendingOrders(list as PendingOrder[]);
   };
 
   useEffect(() => {
@@ -54,9 +62,14 @@ export default function ProductReviewsPage() {
         if (activeTab === 'not-rated') {
           await refetchPending();
         } else {
-          const res = await ReviewService.getMyReviews();
-          const data = res.data || res;
-          setMyReviews((data.productReviews || []) as MineProductReview[]);
+          // [FIX wiki 0095/0099/0103] Cùng lý do trên: `apiClient` trả `null` khi 401 /
+          // body rỗng → `res.data` ném TypeError. BE `/reviews/me` trả object
+          // `{ productReviews, shopReviews }` ở top level (không bọc `data`), nên
+          // `res?.data ?? res` lấy đúng object rồi mới đọc field.
+          const res: any = await ReviewService.getMyReviews();
+          const data = res?.data ?? res ?? null;
+          const productReviews = data?.productReviews;
+          setMyReviews((Array.isArray(productReviews) ? productReviews : []) as MineProductReview[]);
         }
       } catch (error) {
         console.error('Failed to fetch reviews', error);

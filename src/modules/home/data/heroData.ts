@@ -1,63 +1,58 @@
 // src/modules/home/data/heroData.ts
+//
+// Wiki 0104: bộ này là DỰ PHÒNG, chỉ hiện khi admin CHƯA cấu hình banner nào ở CMS
+// (`location=HOMEPAGE`). Đường đi chính là banner thật của khách — xem `homeClient.tsx`.
+//
+// Bản cũ có 5 slide nhưng chỉ 3 ảnh: slide 4 và 5 là bản sao y của 1 và 2, comment ghi
+// thẳng "Lặp lại ảnh 1 để test loop" — giàn giáo lúc dựng khung bị đẩy ra production,
+// nên khách xem trang chủ thấy cùng một banner lặp lại hai lần trong một vòng quay.
+// Nội dung cũng gắn cứng "2024" và trỏ về các danh mục `thoi-trang` / `cong-nghe`
+// KHÔNG tồn tại trong danh mục thật (danh mục thật: quà tặng, mẹ và bé, làm đẹp...).
+// Đã bỏ bản sao, gỡ mốc năm, và trỏ CTA về những trang chắc chắn có thật.
 
 export const HERO_SLIDES = [
   {
     id: 1,
-    // Ảnh 1: Fashion Shopping - Bố cục ngang, nhiều đường thẳng từ kiến trúc
-    src: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
-    alt: "Thời trang sành điệu",
-    title: "Phong Cách Mới 2024",
-    description: "Khám phá bộ sưu tập thời trang Thu Đông mới nhất. Đẳng cấp trong từng đường nét.",
-    ctaLabel: "Mua Ngay",
-    ctaLink: "/search?category=thoi-trang",
-    theme: "dark", 
+    src: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80&w=1600",
+    alt: "Quà tặng trao gửi yêu thương",
+    title: "Quà Tặng Trao Yêu Thương",
+    description: "Gợi ý quà theo từng dịp, gói quà tận tâm, giao nhanh toàn quốc.",
+    ctaLabel: "Khám Phá Quà Tặng",
+    ctaLink: "/search",
+    theme: "dark",
   },
   {
     id: 2,
-    // Ảnh 2: Minimalist Product - Ảnh sáng, nền phẳng, không bị tối góc
     src: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1600",
-    alt: "Công nghệ hiện đại",
-    title: "Công Nghệ Đỉnh Cao",
-    description: "Trải nghiệm những sản phẩm công nghệ mới nhất với ưu đãi lên đến 40%.",
-    ctaLabel: "Xem Chi Tiết",
-    ctaLink: "/search?category=cong-nghe",
+    alt: "Hàng chính hãng chọn lọc",
+    title: "Chính Hãng, Chọn Lọc",
+    description: "Sản phẩm từ các gian hàng đã được kiểm duyệt, đổi trả minh bạch.",
+    ctaLabel: "Xem Sản Phẩm",
+    ctaLink: "/search",
     theme: "light",
   },
   {
     id: 3,
-    // Ảnh 3: Shopping Bags - Hình khối hộp rõ ràng, giúp test góc vuông tốt nhất
-    src: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80&w=1600",
-    alt: "Siêu sale cuối năm",
-    title: "Sale Sập Sàn",
-    description: "Cơ hội săn hàng hiệu giá hời. Hàng ngàn voucher đang chờ bạn.",
+    src: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
+    alt: "Ưu đãi giới hạn trong ngày",
+    title: "Ưu Đãi Mỗi Ngày",
+    description: "Săn khung giờ vàng cùng hàng ngàn voucher đang chờ bạn.",
     ctaLabel: "Săn Deal Ngay",
     ctaLink: "/flash-sale",
     theme: "dark",
   },
-  {
-    id: 4,
-    // Lặp lại ảnh 1 để test loop
-    src: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
-    alt: "Thời trang sành điệu",
-    title: "Phong Cách Mới 2024",
-    description: "Khám phá bộ sưu tập thời trang Thu Đông mới nhất. Đẳng cấp trong từng đường nét.",
-    ctaLabel: "Mua Ngay",
-    ctaLink: "/search?category=thoi-trang",
-    theme: "dark", 
-  },
-  {
-    id: 5,
-    // Lặp lại ảnh 2
-    src: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1600",
-    alt: "Công nghệ hiện đại",
-    title: "Công Nghệ Đỉnh Cao",
-    description: "Trải nghiệm những sản phẩm công nghệ mới nhất với ưu đãi lên đến 40%.",
-    ctaLabel: "Xem Chi Tiết",
-    ctaLink: "/search?category=cong-nghe",
-    theme: "light",
-  },
 ];
 
+// Wiki 0104: dải ô nhỏ dưới hero. Đây là ô TRANG TRÍ — `SubHeroCarousel` không nhận
+// `href` nên bấm vào không đi đâu cả.
+//
+// Đã gỡ ô "Trang Sức" bị LẶP LẠI ở cuối (5 ô nhưng chỉ 4 ảnh khác nhau, người xem
+// thấy cùng một ô hiện hai lần trong một vòng).
+//
+// CỐ Ý KHÔNG đổi nhãn sang tên danh mục thật ("Dành cho Mẹ và Bé", "Điện Hoa Thiệp
+// mừng"...): ảnh ở đây vẫn là ảnh kho Unsplash, đổi nhãn mà giữ ảnh cũ sẽ thành
+// "ảnh trang sức, nhãn Mẹ & Bé" — sai lệch hơn hiện trạng. Việc cần khách làm là
+// cấp ảnh danh mục thật; khi có ảnh thì đổi cả cụm ảnh + nhãn + link một lượt.
 export const SUB_HERO_SLIDES = [
   {
     src: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&q=80&w=600",
@@ -80,11 +75,6 @@ export const SUB_HERO_SLIDES = [
     src: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600",
     alt: "Giày hiệu năng động",
     label: "Giày Dép",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&q=80&w=600",
-    alt: "Trang sức cao cấp",
-    label: "Trang Sức",
   },
 ];
 

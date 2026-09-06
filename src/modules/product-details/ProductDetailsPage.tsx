@@ -15,6 +15,9 @@ import ProductReviews from "@/modules/product-details/components/ProductReviews"
 import ProductDetailBanner from "@/modules/product-details/components/ProductDetailBanner";
 import RelatedBrands from "@/modules/product-details/components/RelatedBrands";
 import { StickyBuyBox } from "@/modules/product-details/components/StickyBuyBox";
+// wiki 0105 — affiliate sản phẩm: bắt `?aff=` để quy đổi, và nút chia sẻ kiếm hoa hồng.
+import AffiliateCapture from "@/modules/affiliate/components/AffiliateCapture";
+import ShareToEarnButton from "@/modules/affiliate/components/ShareToEarnButton";
 
 import { ProductService } from "@/services/product.service";
 import { CategoryService } from "@/services/category.service";
@@ -126,6 +129,13 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
   const product = useMemo(() => normalizeProductData(initialProduct), [initialProduct]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Wiki 0104 (đợt 4): biến thể + giá đang chọn ở khung mua, nâng lên đây để khối
+  // "Thường được mua cùng" ở cột khác tính tiền theo đúng thứ khách đang chọn.
+  const [selectedVariantInfo, setSelectedVariantInfo] = useState<{
+    variantId?: string;
+    price: number;
+  } | null>(null);
+
   const { track } = useTracking();
   useEffect(() => {
     if (product?.id) {
@@ -179,6 +189,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
 
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 min-h-screen pb-12">
+      {/* wiki 0105: bắt `?aff=<code>` để ghi cookie quy đổi + báo lượt bấm. Không render
+          gì, chỉ có tác dụng phụ — đặt sớm để chạy ngay khi trang mở. */}
+      <AffiliateCapture productId={product.id} />
       <div className="w-full max-w-[1340px] mx-auto px-4 py-6">
         {/* Breadcrumb & Banners */}
         <div className="mb-4">
@@ -216,6 +229,16 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
 
                 <div className="w-full md:w-[52%] lg:flex-1">
                   <ProductInfo product={product} />
+                  {/* wiki 0105: nút chia sẻ đặt NGAY DƯỚI khối thông tin sản phẩm — đây
+                      là lúc người xem đang cân nhắc món hàng nên cũng là lúc dễ nghĩ tới
+                      việc giới thiệu nó nhất. Component tự ẩn nếu SP chưa bật affiliate. */}
+                  <ShareToEarnButton
+                    productId={product.id}
+                    productName={product.title}
+                    affiliateEnabled={product.affiliateEnabled}
+                    affiliateRate={product.affiliateRate}
+                    price={selectedVariantInfo?.price ?? product.price}
+                  />
                 </div>
               </div>
             </div>
@@ -227,7 +250,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
 
             {/* Mua kèm deal sốc */}
             <div>
-              <BoughtTogether mainProduct={product} />
+              {/* Wiki 0104 (đợt 4): truyền biến thể đang chọn ở khung mua xuống, để khối
+                  "mua cùng" tính tiền theo ĐÚNG thứ khách đang chọn thay vì giá gốc. */}
+              <BoughtTogether mainProduct={product} mainSelectedVariant={selectedVariantInfo} />
             </div>
 
             {/* Mô tả chi tiết sản phẩm */}
@@ -252,14 +277,26 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product: initia
             </div>
           </div>
 
-          {/* CỘT PHẢI STICKY (CÓ `self-stretch` ĐỂ TẠO ĐƯỜNG TRƯỢT DÀI THEO TRANG) */}
-          <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 hidden lg:block self-stretch">
-            <div className="sticky top-24 z-20">
+          {/* CỘT PHẢI STICKY (CÓ `self-stretch` ĐỂ TẠO ĐƯỜNG TRƯỢT DÀI THEO TRANG)
+
+              wiki 0108 — BỎ `hidden lg:block`. Class đó ẩn TOÀN BỘ cột mua ở mọi màn hình
+              dưới 1024px, và **không có thanh mua thay thế nào cho điện thoại** ở bất kỳ đâu
+              trong trang. Hệ quả đo được trên prod ở khung 390x844 (iPhone 14): cả ba nút
+              "Mua Ngay", "Thêm vào giỏ", "Tặng người thân" đều tồn tại trong DOM nhưng
+              kích thước 0x0 — nghĩa là **không ai mua được gì trên điện thoại**. Với một
+              sàn thương mại điện tử Việt Nam thì đó là phần lớn khách.
+
+              Cha là `flex-col lg:flex-row` nên bỏ class đi là cột mua tự xếp xuống dưới
+              thư viện ảnh trên mobile — đúng thứ tự người dùng mong đợi. `sticky` đổi thành
+              `lg:sticky` để trên điện thoại nó nằm yên theo mạch đọc thay vì bám dính. */}
+          <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 self-stretch">
+            <div className="lg:sticky lg:top-24 z-20">
               <StickyBuyBox
                 product={product}
                 shopProfile={shopProfile}
                 vouchers={allVouchers}
                 onHoverVariant={(img) => setPreviewImage(img)}
+                // onVariantChange={setSelectedVariantInfo}
               />
             </div>
           </div>

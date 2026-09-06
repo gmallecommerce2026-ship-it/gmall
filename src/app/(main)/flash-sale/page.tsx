@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api/ApiClient';
 
 export const metadata: Metadata = {
-  title: 'Flash Deal — GMall',
+  title: 'Flash Deal',
   description: 'Tất cả sản phẩm Flash Deal đang giảm giá sốc trên GMall.',
 };
 

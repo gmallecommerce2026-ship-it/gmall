@@ -33,9 +33,11 @@ export default function SimpleHeader() {
           </div>
         </div>
 
-        {/* Link hỗ trợ bên phải (Optional) */}
-        <Link 
-          href="/help" 
+        {/* Link hỗ trợ bên phải (Optional).
+            Wiki 0104: trước trỏ `/help` — route chưa bao giờ tồn tại → 404.
+            Trung tâm trợ giúp thật nằm ở `/user/help`. */}
+        <Link
+          href="/user/help"
           className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
         >
           Bạn cần giúp đỡ?

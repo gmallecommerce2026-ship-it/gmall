@@ -69,12 +69,14 @@ const WelcomePopup: React.FC = () => {
           <h2 id="welcome-popup-title" className="text-2xl font-bold">
             Chào mừng đến với GMall!
           </h2>
+          {/* wiki 0108: bỏ mã "NEWUSER". Mã đó KHÔNG tồn tại trong DB — đã tra toàn bảng
+              `Voucher`, không có mã nào tên NEWUSER/FIRST/ĐẦU, và cũng không có cờ đánh
+              dấu "đơn đầu tiên". Đây là thứ đầu tiên MỌI khách mới nhìn thấy khi vào
+              site, và họ sẽ gõ mã đó ở bước thanh toán rồi nhận về lỗi. Hứa một mã giảm
+              giá không có thật là cách tệ nhất để mở đầu.
+              Muốn giữ ưu đãi này thì tạo voucher NEWUSER thật rồi khôi phục câu chữ. */}
           <p className="mt-2 text-white/90 text-sm leading-relaxed">
-            Nền tảng quà tặng online — nhập mã{" "}
-            <span className="font-mono font-bold bg-white text-orange-600 px-2 py-0.5 rounded">
-              NEWUSER
-            </span>{" "}
-            để giảm 10% cho đơn đầu tiên.
+            Nền tảng quà tặng online — chọn quà, gửi lời chúc, và để chúng tôi lo phần còn lại.
           </p>
         </div>
         <div className="p-6 space-y-3">

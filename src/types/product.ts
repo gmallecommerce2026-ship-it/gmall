@@ -22,6 +22,11 @@ export interface ProductVariant {
 
 // 3. Interface Product đầy đủ
 export interface Product {
+  /** wiki 0105 — affiliate sản phẩm: seller đã bật tiếp thị liên kết cho SP này chưa. */
+  affiliateEnabled?: boolean;
+  /** Tỉ lệ hoa hồng dạng thập phân (0.05 = 5%). Null khi chưa đặt. */
+  affiliateRate?: number | null;
+
   id: string;
   title: string;          // Tên sản phẩm
   slug: string;

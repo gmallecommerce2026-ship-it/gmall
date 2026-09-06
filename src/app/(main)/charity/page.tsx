@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { CharityService, CharityFund } from '@/services/charity.service';
 
 export const metadata: Metadata = {
-  title: 'Quỹ từ thiện — GMall',
+  title: 'Quỹ từ thiện',
   description:
     'Chung tay góp sức cùng GMall xây dựng các quỹ từ thiện ý nghĩa. Mỗi đóng góp là một hành động yêu thương.',
 };

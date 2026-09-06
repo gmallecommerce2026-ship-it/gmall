@@ -1,13 +1,19 @@
 // src/services/product.service.ts
 import { api } from "./api";
 
+// wiki 0108: hình dạng này phải khớp `UpdateProductDiscountDto` của BE.
+// Trước đây nó khai `variations` trong khi DTO khai `variants` — TypeScript không thể
+// bắt được vì hai bên nằm ở hai repo, nên lỗi chỉ lộ ra lúc chạy: `whitelist: true`
+// cắt trường lạ đi trong im lặng, API vẫn trả 200 và giảm giá phân loại biến mất.
+// Ngày để `?:` vì khi TẮT giảm giá thì phải BỎ HẲN trường đi — gửi chuỗi rỗng sẽ
+// rơi vào `@IsDateString()` và bị 400.
 export interface DiscountPayload {
   isDiscountActive: boolean;
   discountType: 'PERCENT';
   discountValue: number;
-  discountStartDate: string;
-  discountEndDate: string;
-  variations?: {
+  discountStartDate?: string;
+  discountEndDate?: string;
+  variants?: {
     id: string; // Variant ID hoặc SKU ID
     discountValue: number;
   }[];
@@ -23,6 +29,17 @@ export const ProductService = {
 
   updateDiscount: async (productId: string, data: DiscountPayload) => {
     const res = await api.patch(`/seller/products/${productId}/discount`, data);
+    return res;
+  },
+
+  /**
+   * wiki 0105 — bật/tắt tiếp thị liên kết cho một sản phẩm.
+   *
+   * `rate` là tỉ lệ THẬP PHÂN (0.08 = 8%). Giao diện nhập theo phần trăm rồi chia 100 —
+   * BE nhận thập phân và chặn ở trần `AFFILIATE_MAX_RATE`.
+   */
+  updateAffiliate: async (productId: string, data: { enabled: boolean; rate?: number }) => {
+    const res = await api.patch(`/seller/products/${productId}/affiliate`, data);
     return res;
   },
   

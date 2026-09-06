@@ -14,8 +14,14 @@ export default function ShopReviewsTab({ shopId }: { shopId: string }) {
     const fetchData = async () => {
       try {
         const res: any = await ShopService.getReviews(shopId, { page: 1 });
-        setReviews(res.data);
-        setStats(res.stats);
+        // [FIX wiki 0095/0099/0103] `setReviews(res.data)` cũ đẩy thẳng giá trị chưa
+        // kiểm tra vào state: nếu response rỗng/không đúng shape thì `reviews` thành
+        // `undefined` → `reviews.map` bên dưới ném TypeError và cả tab trắng.
+        // BE `/shops/:id/reviews` trả `{ data, meta, stats }`, nên `.data` là khoá đúng;
+        // chỉ bọc thêm để state LUÔN là mảng.
+        const list = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+        setReviews(Array.isArray(list) ? list : []);
+        setStats(res?.stats ?? null);
       } catch (error) {
         console.error(error);
       } finally {

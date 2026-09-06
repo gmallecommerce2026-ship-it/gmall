@@ -145,6 +145,28 @@ const OrderTable = ({ status, searchQuery }: { status: string, searchQuery?: str
                     />
                   )}
 
+                  {/* wiki 0108: nút HỦY ĐƠN. API đã hỗ trợ từ lâu (`updateOrderStatus` →
+                      CANCELLED hoàn lại tồn kho/xu/voucher và tạo thông báo cho người mua),
+                      nhưng bảng này chỉ vẽ "Xác nhận" và "Giao ĐVVC" — người bán hết hàng
+                      hoặc khách đổi ý thì không có cách nào huỷ từ giao diện. Icon `Ban` đã
+                      được import sẵn mà không dùng, dấu hiệu nút này từng được dự tính.
+                      Chỉ cho huỷ TRƯỚC khi giao (PENDING/CONFIRMED) — đúng theo FSM của BE,
+                      vốn chặn mọi bước lùi. */}
+                  {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+                    <ActionBtn
+                      icon={<Ban size={14} />}
+                      label="Hủy đơn"
+                      onClick={() => {
+                        // Huỷ là không hoàn tác được và có hoàn tiền/tồn kho → hỏi lại.
+                        if (window.confirm(`Hủy đơn #${String(order.id).slice(0, 8)}? Tồn kho, xu và voucher của khách sẽ được hoàn lại.`)) {
+                          handleUpdate(order.id, 'CANCELLED');
+                        }
+                      }}
+                      loading={updatingId === order.id}
+                      variant="danger"
+                    />
+                  )}
+
                   {/* View Details Button */}
                   <Link href={`/seller-dashboard/orders/${order.id}`}>
                     <Button variant="outline" className="!h-8 !px-3 !text-[11px] border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300">
@@ -201,6 +223,8 @@ const ActionBtn = ({ icon, label, onClick, loading, variant }: any) => (
     onClick={onClick}
     className={`!h-8 !px-3 !text-[11px] shadow-sm flex items-center gap-1.5 ${
       variant === 'primary' ? 'bg-brand-orange hover:bg-orange-600 text-white' : ''
+    } ${
+      variant === 'danger' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : ''
     }`}
   >
     {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : icon}

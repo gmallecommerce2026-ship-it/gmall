@@ -48,7 +48,15 @@ export default function AdminLoginPage() {
       {/* LEFT: Admin Visual Section (Blue Brand Color) */}
       <div className="hidden lg:flex w-1/2 bg-brand-500 relative items-center justify-center p-12 overflow-hidden">
         {/* Geometric Tech Background */}
-        <div className="absolute inset-0 bg-[url('/assets/grid-pattern.svg')] opacity-10"></div>
+        {/* wiki 0108: BỎ dấu nháy trong giá trị tuỳ ý của Tailwind.
+            `bg-[url('/assets/...')]` khiến Tailwind v4 sinh ra CSS có dấu nháy bị escape
+            thành `&#x27;`, rồi `css-loader` của webpack cố phân giải nó như một module và
+            gãy: `Cannot find module './&'` → **Build failed because of webpack errors**.
+            Lỗi này CHỈ lộ ra khi build ĐẦY ĐỦ (cache lạnh). Build tăng dần vẫn xanh, nên
+            nó lọt qua đợt deploy 14:23 hôm nay và chỉ hiện hình khi đổi biến môi trường
+            (đổi `NEXT_PUBLIC_*` làm mất toàn bộ cache webpack → buộc build lại từ đầu).
+            Không có dấu nháy thì css-loader nhận đúng đường dẫn. */}
+        <div className="absolute inset-0 bg-[url(/assets/grid-pattern.svg)] opacity-10"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-400 rounded-full blur-3xl opacity-50 translate-x-1/2 -translate-y-1/2"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-brand-600 rounded-full blur-3xl opacity-50 -translate-x-1/2 translate-y-1/2"></div>
 

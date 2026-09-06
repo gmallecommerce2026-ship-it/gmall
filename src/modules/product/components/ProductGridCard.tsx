@@ -67,12 +67,11 @@ type ProductGridCardProps = {
 const ProductGridCard = (props: ProductGridCardProps) => {
   const { id, imageUrl, title, variant, product } = props;
 
-  // --- DEBUG LOGGING ---
-  // Dòng này sẽ in ra console dữ liệu thực tế đang chạy vào component
-  console.group(`🔍 DEBUG PRODUCT: ${title}`);
-  console.log("1. Props nhận được:", props);
-  console.log("2. Object 'product' bên trong:", product);
-  
+  // Wiki 0104: gỡ khối debug log. Ngoài việc đổ rác ra console của khách, nó còn
+  // SAI cân bằng: `console.group()` gọi ngoài useMemo (mỗi lần render) nhưng
+  // `console.groupEnd()` lại nằm trong useMemo (chỉ chạy khi deps đổi) → nhóm mở
+  // mà không đóng, lồng sâu dần; và log giữ tham chiếu tới nguyên object sản phẩm
+  // nên chặn thu hồi bộ nhớ trên trang có hàng chục thẻ.
   const priceInfo = useMemo(() => {
     // 1. RAW DATA & PARSE
     const pPrice = parsePrice(product?.price);
@@ -82,14 +81,6 @@ const ProductGridCard = (props: ProductGridCardProps) => {
     const propsPrice = parsePrice(props.price);
     const propsOriginal = parsePrice(props.originalPrice);
     const propsRegular = parsePrice(props.regularPrice);
-
-    console.log("3. Giá trị sau khi parse:", {
-        API_Price: pPrice,
-        API_Original: pOriginal,
-        API_Regular: pRegular,
-        Props_Price: propsPrice,
-        Props_Original: propsOriginal
-    });
 
     // BƯỚC 1: Xác định GIÁ BÁN (FinalPrice)
     let finalPrice = pPrice > 0 ? pPrice : propsPrice;
@@ -121,14 +112,6 @@ const ProductGridCard = (props: ProductGridCardProps) => {
     } else {
         discountValue = parsePrice(rawDiscountVal);
     }
-
-    console.log("4. Trạng thái giảm giá:", {
-        isDiscountActive,
-        discountType,
-        discountValue,
-        inputOriginalPrice,
-        finalPrice
-    });
 
     let calculatedOriginalPrice = inputOriginalPrice;
     let displayBadge = "";
@@ -173,13 +156,6 @@ const ProductGridCard = (props: ProductGridCardProps) => {
     if (calculatedOriginalPrice > 0 && finalPrice >= calculatedOriginalPrice) {
         calculatedOriginalPrice = 0;
     }
-
-    console.log("5. KẾT QUẢ CUỐI CÙNG:", {
-        finalPriceStr: safeFormatCurrency(finalPrice),
-        originalPriceStr: (calculatedOriginalPrice > 0) ? safeFormatCurrency(calculatedOriginalPrice) : null,
-        badgeText: displayBadge
-    });
-    console.groupEnd();
 
     return {
       finalPriceStr: safeFormatCurrency(finalPrice),

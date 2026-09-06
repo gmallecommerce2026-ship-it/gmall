@@ -45,6 +45,9 @@ interface PaymentSummaryProps {
   coinDiscount: number;      // 6. Giảm giá G-Mall xu [NEW]
   total: number;             // Tổng thanh toán
   onPlaceOrder: () => void;
+  // wiki 0108: tách khỏi `loading` — "đang xử lý" và "không có gì để đặt" là hai trạng
+  // thái khác nhau, và cái sau cần nút mờ đi ngay từ đầu chứ không phải sau khi bấm.
+  disabled?: boolean;
   loading?: boolean;
 }
 
@@ -57,6 +60,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   coinDiscount,
   total,
   onPlaceOrder,
+  disabled = false,
   loading = false,
 }) => {
   return (
@@ -129,10 +133,11 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       {/* Nút Đặt hàng */}
       <button 
         onClick={onPlaceOrder}
-        disabled={loading}
+        disabled={loading || disabled}
+        title={disabled ? 'Chưa có sản phẩm nào được chọn' : undefined}
         className={`w-full font-outfit text-lg font-bold h-[52px] rounded-lg flex items-center justify-center transition-all shadow-md
-          ${loading 
-            ? 'bg-gray-400 text-white cursor-not-allowed' 
+          ${loading || disabled
+            ? 'bg-gray-400 text-white cursor-not-allowed'
             : 'bg-orange-600 text-white hover:bg-orange-700 hover:shadow-lg active:scale-[0.99]'
           }
         `}

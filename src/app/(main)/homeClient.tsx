@@ -306,10 +306,36 @@ interface HomeClientProps {
   initialSections?: any[];
   suggestedProducts?: any[];
   flashSaleData?: any;
+  /** Banner do admin tải lên CMS ở `location=HOMEPAGE`. Xem wiki 0104. */
+  heroBanners?: any[];
 }
 
-const HomeClient = ({ initialSections = [], suggestedProducts = [], flashSaleData }: HomeClientProps) => {
+const HomeClient = ({ initialSections = [], suggestedProducts = [], flashSaleData, heroBanners = [] }: HomeClientProps) => {
   const dynamicSections = initialSections;
+
+  // Wiki 0104: banner trang chủ ưu tiên dữ liệu CMS, chỉ lùi về bộ mặc định khi
+  // khách CHƯA cấu hình banner nào. Bộ mặc định là ảnh stock Unsplash mang nội dung
+  // demo ("Phong Cách Mới 2024", "Công Nghệ Đỉnh Cao") — đúng lúc dựng khung, sai
+  // hoàn toàn với gian hàng thật; nó chỉ nên xuất hiện khi không còn gì khác để hiện.
+  //
+  // KHÔNG map `title`/`description`/`ctaLabel` sang slide: banner CMS là ảnh đã
+  // thiết kế sẵn chữ và nút. Trường `title` bên CMS chỉ là NHÃN NỘI BỘ để admin nhận
+  // ra banner trong danh sách (dữ liệu thật trên prod là "QT PN") — đem in đè lên ảnh
+  // sẽ vừa chồng hai lớp tiêu đề vừa phơi ký hiệu nội bộ ra cho khách xem.
+  const heroSlides = React.useMemo(() => {
+    const fromCms = (heroBanners || [])
+      .filter((b: any) => b && typeof b.src === 'string' && b.src.trim())
+      .map((b: any) => ({
+        id: b.id,
+        src: b.src,
+        alt: b.alt || b.title || 'Banner khuyến mãi GMall',
+        ctaLink: (b.ctaLink || '').trim() || undefined,
+        // Bản thiết kế đặt tiêu đề + nút ở nửa trái; khung hero hẹp hơn ảnh nên
+        // cắt canh giữa sẽ ăn mất đúng phần đó.
+        objectPosition: 'left center',
+      }));
+    return fromCms.length > 0 ? fromCms : HERO_SLIDES;
+  }, [heroBanners]);
 
   const renderSection = (section: any) => {
     if (!section || !section.type) return null;
@@ -355,7 +381,7 @@ const HomeClient = ({ initialSections = [], suggestedProducts = [], flashSaleDat
            <div className="flex flex-col lg:flex-row gap-[6px] w-full">
              <div className="flex flex-col gap-2 w-full lg:flex-1 min-w-0">
                <div className="h-[180px] sm:h-[240px] md:h-[300px] lg:h-[350px] w-full rounded-[2px] overflow-hidden shadow-sm">
-                 <HeroCarousel slides={HERO_SLIDES} autoPlayInterval={4000} />
+                 <HeroCarousel slides={heroSlides} autoPlayInterval={4000} />
                </div>
                <SubHeroCarousel slides={SUB_HERO_SLIDES} />
              </div>

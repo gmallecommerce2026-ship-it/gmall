@@ -66,11 +66,15 @@ export default function ProductSelector({ selectedIds, onChange, shopId, onShopC
         const fetchExistingDetails = async () => {
             setLoadingDetails(true);
             try {
-                // Giả lập: Gọi API lấy chi tiết nhiều sản phẩm theo ID
-                // Thực tế bạn cần endpoint: POST /products/get-by-ids { ids: [...] } trả về kèm thông tin shop
-                // Ở đây tôi dùng tạm endpoint giả định
-                const res = await apiClient.post('/admin/products/get-by-ids', { ids: selectedIds });
-                const items = res.data || [];
+                // wiki 0103: endpoint này TRƯỚC ĐÂY KHÔNG TỒN TẠI ở BE (comment cũ ở
+                // đây tự ghi "dùng tạm endpoint giả định") nên lời gọi luôn 404 →
+                // danh sách sản phẩm đã chọn hiện ra rỗng khi mở form sửa. Nay BE đã
+                // có `POST /admin/products/get-by-ids` trả về MẢNG THẲNG.
+                //
+                // Đọc `res` trực tiếp, KHÔNG phải `res.data`: `apiClient` (fetch) trả
+                // nguyên body JSON, không bọc `{data}` như axios (xem ApiClient.request).
+                const res = await apiClient.post<any[]>('/admin/products/get-by-ids', { ids: selectedIds });
+                const items = Array.isArray(res) ? res : [];
 
                 // Map data trả về vào state (Đảm bảo BE trả về object có relation shop)
                 const mappedItems = items.map((p: any) => ({

@@ -6,7 +6,7 @@ import { useTracking } from "@/hooks/useTracking";
 import Link from "next/link";
 
 interface Slide {
-  id?: number;
+  id?: number | string;
   src: string;
   alt: string;
   title?: string;
@@ -14,6 +14,13 @@ interface Slide {
   ctaLabel?: string;
   ctaLink?: string;
   theme?: string;
+  /**
+   * Wiki 0104: vị trí neo khi ảnh bị cắt (CSS `background-position`).
+   * Banner do khách thiết kế thường đặt tiêu đề + nút ở NỬA TRÁI, mà khung hero
+   * (~2.79:1) hẹp hơn ảnh (~4.5:1) nên cắt canh giữa sẽ ăn mất đúng phần chữ.
+   * Neo `left` giữ trọn phần chữ ở mọi bề ngang màn hình.
+   */
+  objectPosition?: string;
 }
 
 interface HeroCarouselProps {
@@ -51,11 +58,13 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
 
   useEffect(() => {
     resetTimeout();
-    if (autoPlayInterval) {
+    // Chỉ hẹn giờ khi thật sự có nhiều hơn 1 banner — nếu không thì cứ 4 giây lại
+    // đặt lại state về đúng giá trị cũ và chạy lại effect mà chẳng đổi gì trên màn hình.
+    if (autoPlayInterval && slides.length > 1) {
       timeoutRef.current = setTimeout(goToNext, autoPlayInterval);
     }
     return () => resetTimeout();
-  }, [currentIndex, autoPlayInterval, goToNext]);
+  }, [currentIndex, autoPlayInterval, goToNext, slides.length]);
 
   if (!slides || slides.length === 0) return null;
 
@@ -68,34 +77,69 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
       
       {slides.map((slide, index) => {
         const isActive = index === currentIndex;
-        return (
-          <div
-            key={index}
-            onClick={() => isActive && handleBannerClick(index)}
-            className={`absolute inset-0 w-full h-full transition-all duration-700 ease-in-out
-              ${isActive ? "opacity-100 z-10" : "opacity-0 z-0"}
-            `}
-          >
+        // Wiki 0104: banner tải lên từ CMS là ẢNH ĐÃ THIẾT KẾ SẴN — tiêu đề, khẩu hiệu
+        // và nút bấm đều nằm trong chính ảnh. Với loại này KHÔNG được phủ gradient đen
+        // (làm tối xỉn nền sáng của nhà thiết kế) và KHÔNG được vẽ thêm chữ (chồng
+        // hai lớp tiêu đề). Phân biệt bằng chính dữ liệu: có chữ thì mới có lớp phủ.
+        const hasOverlayText = Boolean(slide.title || slide.description || slide.ctaLabel);
+        // Ảnh không có chữ overlay nhưng có đích đến → cho bấm cả tấm banner,
+        // vì nút "kêu gọi" đã được in sẵn trong ảnh và người dùng sẽ bấm vào đó.
+        const wholeBannerLink = !hasOverlayText && slide.ctaLink ? slide.ctaLink : null;
+
+        const media = (
+          <>
             {/* Image Container */}
             {/* Thêm overflow-hidden lần nữa ở đây để double-check việc cắt góc cho ảnh con */}
             <div className="w-full h-full overflow-hidden rounded-[4px]">
-                <div 
-                  className="w-full h-full bg-cover bg-center bg-no-repeat will-change-transform transition-transform duration-[2000ms] ease-out"
-                  style={{ 
+                <div
+                  className="w-full h-full bg-cover bg-no-repeat will-change-transform transition-transform duration-[2000ms] ease-out"
+                  style={{
                       backgroundImage: `url(${slide.src})`,
-                      transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                      backgroundPosition: slide.objectPosition || 'center',
+                      // Ảnh thiết kế sẵn: KHÔNG phóng to. Hiệu ứng zoom cắt thêm vào
+                      // mép, dễ liếm mất chữ nằm sát rìa của bản thiết kế.
+                      transform: isActive && hasOverlayText ? 'scale(1.05)' : 'scale(1)',
                       // Giúp trình duyệt hiểu đây là layer 3D, hỗ trợ khử răng cưa tốt hơn khi scale
-                      transformOrigin: 'center center' 
+                      transformOrigin: 'center center'
                   }}
+                  role="img"
                   aria-label={slide.alt}
                 />
             </div>
 
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent pointer-events-none" />
+            {/* Gradient Overlay — chỉ khi có chữ đè lên, để chữ trắng còn đọc được */}
+            {hasOverlayText && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent pointer-events-none" />
+              </>
+            )}
+          </>
+        );
 
-            {/* Content */}
+        return (
+          <div
+            key={slide.id ?? index}
+            onClick={() => isActive && handleBannerClick(index)}
+            className={`absolute inset-0 w-full h-full transition-all duration-700 ease-in-out
+              ${isActive ? "opacity-100 z-10" : "opacity-0 z-0"}
+            `}
+            // Slide ẩn vẫn nằm trong cây DOM (chỉ opacity-0) nên trình đọc màn hình và
+            // phím Tab vẫn chạm tới link bên trong. Ẩn hẳn khỏi cây trợ năng khi không hiện.
+            aria-hidden={!isActive}
+          >
+            {wholeBannerLink ? (
+              <Link href={wholeBannerLink} className="block w-full h-full" aria-label={slide.alt} tabIndex={isActive ? 0 : -1}>
+                {media}
+              </Link>
+            ) : (
+              media
+            )}
+
+            {/* Content — chỉ dựng khi slide THẬT SỰ có chữ.
+                Trước đây khối này luôn render: dù rỗng nó vẫn phủ `absolute inset-0`
+                nằm đè lên ảnh, nên với banner-bấm-cả-tấm nó sẽ NUỐT toàn bộ cú click. */}
+            {hasOverlayText && (
             <div className="absolute inset-0 flex flex-col justify-center px-4 md:px-16 lg:px-20 max-w-2xl text-white">
                 <div className={`transition-all duration-700 delay-300 transform 
                     ${isActive ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
@@ -129,6 +173,7 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
                     )}
                 </div>
             </div>
+            )}
           </div>
         );
       })}
@@ -136,7 +181,11 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
       {/* Border Overlay - Rất quan trọng để che đi mép răng cưa nếu mask chưa xử lý triệt để */}
       <div className="absolute inset-0 rounded-[4px] ring-1 ring-black/5 pointer-events-none z-40" />
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons — Wiki 0104: chỉ có nghĩa khi có từ 2 banner trở lên.
+          Khách hiện mới cấu hình 1 banner; hiện mũi tên "trước/sau" và một chấm chỉ mục
+          cho đúng một slide là nhiễu giao diện và bấm vào không đi đâu cả. */}
+      {slides.length > 1 && (
+      <>
       <button
         onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
         className={`absolute top-1/2 left-4 z-50 -translate-y-1/2 p-3 bg-black/20 hover:bg-black/40 text-white rounded-[4px]
@@ -180,7 +229,9 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
           </div>
         ))}
       </div>
-      
+      </>
+      )}
+
       <style jsx>{`
         @keyframes progress {
           from { width: 0%; }

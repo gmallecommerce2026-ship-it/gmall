@@ -14,6 +14,18 @@ interface MobileMenuProps {
   onClose: () => void;
 }
 
+// Wiki 0104: TRƯỚC ĐÂY href được suy ra từ chính nhãn hiển thị
+// (`/${label.toLowerCase().replace(/ /g,'-')}`). Nhãn tiếng Việt có dấu nên sinh ra
+// `/sản-phẩm`, `/về-chúng-tôi`, `/liên-hệ` — cả 3 đều 404, và "Blog" chỉ đúng do
+// tình cờ là ASCII. Route là HỢP ĐỒNG, không phải hệ quả của chuỗi UI → khai tường minh.
+const NAV_LINKS: { label: string; href: string }[] = [
+  { label: "Trang chủ", href: "/" },
+  { label: "Sản phẩm", href: "/search" },
+  { label: "Blog", href: "/blog" },
+  { label: "Về chúng tôi", href: "/about" },
+  { label: "Liên hệ", href: "/contact" },
+];
+
 const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const { user, logout } = useUserStore();
   const totalItems = useCartStore((state) => state.totalItems);
@@ -70,14 +82,14 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
           ) : (
             <div className="flex gap-3">
               <Link
-                href="/auth/login"
+                href="/login"
                 className="flex-1 bg-white text-brand-orange py-2 rounded font-bold text-center text-sm shadow-sm"
                 onClick={onClose}
               >
                 Đăng nhập
               </Link>
               <Link
-                href="/auth/register"
+                href="/register"
                 className="flex-1 bg-brand-orange-dark border border-white/30 text-white py-2 rounded font-bold text-center text-sm"
                 onClick={onClose}
               >
@@ -122,14 +134,14 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         {/* 3. Menu Links */}
         <div className="overflow-y-auto h-[calc(100%-180px)] p-4 space-y-1">
           <div className="text-xs font-bold text-gray-400 uppercase mb-2">Danh mục</div>
-          {["Trang chủ", "Sản phẩm", "Blog", "Về chúng tôi", "Liên hệ"].map((item, idx) => (
-             <Link 
-                key={idx} 
-                href={item === "Trang chủ" ? "/" : `/${item.toLowerCase().replace(/ /g, '-')}`}
+          {NAV_LINKS.map(({ label, href }) => (
+             <Link
+                key={href}
+                href={href}
                 onClick={onClose}
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 text-gray-700 font-medium"
              >
-                {item}
+                {label}
                 <Icons.ChevronRight />
              </Link>
           ))}
