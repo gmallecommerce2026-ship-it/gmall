@@ -606,7 +606,7 @@ const PaymentPage = () => {
                 </div>
 
                 <div className="px-5 py-2 divide-y divide-gray-50">
-                  {group.items.map((item) => (
+                  {group.items.map((item: any) => (
                     <div key={item.id} className="py-2">
                       <OrderItem
                         productId={String(item.productId)}
