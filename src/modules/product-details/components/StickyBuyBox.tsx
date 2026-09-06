@@ -25,7 +25,7 @@ interface StickyBuyBoxProps {
   shopProfile: ShopProfileData | null;
   vouchers: any[];
   onHoverVariant?: (image: string | null) => void;
-  /** Wiki 0104: bao bien the + gia dang chon cho trang cha. */
+  /** Wiki 0104: báo biến thể + giá đang chọn cho trang cha. */
   onVariantChange?: (info: { variantId?: string; price: number }) => void;
 }
 
@@ -103,11 +103,11 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
 
   const subtotal = Number(finalPrice || 0) * quantity;
 
-  // Wiki 0104 (khoi phuc 06/09): bao bien the + gia dang chon RA NGOAI cho trang cha.
-  // Khoi "Thuong duoc mua cung" nam o cot khac, khong thay state nay, nen no hien
-  // product.price (gia GOC) trong khi khach dang chon bien the co gia khac — hai con so
-  // cai nhau tren cung mot man hinh. Deps la currentVariant?.id + finalPrice (gia tri
-  // nguyen thuy) nen trang cha re-render cung khong tao vong lap set-state.
+  // Wiki 0104 (khôi phục 06/09): báo biến thể + giá đang chọn RA NGOÀI cho trang cha.
+  // Khối "Thường được mua cùng" nằm ở cột khác, không thấy state này, nên nó hiển thị
+  // `product.price` (giá GỐC) trong khi khách đang chọn biến thể có giá khác — hai con số
+  // cãi nhau trên cùng một màn hình. Deps là `currentVariant?.id` + `finalPrice` (giá trị
+  // nguyên thuỷ) nên trang cha re-render cũng không tạo vòng lặp set-state.
   useEffect(() => {
     if (!onVariantChange) return;
     onVariantChange({
@@ -222,11 +222,11 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
   const handleGiftNow = () => {
     if (!validateSelection()) return;
     setIsGifting(true);
-    // wiki 0108 (khoi phuc 06/09): goi du lieu nay phai DU nhu `handleBuyNow` phia tren.
-    // Neu chi nhet productId/variantId/quantity/selectedOptions — thieu price, title,
-    // imageUrl, shopId — thi /gift-payment (dung thang danh sach hang tu goi nay, khong
-    // goi API lay them) doc item.price.toLocaleString() khong chan null => TypeError =>
-    // React thao ca cay => TRANG TRANG TINH. Tuc la nut "Tang nguoi than" chet han.
+    // wiki 0108 (khôi phục 06/09): gói dữ liệu này phải ĐỦ như `handleBuyNow` phía trên.
+    // Nếu chỉ nhét productId/variantId/quantity/selectedOptions — thiếu `price`, `title`,
+    // `imageUrl`, `shopId` — thì `/gift-payment` (dựng thẳng danh sách hàng từ gói này,
+    // không gọi API lấy thêm) đọc `item.price.toLocaleString()` không chặn null ⇒ TypeError
+    // ⇒ React tháo cả cây ⇒ **trang trắng tinh**. Nút "Tặng người thân" chết hẳn.
     const checkoutData = {
       id: `gift-${Date.now()}`,
       productId: product.id,
@@ -238,7 +238,7 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
       quantity: quantity,
       stock: displayStock,
       shopId: product.shopId || product.sellerId || 'unknown-shop',
-      shopName: product.shopName || 'Cua hang',
+      shopName: product.shopName || 'Cửa hàng',
       variantName: getVariantName(),
       selectedOptions: product.tiers
         ? selections.map((s, i) => ({
@@ -311,10 +311,10 @@ export const StickyBuyBox: React.FC<StickyBuyBoxProps> = ({
         {product.tiers &&
           product.tiers.length > 0 &&
           product.tiers.map((tier, idx) => {
-            // wiki 0095 B2 (khoi phuc 06/09): sort bang localeCompare(numeric:true) chi so
-            // cum so dau, bo qua don vi => "1TB, 2TB, 256GB, 512GB". Ngoai ra `images` KHONG
-            // duoc sort kem nen anh swatch lech nhan. applyVariantDisplayOrder quy doi don vi
-            // ve gia tri nen, sap ca options lan images, va tra originalIndexes de giu dung
+            // wiki 0095 B2 (khôi phục 06/09): sort bằng localeCompare(numeric:true) chỉ so
+            // cụm số đầu, bỏ qua đơn vị ⇒ "1TB, 2TB, 256GB, 512GB". Ngoài ra `images` KHÔNG
+            // được sort kèm nên ảnh swatch lệch nhãn. applyVariantDisplayOrder quy đổi đơn vị
+            // về giá trị nền, sắp cả options lẫn images, và trả originalIndexes để giữ đúng
             // mapping sang variants[].tierIndex.
             const { tier: orderedTier, originalIndexes } =
               applyVariantDisplayOrder(tier);
