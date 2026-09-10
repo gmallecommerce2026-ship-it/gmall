@@ -99,7 +99,7 @@
       "react": "^16.8.0 || ^17 || ^18 || ^19",
       "react-dom": "^16.8.0 || ^17 || ^18 || ^19"
     },
-    "@types/react": "19.2.7",
+    "@types/react": "^19.2.7",
     "@types/react-dom": "19.2.3"
   },
   "description": "TailAdmin is a free and open-source admin dashboard template built on **Next.js and Tailwind CSS** providing developers with everything they need to create a feature-rich and data-driven: back-end, dashboard, or admin panel solution for any sort of web project.",
