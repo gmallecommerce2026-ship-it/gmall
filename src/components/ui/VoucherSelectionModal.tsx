@@ -93,7 +93,7 @@ const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
             {isSystem ? 'G-Mall Voucher' : 'Voucher của Shop'}
           </h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-full transition-colors">
-            <CloseIcon className="w-6 h-6" />
+            <CloseIcon />
           </button>
         </div>
 
