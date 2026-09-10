@@ -27,6 +27,11 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+# wiki 0112: `.env` PHAI khong duoc track. Truoc day no nam trong git voi gia tri dev
+# (localhost:3001); prod sua tay file nay nen `git pull` tren VPS luon bao xung dot, va
+# `git reset --hard` de go xung dot thi XOA LUON cau hinh prod -> build ra bundle goi ve
+# localhost cua chinh khach. Xem `.env.example`.
+.env
 .env*.local
 
 # vercel
