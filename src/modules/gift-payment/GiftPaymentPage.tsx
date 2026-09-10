@@ -1,4 +1,3 @@
-// src/modules/gift-payment/GiftPaymentPage.tsx
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
@@ -11,16 +10,20 @@ import { useUserStore } from '@/store/useUserStore';
 import { useCartData, useCartActions } from '@/store/useCartStore';
 import { VoucherService, Voucher } from '@/services/voucher.service';
 
+// Components đồng bộ từ Payment
+import OrderItem from '@/modules/payment/components/OrderItem';
+import AddressFormModal from '@/modules/payment/components/AddressFormModal'; 
+import AddressSelectionModal from '@/modules/payment/components/AddressSelectionModal';
 import OrderSummaryBox from '@/components/common/OrderSummaryBox';
+
+// Components riêng cho Quà Tặng
 import { giftWrapData } from './data';
 import GiftWrapCard from './components/GiftWrapCard';
-import { MapPinIcon, GiftIcon, CreditCardIcon, MailIcon, CheckIcon, XIcon } from 'lucide-react';
-import AddressFormModal from '../payment/components/AddressFormModal'; 
-import AddressSelectionModal from '../payment/components/AddressSelectionModal';
+import { GiftIcon, MailIcon, CheckIcon, X as XIcon } from 'lucide-react';
 
 // --- CONSTANTS ---
 const PAYMENT_METHODS = [
-  { id: 'cod', name: 'Thanh toán khi nhận hàng', icon: '/assets-gift-payment/ImageAsset8.png' },
+  { id: 'cod', name: 'Thanh toán khi nhận hàng (COD)' },
 ];
 
 const CARD_OPTIONS = [
@@ -29,15 +32,29 @@ const CARD_OPTIONS = [
   { id: 2, name: 'Thiệp Cao cấp', price: 15000, preview: '/assets/card-premium.jpg' },
 ];
 
-// --- ICONS ---
+// --- ICONS (ĐỒNG BỘ 1:1 VỚI PAYMENT PAGE) ---
 const Icons = {
+  Store: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" /></svg>,
   Ticket: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>,
+  Truck: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.126-.504 1.126-1.125V15m0-1.5h-12.75a1.125 1.125 0 00-1.125 1.125v3.75M3.75 8.25h9m-9 3H12m0 0h5.5m-5.5 0h1.5m3 0h1.5m-3 0h-3.75a1.125 1.125 0 00-1.125 1.125V18a1.125 1.125 0 001.125 1.125M17.25 9l2.25 2.25m-2.25-2.25l2.25-2.25M17.25 9h-2.25" /></svg>,
+  Message: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>,
   ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>,
-  Coin: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-yellow-500"><path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v.816a3.836 3.836 0 00-1.72.756c-.712.566-1.112 1.35-1.112 2.178 0 .829.4 1.612 1.113 2.178.502.4 1.102.647 1.719.756v.166a3.836 3.836 0 01-1.72-.756.75.75 0 00-1.06 1.06c.978.978 2.31 1.469 3.53 1.469a3.836 3.836 0 001.72-.756c.712-.566 1.112-1.35 1.112-2.178 0-.829-.4-1.612-1.113-2.178a4.53 4.53 0 00-1.719-.756v-.166c.569.11 1.153.37 1.72.756a.75.75 0 001.06-1.06c-.978-.978-2.31-1.469-3.53-1.469a3.836 3.836 0 00-1.72.756V6z" clipRule="evenodd" /></svg>
+  Coin: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-yellow-500"><path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v.816a3.836 3.836 0 00-1.72.756c-.712.566-1.112 1.35-1.112 2.178 0 .829.4 1.612 1.113 2.178.502.4 1.102.647 1.719.756v.166a3.836 3.836 0 01-1.72-.756.75.75 0 00-1.06 1.06c.978.978 2.31 1.469 3.53 1.469a3.836 3.836 0 001.72-.756c.712-.566 1.112-1.35 1.112-2.178 0-.829-.4-1.612-1.113-2.178a4.53 4.53 0 00-1.719-.756v-.166c.569.11 1.153.37 1.72.756a.75.75 0 001.06-1.06c-.978-.978-2.31-1.469-3.53-1.469a3.836 3.836 0 00-1.72.756V6z" clipRule="evenodd" /></svg>,
+  LocationPin: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
 };
 
-// --- SUB-COMPONENT: Coin Input ---
-const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange }: any) => {
+// --- SUB-COMPONENT: Coin Input (ĐỒNG BỘ 1:1 VỚI PAYMENT PAGE) ---
+const CoinInputBlock = ({
+  userPoints,
+  appliedCoins,
+  onCoinChange,
+  orderTotal
+}: {
+  userPoints: number;
+  appliedCoins: number;
+  onCoinChange: (val: number) => void;
+  orderTotal: number;
+}) => {
   const [inputValue, setInputValue] = useState(appliedCoins > 0 ? appliedCoins.toString() : '');
   const [isEnabled, setIsEnabled] = useState(appliedCoins > 0);
 
@@ -73,7 +90,7 @@ const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange }: any) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-5">
       <div className="px-5 py-4 flex flex-col gap-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -81,7 +98,8 @@ const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange }: any) => {
             <span className="font-medium text-gray-800">G-Mall Xu</span>
             <span className="text-xs text-gray-500">(Dư: <span className="font-bold text-orange-500">{userPoints.toLocaleString()}</span>)</span>
           </div>
-          <button 
+
+          <button
             onClick={handleToggle}
             className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 focus:outline-none ${isEnabled ? 'bg-orange-500' : 'bg-gray-300'}`}
           >
@@ -92,8 +110,8 @@ const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange }: any) => {
         {isEnabled && (
           <div className="flex items-center gap-3 animate-fade-in-down">
             <div className="flex-1 relative">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={inputValue}
                 onChange={handleChangeInput}
                 placeholder="Nhập số xu..."
@@ -101,7 +119,7 @@ const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange }: any) => {
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">XU</span>
             </div>
-            <button 
+            <button
               onClick={handleUseMax}
               className="px-3 py-2 bg-orange-50 text-orange-600 text-xs font-bold rounded border border-orange-100 hover:bg-orange-100 whitespace-nowrap"
             >
@@ -109,7 +127,7 @@ const CoinInputBlock = ({ userPoints, appliedCoins, onCoinChange }: any) => {
             </button>
           </div>
         )}
-        
+
         {isEnabled && parseInt(inputValue || '0') > 0 && (
           <p className="text-xs text-green-600 flex items-center gap-1">
             ✅ Sẽ giảm trực tiếp {parseInt(inputValue || '0').toLocaleString()}đ vào đơn hàng.
@@ -128,7 +146,7 @@ const GiftPaymentPage: React.FC = () => {
   const { items: cartItems, selectedIds } = useCartData();
   const { removeMultipleItems } = useCartActions();
   
-  // Khai báo Stores
+  // Stores
   const { isAuthenticated, _hasHydrated, user } = useUserStore();
   const {
     isBuyNowFlow,
@@ -139,7 +157,8 @@ const GiftPaymentPage: React.FC = () => {
     shopMessages, setShopMessage, 
     shopVouchers,
     appliedCoins, setAppliedCoins,
-    cardIndex, setCardIndex
+    cardIndex, setCardIndex,
+    resetCheckout
   } = useCheckoutStore();
 
   useEffect(() => {
@@ -156,29 +175,21 @@ const GiftPaymentPage: React.FC = () => {
   }, [_hasHydrated, isAuthenticated, router]);
 
   const dataParam = searchParams.get('data');
-  const updatedVoucher = searchParams.get('updated_voucher');
 
   const [orderData, setOrderData] = useState<any>({
     items: [], subtotal: 0, shippingFee: 0, shippingDiscount: 0,
     voucherDiscount: 0, coinDiscount: 0, giftWrapFee: 0, total: 0
   });
 
-  /* === [CODE CŨ VOUCHER ĐƠN LẺ] ===
-  const [voucherId, setVoucherId] = useState<string | undefined>(
-    selectedVoucherId || (updatedVoucher ? 'DEMO_COMPLEX' : undefined)
-  );
-  useEffect(() => {
-    if (selectedVoucherId) setVoucherId(selectedVoucherId);
-  }, [selectedVoucherId]);
-  ================================= */
-
-  // === [CODE MỚI]: QUẢN LÝ ĐA VOUCHER VÀ MODAL TẬP TRUNG TƯƠNG TỰ PAYMENTPAGE ===
+  // --- MODAL & ĐA VOUCHER (ĐỒNG BỘ 1:1 PAYMENT PAGE) ---
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [voucherPool, setVoucherPool] = useState<{ global: Voucher[]; product: Voucher[] }>({ global: [], product: [] });
   const [selectedVouchers, setSelectedVouchers] = useState<Voucher[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  // Local States
+  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedGiftWrap, setSelectedGiftWrap] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>('cod');
 
@@ -186,7 +197,7 @@ const GiftPaymentPage: React.FC = () => {
 
   useEffect(() => { setIsMounted(true); }, []);
 
-  // 1. DATA SẢN PHẨM
+  // 1. DATA SẢN PHẨM (Cart vs Buy Now)
   const parsedDataItems = useMemo(() => {
     if (!dataParam) return null;
     try { return JSON.parse(atob(dataParam)); }
@@ -201,7 +212,7 @@ const GiftPaymentPage: React.FC = () => {
     return cartItems.filter(item => selectedIds.includes(item.id));
   }, [parsedDataItems, isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
 
-  // Gộp vào 1 shop GMall
+  // Gộp vào 1 shop GMall duy nhất (Web bán lẻ/thương mại)
   const groupedItems = useMemo(() => {
     if (!validPaymentItems || validPaymentItems.length === 0) return [];
     return [
@@ -224,6 +235,7 @@ const GiftPaymentPage: React.FC = () => {
     return raw;
   };
 
+  // --- LOGIC TÍNH TIỀN TẠI CLIENT & PREVIEW ORDER ---
   const frontendCalculations = useMemo(() => {
     const s = orderData?.summary;
     let subtotal = 0;
@@ -239,7 +251,6 @@ const GiftPaymentPage: React.FC = () => {
     const currentCardFee = CARD_OPTIONS.find(c => c.id === cardIndex)?.price || 0;
     const combinedGiftFee = currentGiftWrapFee + currentCardFee;
 
-    // Tính local discount từ mảng selectedVouchers
     const localTotalVoucherDiscount = selectedVouchers.reduce((acc, v) => acc + computeVoucherDiscount(v, subtotal), 0);
 
     if (s) {
@@ -284,7 +295,7 @@ const GiftPaymentPage: React.FC = () => {
       });
     } catch (err) {
       console.error("Lỗi lấy vouchers:", err);
-      toast.error("Không thể tải danh sách voucher");
+      toast.error("Không thể tải danh sách ưu đãi");
     } finally {
       setVoucherLoading(false);
     }
@@ -296,16 +307,14 @@ const GiftPaymentPage: React.FC = () => {
       setSelectedVouchers(prev => prev.filter(v => v.id !== voucher.id));
     } else {
       if (voucher.scope === 'GLOBAL') {
-        // Tối đa 1 voucher toàn sàn
         setSelectedVouchers(prev => [...prev.filter(v => v.scope !== 'GLOBAL'), voucher]);
       } else {
-        // Nhiều voucher sản phẩm
         setSelectedVouchers(prev => [...prev, voucher]);
       }
     }
   };
 
-  // --- LOGIC 2: ĐỊA CHỈ & MODAL ---
+  // --- LOGIC: ĐỊA CHỈ & MODAL ---
   const [addressList, setAddressList] = useState<any[]>([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
@@ -398,16 +407,9 @@ const GiftPaymentPage: React.FC = () => {
   };
 
   // --- LOGIC: BUILD PAYLOAD ---
-  const buildPayload = useCallback((isPreview = false) => {
+  const buildPayload = useCallback((isPreview = false): CreateOrderPayload | null => {
     if (validPaymentItems.length === 0) return null;
 
-    /* === [CODE CŨ TRUYỀN VOUCHER IDS] ===
-    const voucherIds: string[] = [];
-    if (voucherId) voucherIds.push(voucherId);
-    Object.values(shopVouchers).forEach((v: any) => v?.id && voucherIds.push(v.id));
-    ====================================== */
-
-    // === [CODE MỚI]: GOM TẤT CẢ VOUCHER TỪ MODAL CHỌN ĐA VOUCHER ===
     const voucherIds: string[] = selectedVouchers.map(v => v.id);
 
     const giftNote = selectedGiftWrap !== null 
@@ -452,35 +454,25 @@ const GiftPaymentPage: React.FC = () => {
   useEffect(() => {
     if (!isMounted) return;
     const fetchPreview = async () => {
-      if (validPaymentItems.length === 0) {
-        setLoading(false); 
-        return;
-      }
+      if (validPaymentItems.length === 0 || !isAuthenticated) return;
 
       const payload = buildPayload(true);
       if (!payload) return;
 
       try {
+        setIsLoading(true);
         const res = await OrderService.previewOrder(payload);
         if (res) setOrderData(res);
       } catch (error) {
         console.error("Preview error", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     const timeoutId = setTimeout(fetchPreview, 400);
     return () => clearTimeout(timeoutId);
-  }, [isMounted, validPaymentItems, buildPayload]);
-
-  /* === [CODE CŨ CHUYỂN TRANG /CHECKOUT/VOUCHERS - ĐÃ COMMENT LẠI] ===
-  const handleSelectVoucher = () => {
-    const currentPath = `/gift-payment${dataParam ? `?data=${encodeURIComponent(dataParam)}` : ''}`;
-    const encodedBackUrl = encodeURIComponent(currentPath);
-    router.push(`/checkout/vouchers?backUrl=${encodedBackUrl}&selected=${voucherId || ''}`);
-  };
-  =================================================================== */
+  }, [isMounted, validPaymentItems, isAuthenticated, buildPayload]);
 
   // --- XỬ LÝ ĐẶT HÀNG ---
   const handleOrder = async () => {
@@ -489,19 +481,20 @@ const GiftPaymentPage: React.FC = () => {
     if (selectedPayment !== 'cod') return toast.error("Vui lòng chọn thanh toán COD (Đang bảo trì Online).");
 
     const payload = buildPayload(false);
-    if (!payload) return;
+    if (!payload) {
+      toast.error("Vui lòng chọn ít nhất một sản phẩm để đặt hàng.");
+      return;
+    }
 
     try {
-      setLoading(true);
-      toast.loading("Đang tạo đơn hàng quà tặng...");
-
+      setIsProcessing(true);
       const res = await OrderService.createOrder(payload);
 
       if (!isActuallyBuyNow) {
         await removeMultipleItems(selectedIds);
       }
 
-      toast.dismiss();
+      resetCheckout();
       toast.success("Đặt hàng quà tặng thành công!");
 
       if (res.paymentUrl) {
@@ -512,31 +505,21 @@ const GiftPaymentPage: React.FC = () => {
       }
       
     } catch (err: any) {
-      toast.dismiss();
       const raw = err?.response?.data?.message;
       const msg = Array.isArray(raw) ? raw.join('\n') : (raw || err?.message || 'Có lỗi xảy ra khi tạo đơn.');
       toast.error(msg);
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
-  if (!isMounted || loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="w-10 h-10 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (validPaymentItems.length === 0) {
-    return <div className="p-8 text-center text-gray-500">Giỏ hàng trống. <span className="text-brand-orange cursor-pointer" onClick={() => router.push('/')}>Về trang chủ</span></div>;
-  }
+  if (!isMounted || !isAuthenticated) return null;
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto py-8 px-4 font-sans bg-gray-50 min-h-screen">
-      <Toaster position="top-right" />
+    <div className="w-full max-w-[1200px] mx-auto py-8 px-4 bg-[#F8F9FA] min-h-screen font-sans">
+      <Toaster position="top-center" />
 
+      {/* Modals Địa Chỉ */}
       <AddressSelectionModal 
         isOpen={isAddressModalOpen}
         onClose={() => setIsAddressModalOpen(false)}
@@ -557,7 +540,7 @@ const GiftPaymentPage: React.FC = () => {
         initialData={editingAddress}
       />
 
-      {/* === [MODAL CHỌN ĐA VOUCHER CHO GIFT PAYMENT] === */}
+      {/* Modal Đa Voucher Đồng Bộ 1:1 với PaymentPage */}
       {isVoucherModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
           <div
@@ -569,7 +552,7 @@ const GiftPaymentPage: React.FC = () => {
             <div className="flex items-center justify-between p-4 border-b bg-white rounded-t-2xl z-10">
               <div>
                 <h3 className="font-bold text-lg text-gray-800">Chọn Mã Quà Tặng & Ưu Đãi</h3>
-                <p className="text-xs text-gray-500">Áp dụng voucher toàn sàn và theo từng món quà</p>
+                <p className="text-xs text-gray-500">Có thể chọn 1 mã toàn sàn và nhiều mã mặt hàng</p>
               </div>
               <button
                 onClick={() => setIsVoucherModalOpen(false)}
@@ -582,16 +565,16 @@ const GiftPaymentPage: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-5">
               {voucherLoading ? (
                 <div className="flex flex-col items-center justify-center h-40 text-gray-400 space-y-2">
-                  <div className="w-6 h-6 border-2 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                   <span className="text-sm">Đang tải mã ưu đãi...</span>
                 </div>
               ) : (
                 <>
-                  {/* Nhóm Voucher Sản phẩm / Mặt hàng */}
+                  {/* Nhóm Voucher Mặt hàng / Sản phẩm */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center justify-between">
                       <span>Voucher Mặt hàng quà tặng</span>
-                      <span className="text-brand-orange font-normal normal-case">Chọn được nhiều mã</span>
+                      <span className="text-orange-600 font-normal normal-case">Chọn được nhiều mã</span>
                     </h4>
                     {voucherPool.product.length > 0 ? (
                       voucherPool.product.map(v => {
@@ -603,11 +586,11 @@ const GiftPaymentPage: React.FC = () => {
                             key={v.id}
                             onClick={() => isEligible && handleToggleVoucherItem(v)}
                             className={`flex items-stretch bg-white border rounded-xl overflow-hidden mb-3 transition-all cursor-pointer ${
-                              isSelected ? 'border-brand-orange bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
+                              isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
                             } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="w-24 bg-orange-50 flex flex-col items-center justify-center p-2 border-r border-dashed border-orange-200">
-                              <span className="text-xs font-bold text-brand-orange">SẢN PHẨM</span>
+                              <span className="text-xs font-bold text-orange-600">SẢN PHẨM</span>
                               <span className="text-[11px] font-medium text-gray-500 mt-1">{v.code}</span>
                             </div>
                             <div className="flex-1 p-3 flex justify-between items-center">
@@ -624,7 +607,7 @@ const GiftPaymentPage: React.FC = () => {
                                 checked={isSelected}
                                 readOnly
                                 disabled={!isEligible}
-                                className="w-5 h-5 text-brand-orange rounded border-gray-300 focus:ring-brand-orange cursor-pointer"
+                                className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500 cursor-pointer"
                               />
                             </div>
                           </div>
@@ -632,7 +615,7 @@ const GiftPaymentPage: React.FC = () => {
                       })
                     ) : (
                       <div className="text-center py-3 text-gray-400 text-xs bg-white rounded-lg border border-dashed">
-                        Chưa có voucher mặt hàng
+                        Chưa có voucher mặt hàng nào khả dụng
                       </div>
                     )}
                   </div>
@@ -640,8 +623,8 @@ const GiftPaymentPage: React.FC = () => {
                   {/* Nhóm Voucher Toàn đơn */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center justify-between">
-                      <span>Voucher Toàn Đơn Hàng</span>
-                      <span className="text-brand-orange font-normal normal-case">Tối đa 1 mã</span>
+                      <span>Voucher Toàn Đơn Hàng (GMall)</span>
+                      <span className="text-orange-600 font-normal normal-case">Tối đa 1 mã</span>
                     </h4>
                     {voucherPool.global.length > 0 ? (
                       voucherPool.global.map(v => {
@@ -653,7 +636,7 @@ const GiftPaymentPage: React.FC = () => {
                             key={v.id}
                             onClick={() => isEligible && handleToggleVoucherItem(v)}
                             className={`flex items-stretch bg-white border rounded-xl overflow-hidden mb-3 transition-all cursor-pointer ${
-                              isSelected ? 'border-brand-orange bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
+                              isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
                             } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="w-24 bg-red-50 flex flex-col items-center justify-center p-2 border-r border-dashed border-red-200">
@@ -674,7 +657,7 @@ const GiftPaymentPage: React.FC = () => {
                                 checked={isSelected}
                                 readOnly
                                 disabled={!isEligible}
-                                className="w-5 h-5 text-brand-orange border-gray-300 focus:ring-brand-orange cursor-pointer"
+                                className="w-5 h-5 text-orange-600 border-gray-300 focus:ring-orange-500 cursor-pointer"
                               />
                             </div>
                           </div>
@@ -693,14 +676,14 @@ const GiftPaymentPage: React.FC = () => {
             <div className="p-4 border-t bg-white rounded-b-2xl shadow-sm flex items-center justify-between gap-4">
               <div className="text-sm">
                 <span className="text-gray-500">Đã chọn: </span>
-                <span className="font-bold text-brand-orange">{selectedVouchers.length} mã</span>
+                <span className="font-bold text-orange-600">{selectedVouchers.length} mã</span>
               </div>
               <button
                 onClick={() => {
                   setIsVoucherModalOpen(false);
-                  toast.success(`Đã áp dụng ${selectedVouchers.length} mã voucher`);
+                  toast.success(`Đã áp dụng ${selectedVouchers.length} mã ưu đãi`);
                 }}
-                className="px-6 py-2.5 bg-brand-orange text-white font-bold rounded-lg shadow hover:bg-orange-600 transition-all text-sm"
+                className="px-6 py-2.5 bg-orange-500 text-white font-bold rounded-lg shadow hover:bg-orange-600 transition-all text-sm"
               >
                 Xác nhận
               </button>
@@ -709,115 +692,150 @@ const GiftPaymentPage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <span className="cursor-pointer hover:text-brand-orange" onClick={() => router.push('/')}>Trang chủ</span>
-        <span>/</span>
-        <span className="cursor-pointer hover:text-brand-orange" onClick={() => router.push('/cart')}>Giỏ hàng</span>
-        <span>/</span>
-        <span className="text-gray-900 font-medium">Thanh toán quà tặng</span>
+      {/* Breadcrumb Đồng Bộ */}
+      <div className="flex items-center gap-2 text-sm mb-6 text-gray-500 select-none">
+        <span className="cursor-pointer hover:text-orange-600 transition-colors" onClick={() => router.push('/')}>Trang chủ</span> /
+        <span className="cursor-pointer hover:text-orange-600 transition-colors" onClick={() => router.push('/cart')}>Giỏ hàng</span> /
+        <span className="text-gray-800 font-medium">Thanh toán quà tặng</span>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start relative">
         {/* --- CỘT TRÁI --- */}
-        <div className="flex flex-col w-full lg:flex-1 gap-6">
+        <div className="flex-1 flex flex-col gap-5 w-full min-w-0">
 
-          {/* 1. ĐỊA CHỈ */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-brand-orange/10 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
-              <MapPinIcon className="text-brand-orange" size={20} />
-              <h3 className="font-bold text-gray-800 text-lg">Địa chỉ Giao - Nhận Quà</h3>
+          {/* 1. ĐỊA CHỈ GIAO - NHẬN QUÀ (CÓ DẢI PHONG BÌ THƯ ĐẶC TRƯNG) */}
+          <div className="bg-white rounded-lg shadow-sm border border-orange-200 overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-[repeating-linear-gradient(45deg,#F2542D,#F2542D_30px,#ffffff_30px,#ffffff_60px,#1b64da_60px,#1b64da_90px,#ffffff_90px,#ffffff_120px)] opacity-80"></div>
+            
+            <div className="p-5 pt-6 border-b border-gray-100 flex items-center gap-2 text-orange-600">
+              <Icons.LocationPin />
+              <h3 className="font-bold text-base">Địa chỉ Giao - Nhận Quà Tặng</h3>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-gray-100">
-              <div onClick={() => handleEditInfo('sender')} className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">1. Người gửi (Bạn)</span>
-                  <span className="text-brand-orange text-sm opacity-0 group-hover:opacity-100 transition-opacity">Thay đổi</span>
+              {/* Cột 1: Người gửi */}
+              <div onClick={() => handleEditInfo('sender')} className="p-5 hover:bg-orange-50/20 cursor-pointer transition-colors group">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">1. Người gửi (Bạn)</span>
+                  <span className="text-blue-600 text-xs font-medium group-hover:underline">Thay đổi</span>
                 </div>
                 {senderInfo.name ? (
                   <div>
-                    <p className="font-bold text-gray-900 text-lg">{senderInfo.name} <span className="text-sm font-normal text-gray-500">| {senderInfo.phone}</span></p>
-                    <p className="text-gray-600 mt-2 text-sm">{senderInfo.address}</p>
+                    <p className="font-bold text-gray-900 text-base">{senderInfo.name} <span className="text-sm font-normal text-gray-500">| {senderInfo.phone}</span></p>
+                    <p className="text-gray-600 mt-1.5 text-sm line-clamp-2 leading-relaxed">{senderInfo.address}</p>
                   </div>
                 ) : (
-                  <p className="text-orange-600 text-sm italic">Vui lòng thiết lập thông tin người gửi</p>
+                  <p className="text-orange-500 text-sm italic py-1">Vui lòng thiết lập thông tin người gửi</p>
                 )}
               </div>
 
-              <div onClick={() => handleEditInfo('receiver')} className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-brand-orange uppercase tracking-wide">2. Người nhận quà</span>
-                  <span className="text-brand-orange text-sm opacity-0 group-hover:opacity-100 transition-opacity">Thay đổi</span>
+              {/* Cột 2: Người nhận */}
+              <div onClick={() => handleEditInfo('receiver')} className="p-5 hover:bg-orange-50/20 cursor-pointer transition-colors group">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">2. Người nhận quà</span>
+                  <span className="text-blue-600 text-xs font-medium group-hover:underline">Thay đổi</span>
                 </div>
                 {receiverInfo.name ? (
                   <div>
-                    <p className="font-bold text-gray-900 text-lg">{receiverInfo.name} <span className="text-sm font-normal text-gray-500">| {receiverInfo.phone}</span></p>
-                    <p className="text-gray-600 mt-2 text-sm">{receiverInfo.address}</p>
-                    {receiverInfo.message && <p className="mt-3 text-sm italic text-gray-500 bg-gray-100 p-2 rounded">"{receiverInfo.message}"</p>}
+                    <p className="font-bold text-gray-900 text-base">{receiverInfo.name} <span className="text-sm font-normal text-gray-500">| {receiverInfo.phone}</span></p>
+                    <p className="text-gray-600 mt-1.5 text-sm line-clamp-2 leading-relaxed">{receiverInfo.address}</p>
+                    {receiverInfo.message && <p className="mt-2 text-xs italic text-gray-500 bg-gray-50 p-2 rounded border border-dashed border-gray-200">"{receiverInfo.message}"</p>}
                   </div>
                 ) : (
-                  <p className="text-orange-600 text-sm italic">Vui lòng thiết lập thông tin người nhận</p>
+                  <p className="text-orange-500 text-sm italic py-1">Vui lòng thiết lập thông tin người nhận</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* 2. SẢN PHẨM */}
-          <div className="flex flex-col gap-4">
-            {groupedItems.map((group) => (
-              <div key={group.shopId} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-                  <span className="bg-brand-orange text-white text-[10px] px-2 py-0.5 rounded font-bold">Mall</span>
-                  <h3 className="font-bold text-gray-800">{group.shopName}</h3>
+          {/* 2. SẢN PHẨM GROUP THEO SHOP (DÙNG CHUNG ORDER_ITEM VÀ LAYOUT PAYMENT) */}
+          {groupedItems.map((group) => {
+            const displayShippingFee = SHIPPING_FEE_PER_SHOP;
+            const shopItemTotal = group.items.reduce((acc: number, i: any) => acc + (Number(i.price ?? 0) * Number(i.quantity ?? 0)), 0);
+            const displayShopTotal = shopItemTotal + displayShippingFee;
+
+            return (
+              <div key={group.shopId} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
+                  <Icons.Store />
+                  <span className="font-bold text-gray-800">{group.shopName}</span>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                  {group.items.map((item: any, index: number) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div className="w-20 h-20 border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                        <img src={item.imageUrl || item.image || '/assets/placeholder.png'} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{item.title || item.name}</h4>
-                        <p className="text-xs text-gray-500 mt-1">{item.variantName || 'Mặc định'}</p>
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-brand-orange font-bold text-sm">{Number(item.price ?? 0).toLocaleString('vi-VN')} đ</span>
-                          <span className="text-sm text-gray-600">x{item.quantity}</span>
-                        </div>
-                      </div>
+                <div className="px-5 py-2 divide-y divide-gray-50">
+                  {group.items.map((item: any) => (
+                    <div key={item.id} className="py-2">
+                      <OrderItem
+                        productId={String(item.productId)}
+                        name={item.title || item.name}
+                        imageUrl={item.imageUrl || item.image}
+                        price={item.price}
+                        quantity={item.quantity}
+                        color={item.color}
+                        size={item.size}
+                      />
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Lời nhắn:</span>
-                  <input
-                    type="text"
-                    maxLength={191}
-                    placeholder="Lưu ý cho cửa hàng (Ví dụ: Giao giờ hành chính)"
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-brand-orange"
-                    value={shopMessages[group.shopId] || ''}
-                    onChange={(e) => setShopMessage(group.shopId, e.target.value)}
-                  />
+                <div className="border-t border-dashed border-gray-200 bg-[#FDFDFD]">
+                  {/* Đơn vị vận chuyển đồng bộ Payment */}
+                  <div className="px-5 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-gray-50 bg-blue-50/10">
+                    <div className="flex items-center gap-3 text-green-700">
+                      <Icons.Truck />
+                      <span className="text-sm font-medium">Đơn vị vận chuyển</span>
+                    </div>
+                    <div className="flex flex-col sm:items-end text-sm">
+                      <div className="font-bold text-gray-800 flex items-center gap-2">
+                        <span>Giao Hàng Nhanh</span>
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded border">Tiêu chuẩn</span>
+                      </div>
+                      <div className="text-orange-600 font-bold text-sm mt-1">
+                        {displayShippingFee.toLocaleString()} đ
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lời nhắn cho shop đồng bộ Payment */}
+                  <div className="px-5 py-4 flex items-center gap-3">
+                    <span className="text-gray-400"><Icons.Message /></span>
+                    <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
+                    <input 
+                      type="text" 
+                      maxLength={191}
+                      placeholder="Lưu ý cho người bán..." 
+                      value={shopMessages[group.shopId] || ''}
+                      onChange={(e) => setShopMessage(group.shopId, e.target.value)}
+                      className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1" 
+                    />
+                  </div>
+
+                  {/* Tạm tính đồng bộ Payment */}
+                  <div className="px-5 py-3 flex justify-end items-center gap-2 border-t border-gray-100 bg-gray-50 text-sm">
+                    <span className="text-gray-500">Tạm tính ({group.items.length} sản phẩm):</span>
+                    <span className="text-lg font-bold text-orange-600">
+                      ₫{displayShopTotal.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
 
-          {/* 3. DỊCH VỤ GÓI QUÀ */}
-          <div className="bg-white rounded-xl shadow-sm border border-brand-orange/50 overflow-hidden">
-            <div className="bg-orange-50 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
-              <GiftIcon className="text-brand-orange" size={20} />
-              <h3 className="font-bold text-orange-800 text-lg">Dịch vụ Gói Quà</h3>
+          {/* 3. DỊCH VỤ GÓI QUÀ (ĐỒNG BỘ ROUNDED-LG VÀ BORDER CHUẨN) */}
+          <div className="bg-white rounded-lg shadow-sm border border-orange-200/80 overflow-hidden">
+            <div className="bg-orange-50/70 px-5 py-3.5 border-b border-orange-100 flex items-center gap-2">
+              <GiftIcon className="text-orange-600" size={18} />
+              <h3 className="font-bold text-gray-800 text-sm sm:text-base">Dịch vụ Gói Quà</h3>
             </div>
-            <div className="p-6">
+            <div className="p-5">
               <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                 {giftWrapData.map((item, index) => (
                   <div
                     key={index}
                     onClick={() => setSelectedGiftWrap(selectedGiftWrap === index ? null : index)}
                     className={`
-                      cursor-pointer rounded-[20px] p-[2px] transition-all duration-200 flex-shrink-0
-                      ${selectedGiftWrap === index ? 'ring-2 ring-brand-orange scale-105 shadow-md' : 'hover:opacity-80 opacity-70'}
+                      cursor-pointer rounded-xl p-[2px] transition-all duration-200 flex-shrink-0
+                      ${selectedGiftWrap === index ? 'ring-2 ring-orange-500 scale-102 shadow-md' : 'hover:opacity-90 opacity-75'}
                     `}
                   >
                     <GiftWrapCard {...item} selected={selectedGiftWrap === index} />
@@ -827,13 +845,14 @@ const GiftPaymentPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 4. MẪU THIỆP */}
-          <div className="bg-white rounded-xl shadow-sm border border-brand-orange/50 overflow-hidden">
-            <div className="bg-orange-50 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
-              <MailIcon className="text-brand-orange" size={20} />
-              <h3 className="font-bold text-orange-800 text-lg">Mẫu thiệp chúc mừng</h3>
+          {/* 4. MẪU THIỆP CHÚC MỪNG & LỜI CHÚC */}
+          <div className="bg-white rounded-lg shadow-sm border border-orange-200/80 overflow-hidden">
+            <div className="bg-orange-50/70 px-5 py-3.5 border-b border-orange-100 flex items-center gap-2">
+              <MailIcon className="text-orange-600" size={18} />
+              <h3 className="font-bold text-gray-800 text-sm sm:text-base">Mẫu thiệp chúc mừng</h3>
             </div>
-            <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+            
+            <div className="p-5 grid grid-cols-2 md:grid-cols-3 gap-3.5">
               {CARD_OPTIONS.map((card) => {
                 const isSelected = cardIndex === card.id;
 
@@ -841,13 +860,13 @@ const GiftPaymentPage: React.FC = () => {
                   <div
                     key={card.id}
                     onClick={() => setCardIndex(card.id)}
-                    className={`relative cursor-pointer rounded-xl border p-3 transition-all duration-200 ${
+                    className={`relative cursor-pointer rounded-lg border p-3 transition-all duration-200 ${
                       isSelected
-                        ? 'border-brand-orange bg-orange-50/50 shadow-md ring-1 ring-brand-orange'
-                        : 'border-gray-200 hover:border-brand-orange/50 hover:bg-gray-50'
+                        ? 'border-orange-500 bg-orange-50/50 shadow-sm ring-1 ring-orange-500'
+                        : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="aspect-[4/3] bg-gray-100 rounded-lg mb-3 overflow-hidden relative">
+                    <div className="aspect-[4/3] bg-gray-100 rounded-md mb-2.5 overflow-hidden relative">
                       <div className="flex items-center justify-center w-full h-full text-xs text-gray-400 font-medium bg-gray-200">
                         {card.id === 0 ? 'Không kèm thiệp' : 'Hình ảnh thiệp'}
                       </div>
@@ -857,14 +876,14 @@ const GiftPaymentPage: React.FC = () => {
                       <p className={`text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-700'}`}>
                         {card.name}
                       </p>
-                      <p className="text-brand-orange text-xs font-bold mt-1">
+                      <p className="text-orange-600 text-xs font-bold mt-0.5">
                         {card.price === 0 ? 'Miễn phí' : `+${card.price.toLocaleString('vi-VN')} ₫`}
                       </p>
                     </div>
 
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-brand-orange text-white rounded-full p-1 shadow-sm">
-                        <CheckIcon className="w-3 h-3" />
+                      <div className="absolute top-2 right-2 bg-orange-500 text-white rounded-full p-0.5 shadow-sm">
+                        <CheckIcon className="w-3.5 h-3.5" />
                       </div>
                     )}
                   </div>
@@ -872,7 +891,7 @@ const GiftPaymentPage: React.FC = () => {
               })}
             </div>
 
-            <div className="px-6 pb-6">
+            <div className="px-5 pb-5">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-gray-800">
                   Lời chúc gửi người nhận
@@ -883,7 +902,7 @@ const GiftPaymentPage: React.FC = () => {
                   maxLength={500}
                   rows={3}
                   placeholder="Ví dụ: Chúc mừng sinh nhật cậu! Mong cậu luôn vui vẻ và mạnh khoẻ nhé."
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange resize-none"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none"
                 />
                 <span className="text-xs text-gray-400 self-end">
                   {(senderInfo.message || '').length}/500
@@ -892,67 +911,61 @@ const GiftPaymentPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 5. VOUCHER & XU (ĐÃ ĐỒNG BỘ 1 ĐIỂM CHẠM MỞ MODAL ĐA VOUCHER) */}
-          <div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-              <div
-                className="px-5 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
-                onClick={handleOpenVoucherModal}
-              >
-                <div className="flex items-center gap-2 text-red-600 font-medium">
-                  <Icons.Ticket />
-                  <span>Mã Giảm Giá & Ưu Đãi</span>
-                </div>
-                <div className="flex items-center gap-2 text-blue-600 text-sm">
-                  <span>
-                    {selectedVouchers.length > 0
-                      ? `Đã chọn ${selectedVouchers.length} mã (-${frontendCalculations.voucherDiscountTotal.toLocaleString()}đ)`
-                      : 'Chọn hoặc nhập mã'}
-                  </span>
-                  <Icons.ChevronRight />
-                </div>
+          {/* 5. KHỐI VOUCHER TẬP TRUNG (ĐỒNG BỘ PAYMENT PAGE) */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div
+              className="px-5 py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+              onClick={handleOpenVoucherModal}
+            >
+              <div className="flex items-center gap-2 text-red-600 font-medium">
+                <Icons.Ticket />
+                <span>Mã Giảm Giá & Ưu Đãi</span>
+              </div>
+              <div className="flex items-center gap-2 text-blue-600 text-sm">
+                <span>
+                  {selectedVouchers.length > 0
+                    ? `Đã chọn ${selectedVouchers.length} mã (-${frontendCalculations.voucherDiscountTotal.toLocaleString()}đ)`
+                    : 'Chọn hoặc nhập mã ưu đãi'}
+                </span>
+                <Icons.ChevronRight />
               </div>
             </div>
-
-            <CoinInputBlock
-              userPoints={user?.point || 0}
-              appliedCoins={appliedCoins}
-              onCoinChange={(val: number) => setAppliedCoins(val)}
-              orderTotal={frontendCalculations.subtotal}
-            />
           </div>
 
-          {/* 6. PHƯƠNG THỨC THANH TOÁN */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CreditCardIcon className="text-brand-orange" size={20} />
-              <h3 className="text-lg font-bold text-gray-800">Phương thức thanh toán</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Khối Nhập Xu Đồng Bộ */}
+          <CoinInputBlock
+            userPoints={user?.point || 0}
+            appliedCoins={appliedCoins}
+            onCoinChange={(val: number) => setAppliedCoins(val)}
+            orderTotal={frontendCalculations.subtotal}
+          />
+
+          {/* 6. PHƯƠNG THỨC THANH TOÁN (ĐỒNG BỘ 1:1 VỚI PAYMENT PAGE) */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+            <h3 className="font-bold text-gray-800 mb-4">Phương thức thanh toán</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {PAYMENT_METHODS.map((method) => (
                 <div
                   key={method.id}
                   onClick={() => setSelectedPayment(method.id)}
-                  className={`
-                    border rounded-lg p-4 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all text-center relative
-                    ${selectedPayment === method.id
-                      ? 'border-brand-orange bg-orange-50/50 shadow-sm'
-                      : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                    }
-                  `}
+                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedPayment === method.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200'
+                  }`}
                 >
-                  <img src={method.icon} alt={method.name} className="h-8 object-contain mix-blend-multiply" />
-                  <span className={`text-sm ${selectedPayment === method.id ? 'font-semibold text-brand-orange' : 'text-gray-600'}`}>
-                    {method.name}
-                  </span>
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                    selectedPayment === method.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                  }`}>
+                    {selectedPayment === method.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                  </div>
+                  <span className="text-sm font-medium text-gray-800">{method.name}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* --- CỘT PHẢI --- */}
-        <div className="w-full lg:w-[380px] sticky top-[100px]">
+        {/* --- CỘT PHẢI (STICKY SUMMARY ĐỒNG BỘ PAYMENT PAGE) --- */}
+        <div className="w-full lg:w-[380px] flex-shrink-0 lg:sticky lg:top-4 z-10 h-fit">
           <OrderSummaryBox
             subtotal={frontendCalculations.subtotal}
             shippingFee={frontendCalculations.shippingFee}
@@ -963,7 +976,8 @@ const GiftPaymentPage: React.FC = () => {
             total={frontendCalculations.total}
             onPlaceOrder={handleOrder}
             buttonText="Thanh toán & Gửi quà"
-            loading={false}
+            disabled={validPaymentItems.length === 0}
+            loading={isLoading || isProcessing}
           />
         </div>
       </div>
