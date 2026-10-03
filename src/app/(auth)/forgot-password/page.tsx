@@ -4,11 +4,11 @@ import type { Metadata } from 'next';
 import ForgotPasswordClient from './forgotPasswordClient';
 
 // Wiki 0104: trang này trước đây KHÔNG khai metadata và root layout cũng trống
-// → HTML ra không có thẻ <title>, tab trình duyệt chỉ hiện "gmall.vn".
+// → HTML ra không có thẻ <title>, tab trình duyệt chỉ hiện "LoveGifts.vn".
 // `(auth)/layout.tsx` đã đặt `robots: noindex` cho cả nhóm.
 export const metadata: Metadata = {
   title: 'Quên mật khẩu',
-  description: 'Khôi phục mật khẩu tài khoản GMall qua email đã đăng ký.',
+  description: 'Khôi phục mật khẩu tài khoản LoveGifts qua email đã đăng ký.',
 };
 
 // Bắt buộc render động để tránh lỗi Prerender với Client Component

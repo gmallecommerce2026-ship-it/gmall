@@ -2,13 +2,13 @@ import { IVoucherOption } from './types';
 
 export const voucherOptionsData: IVoucherOption[] = [
   {
-    text: 'GMall voucher',
+    text: 'LoveGifts voucher',
     isLarge: true,
     minWidth: '178px',
     isMediumWeight: true,
   },
   {
-    text: 'GMall VIP',
+    text: 'LoveGifts VIP',
     isLarge: true,
     minWidth: '117px',
     isMediumWeight: false,

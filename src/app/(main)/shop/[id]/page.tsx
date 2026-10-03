@@ -41,14 +41,14 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
   const count = shop.totalProducts ? `${shop.totalProducts} sản phẩm · ` : '';
   const description = shop.description
     ? toPlainText(shop.description)
-    : `${count}Mua sắm tại gian hàng ${shop.name} trên GMall. Hàng chính hãng, giao nhanh toàn quốc.`;
+    : `${count}Mua sắm tại gian hàng ${shop.name} trên LoveGifts. Hàng chính hãng, giao nhanh toàn quốc.`;
 
   return {
     title: shop.name,
     description,
     alternates: { canonical: `/shop/${shopId}` },
     openGraph: {
-      title: `${shop.name} | GMall`,
+      title: `${shop.name} | LoveGifts`,
       description,
       url: `/shop/${shopId}`,
       type: 'website',

@@ -3,7 +3,7 @@
 
 // wiki 0108: trang này TRƯỚC ĐÂY là một bản dựng tĩnh hoàn toàn — "abc shop",
 // "Sản phẩm: 2,4K", "Người theo dõi: 2,4K", 5 tab giả, không một lời gọi API nào.
-// Nó không nằm trong khu vực nội bộ mà **công khai trên gmall.vn**, và header
+// Nó không nằm trong khu vực nội bộ mà **công khai trên lovegifts.vn**, và header
 // (`NavDropdown` → "Cửa hàng") lẫn `BlogHeader` đều trỏ tới. Nghĩa là khách bấm
 // "Cửa hàng" thì rơi vào một trang bịa.
 //
@@ -58,7 +58,7 @@ const ShopClient = () => {
   return (
     <div className="w-full max-w-[1438px] mx-auto px-4 py-8 flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-gray-800">Gian hàng trên GMall</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Gian hàng trên LoveGifts</h1>
         <p className="text-sm text-gray-500">
           {loading ? "Đang tải danh sách gian hàng…" : `${total.toLocaleString("vi-VN")} gian hàng đang hoạt động`}
         </p>

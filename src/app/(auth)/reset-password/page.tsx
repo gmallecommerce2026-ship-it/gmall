@@ -4,11 +4,11 @@ import type { Metadata } from 'next';
 import ResetPasswordClient from './resetPasswordClient';
 
 // Wiki 0104: trang này trước đây KHÔNG khai metadata và root layout cũng trống
-// → HTML ra không có thẻ <title>, tab trình duyệt chỉ hiện "gmall.vn".
+// → HTML ra không có thẻ <title>, tab trình duyệt chỉ hiện "lovegifts.vn".
 // `(auth)/layout.tsx` đã đặt `robots: noindex` cho cả nhóm.
 export const metadata: Metadata = {
   title: 'Đặt lại mật khẩu',
-  description: 'Đặt mật khẩu mới cho tài khoản GMall của bạn.',
+  description: 'Đặt mật khẩu mới cho tài khoản LoveGifts của bạn.',
 };
 
 // Bắt buộc render động để tránh lỗi Prerender với Client Component

@@ -17,7 +17,7 @@ import type { Metadata } from 'next';
 // trang con nhất quán mà không phải sửa từng file, và `noindex` để khu quản trị không
 // bao giờ lọt vào kết quả tìm kiếm (trước đây thừa hưởng `index: true` từ root).
 export const metadata: Metadata = {
-  title: { default: 'Quản trị GMall', template: '%s | Quản trị GMall' },
+  title: { default: 'Quản trị LoveGifts', template: '%s | Quản trị LoveGifts' },
   robots: { index: false, follow: false },
 };
 
@@ -82,7 +82,7 @@ export default function AdminLayout({
         
         {/* Footer Admin */}
         <footer className="py-4 text-center text-gray-400 text-xs bg-white border-t border-gray-100">
-          © 2025 GMall Admin Control Panel. Version 1.2.0
+          © 2025 LoveGifts Admin Control Panel. Version 1.2.0
         </footer>
       </div>
     </div>

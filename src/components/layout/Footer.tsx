@@ -12,7 +12,7 @@ const DEFAULT_FOOTER_LINKS = {
   about: {
     title: "Về chúng tôi",
     links: [
-      { label: "Giới thiệu GMall", href: "/about" },
+      { label: "Giới thiệu LoveGifts", href: "/about" },
       { label: "Điều khoản dịch vụ", href: "/terms" },
       { label: "Chính sách bảo mật", href: "/privacy" },
       { label: "Trung tâm trợ giúp", href: "/user/help" },
@@ -39,10 +39,10 @@ const DEFAULT_FOOTER_LINKS = {
 };
 
 const SOCIAL_ICONS = [
-  { src: "/assets/ImageAsset132.png", alt: "Facebook", href: "https://www.facebook.com/gmall.vn" },
-  { src: "/assets/ImageAsset131.png", alt: "Instagram", href: "https://www.instagram.com/gmall.vn" },
-  { src: "/assets/ImageAsset130.png", alt: "Youtube", href: "https://www.youtube.com/@gmall.vn" },
-  { src: "/assets/ImageAsset129.png", alt: "Tiktok", href: "https://www.tiktok.com/@gmall.vn" },
+  { src: "/assets/ImageAsset132.png", alt: "Facebook", href: "https://www.facebook.com/lovegifts.vn" },
+  { src: "/assets/ImageAsset131.png", alt: "Instagram", href: "https://www.instagram.com/lovegifts.vn" },
+  { src: "/assets/ImageAsset130.png", alt: "Youtube", href: "https://www.youtube.com/@lovegifts.vn" },
+  { src: "/assets/ImageAsset129.png", alt: "Tiktok", href: "https://www.tiktok.com/@lovegifts.vn" },
 ];
 
 const PAYMENT_METHODS = [
@@ -61,7 +61,7 @@ const FooterTitle = ({ children }: { children: React.ReactNode }) => (
 );
 
 // Wiki 0104: footer render THẲNG href do admin gõ trong CMS, nên dữ liệu bẩn ra
-// thẳng production (đo được trên prod: `"/https://gmall.onrender.com/blog/..."` và
+// thẳng production (đo được trên prod: `"/https://lovegifts.onrender.com/blog/..."` và
 // nhiều link trỏ domain Render CŨ đã chết). Chuẩn hoá nằm ở `@/lib/url-helper` để
 // dùng lại được cho mọi chỗ đọc đường dẫn từ CMS — và để có thể kiểm thử riêng.
 const FooterLinkItem = ({ label, href }: { label: string; href: string }) => (
@@ -130,7 +130,7 @@ const Footer = async () => {
                 <span className="font-bold text-gray-900">Địa chỉ:</span> Tầng 4, Tòa nhà Flemington, 182 Lê Đại Hành, Phường 15, Quận 11, TP. Hồ Chí Minh.
               </p>
               <p>
-                <span className="font-bold text-gray-900">Email:</span> support@gmall.vn
+                <span className="font-bold text-gray-900">Email:</span> support@lovegifts.vn
               </p>
               <p>
                 <span className="font-bold text-gray-900">Hotline:</span>{" "}

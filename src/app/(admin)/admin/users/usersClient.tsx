@@ -511,7 +511,7 @@ export default function UsersClient() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                                        <input type="email" required className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition" placeholder="example@gmall.com.vn" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                        <input type="email" required className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition" placeholder="example@lovegifts.com.vn" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className="text-red-500">*</span></label>
@@ -528,7 +528,7 @@ export default function UsersClient() {
                                         <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-4 animate-fade-in">
                                             <div>
                                                 <label className="block text-sm font-bold text-blue-800 mb-1">Tên Shop <span className="text-red-500">*</span></label>
-                                                <input type="text" required className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white" placeholder="VD: Gmall Store Official" value={formData.shopName} onChange={e => setFormData({...formData, shopName: e.target.value})} />
+                                                <input type="text" required className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white" placeholder="VD: LoveGifts Store Official" value={formData.shopName} onChange={e => setFormData({...formData, shopName: e.target.value})} />
                                                 <p className="text-xs text-blue-600 mt-1">Hệ thống sẽ tự động tạo URL shop (slug) từ tên này.</p>
                                             </div>
                                             <div className="text-xs text-blue-800 bg-blue-100 p-3 rounded">💡 <b>Lưu ý:</b> Tài khoản Seller sẽ được tự động kích hoạt Shop ở trạng thái <b>Active</b>. Chủ shop có thể cập nhật thêm thông tin sau.</div>

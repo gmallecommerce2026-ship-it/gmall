@@ -26,23 +26,23 @@ const mainFont = Be_Vietnam_Pro({
 //   - `metadataBase` bắt buộc để `og:image` đường dẫn tương đối resolve thành URL
 //     tuyệt đối; thiếu nó thì ảnh preview không hiện.
 //   - `title.template` ép nhất quán thương hiệu ở MỌI trang con mà không phải sửa
-//     từng file — đây là thuốc chữa gốc cho tình trạng lẫn lộn "G-Mall" / "GMall".
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://gmall.vn";
-const SITE_NAME = "GMall";
+//     từng file — đây là thuốc chữa gốc cho tình trạng lẫn lộn "G-Mall" / "LoveGifts".
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://LoveGifts.vn";
+const SITE_NAME = "LoveGifts";
 const SITE_DESC =
-  "GMall — nền tảng quà tặng và mua sắm trực tuyến. Hàng chính hãng, gói quà tận tâm, " +
+  "LoveGifts — nền tảng quà tặng và mua sắm trực tuyến. Hàng chính hãng, gói quà tận tâm, " +
   "giao nhanh toàn quốc và 1% mỗi đơn hàng dành cho quỹ từ thiện.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "GMall — Nền tảng quà tặng & mua sắm trực tuyến",
+    default: "LoveGifts — Nền tảng quà tặng & mua sắm trực tuyến",
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESC,
   applicationName: SITE_NAME,
   keywords: [
-    "GMall", "quà tặng", "mua sắm online", "quà tặng online",
+    "LoveGifts", "quà tặng", "mua sắm online", "quà tặng online",
     "gói quà", "mẹ và bé", "hàng chính hãng", "sàn thương mại điện tử",
   ],
   alternates: { canonical: "/" },
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
     locale: "vi_VN",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "GMall — Nền tảng quà tặng & mua sắm trực tuyến",
+    title: "LoveGifts — Nền tảng quà tặng & mua sắm trực tuyến",
     description: SITE_DESC,
-    images: [{ url: "/images/gmall-logo.png", width: 677, height: 369, alt: "GMall" }],
+    images: [{ url: "/images/gmall-logo.png", width: 677, height: 369, alt: "LoveGifts" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "GMall — Nền tảng quà tặng & mua sắm trực tuyến",
+    title: "LoveGifts — Nền tảng quà tặng & mua sắm trực tuyến",
     description: SITE_DESC,
     images: ["/images/gmall-logo.png"],
   },

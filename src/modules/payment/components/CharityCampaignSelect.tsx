@@ -81,7 +81,7 @@ const CharityCampaignSelect: React.FC<CharityCampaignSelectProps> = ({ selectedF
       </div>
 
       <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-        Mỗi đơn hoàn tất, GMall trích <strong className="text-pink-600">1% phí hoa hồng</strong> vào quỹ từ thiện.
+        Mỗi đơn hoàn tất, LoveGifts trích <strong className="text-pink-600">1% phí hoa hồng</strong> vào quỹ từ thiện.
         {selectedFundName ? (
           <> Bạn đã chọn quỹ: <strong className="text-gray-700">{selectedFundName}</strong>.</>
         ) : (
@@ -105,7 +105,7 @@ const CharityCampaignSelect: React.FC<CharityCampaignSelectProps> = ({ selectedF
               />
               <div className="flex-1">
                 <div className="text-sm font-semibold text-gray-800">Quỹ chung mặc định</div>
-                <div className="text-xs text-gray-500 mt-0.5">Để GMall phân bổ vào quỹ ưu tiên hiện tại.</div>
+                <div className="text-xs text-gray-500 mt-0.5">Để LoveGifts phân bổ vào quỹ ưu tiên hiện tại.</div>
               </div>
             </div>
           </label>

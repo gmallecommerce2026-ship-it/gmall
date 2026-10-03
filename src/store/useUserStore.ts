@@ -96,7 +96,7 @@ export const useUserStore = create<UserState>()(
             // [round15 FIX clear-cart] Cũng xoá cart-storage để máy dùng chung không lộ giỏ hàng
             // user cũ sang user mới (Header badge / MiniCart đọc trực tiếp store đã persist).
             localStorage.removeItem('cart-storage');
-            localStorage.removeItem('gmall-checkout-storage');
+            localStorage.removeItem('lovegifts-checkout-storage');
           } catch {
             // localStorage có thể fail trong incognito hoặc storage quota — không block logout
           }

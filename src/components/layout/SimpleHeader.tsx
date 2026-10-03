@@ -23,7 +23,7 @@ export default function SimpleHeader() {
           <Link href="/" className="flex-shrink-0">
             {/* Bạn thay src bằng đường dẫn logo của bạn */}
             <div className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
-               <span className="text-3xl">🛍️</span> Gmall
+               <span className="text-3xl">🛍️</span> LoveGifts
             </div>
           </Link>
 

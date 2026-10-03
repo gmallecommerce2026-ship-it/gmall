@@ -165,7 +165,7 @@ export default function RewardPointsPage() {
       </div>
 
       {/* #52 (wiki 0044/0045): bảng lịch sử điểm dạng table với cột rõ ràng
-          ID đơn / Ngày / Điểm / Lý do — theo spec Require GMall §8.
+          ID đơn / Ngày / Điểm / Lý do — theo spec Require LoveGifts §8.
           Trước đây là card scroll list compact bên cột phải, không phải table. */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="p-5 border-b border-gray-100 flex items-center gap-2">

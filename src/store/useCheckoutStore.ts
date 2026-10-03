@@ -194,7 +194,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       }),
     }),
     {
-      name: 'gmall-checkout-storage',
+      name: 'lovegifts-checkout-storage',
       storage: createJSONStorage(() => localStorage),
       skipHydration: true, 
     }

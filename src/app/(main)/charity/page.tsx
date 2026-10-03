@@ -5,7 +5,7 @@ import { CharityService, CharityFund } from '@/services/charity.service';
 export const metadata: Metadata = {
   title: 'Quỹ từ thiện',
   description:
-    'Chung tay góp sức cùng GMall xây dựng các quỹ từ thiện ý nghĩa. Mỗi đóng góp là một hành động yêu thương.',
+    'Chung tay góp sức cùng LoveGifts xây dựng các quỹ từ thiện ý nghĩa. Mỗi đóng góp là một hành động yêu thương.',
 };
 
 // Wiki 0032: ISR conflict với axios pattern — dựa BE cache 30s + PM2 cluster.
@@ -54,7 +54,7 @@ export default async function CharityPage() {
     <div className="max-w-6xl mx-auto px-4 py-12">
       <header className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Quỹ từ thiện <span className="text-brand-orange">GMall</span>
+          Quỹ từ thiện <span className="text-brand-orange">LoveGifts</span>
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Mỗi món quà bạn tặng, mỗi đơn hàng bạn đặt đều góp phần nhỏ vào các quỹ hỗ

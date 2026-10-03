@@ -714,7 +714,7 @@ const AddProductPage = () => {
     const progressPercent = Math.round((completedCount / totalCriteria) * 100);
 
     // ... (Logic Tier, Options, SKU - Giữ nguyên như cũ) ...
-    // #16 (wiki 0044/0045): max nhóm phân loại = 5 (theo spec Require GMall + feedback Pass 2 #16).
+    // #16 (wiki 0044/0045): max nhóm phân loại = 5 (theo spec Require LoveGifts + feedback Pass 2 #16).
     // Trước đây cứng 2. SKU matrix builder giờ dùng generic Cartesian product.
     const MAX_TIERS = 5;
     const addTier = () => { if (tiers.length < MAX_TIERS) setTiers([...tiers, { name: '', options: [], images: [] }]); };

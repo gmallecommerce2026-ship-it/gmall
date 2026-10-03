@@ -6,19 +6,19 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Về chúng tôi",
   description:
-    "GMall là nền tảng thương mại điện tử chuyên về quà tặng, kết hợp cộng đồng và quỹ từ thiện. Mua sắm — Tặng quà — Đóng góp.",
+    "LoveGifts là nền tảng thương mại điện tử chuyên về quà tặng, kết hợp cộng đồng và quỹ từ thiện. Mua sắm — Tặng quà — Đóng góp.",
 };
 
 export default function AboutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-        Về GMall
+        Về LoveGifts
       </h1>
 
       <div className="prose prose-orange max-w-none text-gray-700 space-y-4">
         <p className="text-lg leading-relaxed">
-          GMall là nền tảng thương mại điện tử Việt Nam, tập trung vào{" "}
+          LoveGifts là nền tảng thương mại điện tử Việt Nam, tập trung vào{" "}
           <strong className="text-brand-orange">trải nghiệm tặng quà</strong>{" "}
           và <strong className="text-brand-orange">cộng đồng từ thiện</strong>.
         </p>
@@ -44,10 +44,10 @@ export default function AboutPage() {
           <br />
           Email:{" "}
           <a
-            href="mailto:support@gmall.com.vn"
+            href="mailto:support@lovegifts.com.vn"
             className="text-brand-orange hover:underline"
           >
-            support@gmall.com.vn
+            support@lovegifts.com.vn
           </a>
           <br />
           Trang liên hệ chi tiết:{" "}

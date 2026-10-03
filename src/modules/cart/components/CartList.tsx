@@ -50,13 +50,13 @@ const CartList: React.FC<CartListProps> = ({
   }, [items]);
   =========================================================================== */
 
-  // === [LOGIC TẠM THỜI]: Gộp toàn bộ sản phẩm vào 1 shop duy nhất "GMall" ===
+  // === [LOGIC TẠM THỜI]: Gộp toàn bộ sản phẩm vào 1 shop duy nhất "LoveGifts" ===
   const groupedItems = useMemo(() => {
     if (!items || items.length === 0) return [];
     return [
       {
-        shopId: 'gmall',
-        shopName: 'GMall',
+        shopId: 'lovegifts',
+        shopName: 'LoveGifts',
         items: items,
       },
     ];

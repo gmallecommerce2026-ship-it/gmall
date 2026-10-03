@@ -91,7 +91,7 @@ export default function AffiliateRegisterTab({
 
       <h2 className="mb-2 text-lg font-bold text-gray-800">Đăng ký làm người tiếp thị</h2>
       <p className="mb-6 text-sm leading-relaxed text-gray-600">
-        Chia sẻ link sản phẩm của các shop trên GMall. Khi có người mua qua link của bạn và
+        Chia sẻ link sản phẩm của các shop trên LoveGifts. Khi có người mua qua link của bạn và
         nhận hàng thành công, bạn nhận <span className="font-semibold">hoa hồng bằng tiền mặt</span>{' '}
         vào ví và rút về tài khoản ngân hàng.
       </p>

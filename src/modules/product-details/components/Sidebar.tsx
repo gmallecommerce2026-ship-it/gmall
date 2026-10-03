@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ vouchers, featuredProduct }) => {
           thuộc data → luôn render được, đỡ chiếm whitespace.  */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="text-base font-bold text-gray-900">Cam kết của GMall</h3>
+          <h3 className="text-base font-bold text-gray-900">Cam kết của LoveGifts</h3>
         </div>
         <ul className="p-4 text-sm text-gray-700 space-y-2.5">
           {[

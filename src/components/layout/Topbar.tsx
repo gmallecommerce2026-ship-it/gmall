@@ -19,7 +19,7 @@ interface TopHeaderConfig {
 
 const DEFAULT_CONFIG: Required<TopHeaderConfig> = {
   hotline: '19001221',
-  guestText: 'Chào mừng đến với GMall',
+  guestText: 'Chào mừng đến với LoveGifts',
   links: [
     { label: 'Trợ giúp', href: '/user/help', icon: 'help' },
     { label: 'Chính sách', href: '/privacy', icon: 'policy' },

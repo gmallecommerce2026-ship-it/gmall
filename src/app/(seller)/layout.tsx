@@ -12,7 +12,7 @@ import type { Metadata } from 'next';
 // Wiki 0104: xem giải thích ở `(admin)/layout.tsx` — kênh người bán cũng là khu nội bộ,
 // không lập chỉ mục, và gom hậu tố tiêu đề về một kiểu.
 export const metadata: Metadata = {
-  title: { default: 'Kênh người bán GMall', template: '%s | Kênh người bán GMall' },
+  title: { default: 'Kênh người bán LoveGifts', template: '%s | Kênh người bán LoveGifts' },
   robots: { index: false, follow: false },
 };
 

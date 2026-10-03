@@ -37,7 +37,7 @@ export const paymentDetailsData: IPaymentSummaryRow[] = [
     width: '341px',
     isSlightlyShifted: false,
     gap: '82px',
-    label: 'Giảm giá GMall xu',
+    label: 'Giảm giá LoveGifts xu',
     value: '-10.000 VND',
     valueMinWidth: '99px',
   },

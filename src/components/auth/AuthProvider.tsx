@@ -87,7 +87,7 @@ export default function AuthProvider({
     if (typeof window === 'undefined') return;
     const onPageHide = () => {
       try {
-        if (sessionStorage.getItem('gmall:logout-on-close') === '1') {
+        if (sessionStorage.getItem('lovegifts:logout-on-close') === '1') {
           // [round15 FIX remember-me-off] Cookie session là httpOnly → JS KHÔNG xoá được bằng
           // document.cookie (line cũ là no-op rác, đã bỏ). PHẢI gọi BE /auth/logout để server
           // xoá cookie. Dùng sendBeacon (sống sót qua unload) + fallback keepalive fetch.
@@ -107,10 +107,10 @@ export default function AuthProvider({
           }
           localStorage.removeItem('user-storage');
           // [round15 L2 FIX] remember-me-off ⇒ máy dùng chung: cũng xoá cart-storage +
-          // gmall-checkout-storage để giỏ hàng user cũ không persist sang người dùng kế
+          // lovegifts-checkout-storage để giỏ hàng user cũ không persist sang người dùng kế
           // tiếp (mirror useUserStore.logout()). removeItem đồng bộ → an toàn trong pagehide.
           localStorage.removeItem('cart-storage');
-          localStorage.removeItem('gmall-checkout-storage');
+          localStorage.removeItem('lovegifts-checkout-storage');
           // [round15 L2 FIX] Tear down chat socket + xoá state in-memory để socket cũ
           // không nhận tin nhắn riêng tư realtime trên máy dùng chung. Lazy import tránh
           // circular dependency; best-effort (pagehide có thể chấm dứt trước khi resolve).

@@ -9,7 +9,7 @@ import ShopClient from './shopClient';
 // chỉ hiện tên site (cùng lớp lỗi wiki 0104).
 export const metadata: Metadata = {
   title: 'Gian hàng',
-  description: 'Danh bạ các gian hàng đang hoạt động trên GMall — tìm shop theo tên và xem sản phẩm của họ.',
+  description: 'Danh bạ các gian hàng đang hoạt động trên LoveGifts — tìm shop theo tên và xem sản phẩm của họ.',
 };
 
 // Bắt buộc render động để tránh lỗi Prerender với Client Component

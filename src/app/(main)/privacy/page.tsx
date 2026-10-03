@@ -3,7 +3,7 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Chính sách bảo mật',
-  description: 'Cách GMall thu thập và sử dụng dữ liệu cá nhân.',
+  description: 'Cách LoveGifts thu thập và sử dụng dữ liệu cá nhân.',
 };
 
 // Wiki 0068 D9: ngày cập nhật cố định cho trang pháp lý.
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       {/* Wiki 0068 D8: breadcrumb cho trang chính sách */}
       <Breadcrumbs items={[{ name: 'Trang chủ', href: '/' }, { name: 'Chính sách bảo mật', href: '/privacy' }]} />
       <article className="prose prose-sm max-w-none mt-4">
-      <h1>Chính sách bảo mật GMall</h1>
+      <h1>Chính sách bảo mật LoveGifts</h1>
       <p className="text-gray-500">Cập nhật lần cuối: {LAST_UPDATED}</p>
 
       <h2>1. Dữ liệu chúng tôi thu thập</h2>

@@ -3,7 +3,7 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Điều khoản dịch vụ',
-  description: 'Điều khoản sử dụng nền tảng GMall.',
+  description: 'Điều khoản sử dụng nền tảng LoveGifts.',
 };
 
 // Wiki 0068 D9: ngày cập nhật cố định cho trang pháp lý (trước chỉ hiện năm
@@ -16,12 +16,12 @@ export default function TermsPage() {
       {/* Wiki 0068 D8: breadcrumb cho trang chính sách */}
       <Breadcrumbs items={[{ name: 'Trang chủ', href: '/' }, { name: 'Điều khoản dịch vụ', href: '/terms' }]} />
       <article className="prose prose-sm max-w-none mt-4">
-      <h1>Điều khoản dịch vụ GMall</h1>
+      <h1>Điều khoản dịch vụ LoveGifts</h1>
       <p className="text-gray-500">Cập nhật lần cuối: {LAST_UPDATED}</p>
 
       <h2>1. Chấp nhận điều khoản</h2>
       <p>
-        Khi bạn truy cập hoặc sử dụng GMall, bạn đồng ý tuân theo các điều khoản
+        Khi bạn truy cập hoặc sử dụng LoveGifts, bạn đồng ý tuân theo các điều khoản
         dưới đây. Nếu không đồng ý, vui lòng ngừng sử dụng.
       </p>
 
@@ -33,19 +33,19 @@ export default function TermsPage() {
 
       <h2>3. Giao dịch mua bán</h2>
       <p>
-        GMall là nền tảng kết nối người mua và người bán. Các shop trên nền tảng
-        chịu trách nhiệm về chất lượng sản phẩm; GMall đóng vai trò trung gian.
+        LoveGifts là nền tảng kết nối người mua và người bán. Các shop trên nền tảng
+        chịu trách nhiệm về chất lượng sản phẩm; LoveGifts đóng vai trò trung gian.
       </p>
 
       <h2>4. Quỹ từ thiện</h2>
       <p>
-        Một phần doanh thu GMall được trích vào các quỹ từ thiện được công bố
+        Một phần doanh thu LoveGifts được trích vào các quỹ từ thiện được công bố
         công khai trên trang <a href="/charity">/charity</a>.
       </p>
 
       <h2>5. Thay đổi điều khoản</h2>
       <p>
-        GMall có quyền cập nhật điều khoản này bất cứ lúc nào. Thay đổi lớn sẽ
+        LoveGifts có quyền cập nhật điều khoản này bất cứ lúc nào. Thay đổi lớn sẽ
         được thông báo qua email đã đăng ký.
       </p>
 
@@ -58,9 +58,9 @@ export default function TermsPage() {
 
       <h2 id="payment">7. Thanh toán</h2>
       <p>
-        GMall hỗ trợ COD (tiền mặt khi nhận hàng), ví MoMo, thẻ ATM/Visa,
+        LoveGifts hỗ trợ COD (tiền mặt khi nhận hàng), ví MoMo, thẻ ATM/Visa,
         Mastercard, JCB. Giao dịch online được mã hóa qua cổng thanh toán đối
-        tác; GMall không lưu thông tin thẻ.
+        tác; LoveGifts không lưu thông tin thẻ.
       </p>
 
       <h2 id="refund">8. Trả hàng & Hoàn tiền</h2>

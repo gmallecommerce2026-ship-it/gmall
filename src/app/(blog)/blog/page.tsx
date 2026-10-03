@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Khám phá các bài viết mới nhất về phong cách sống, mẹo mua sắm, review sản phẩm và hướng dẫn sử dụng từ G-Mall.',
   keywords: ['blog', 'tin tức', 'cẩm nang', 'mua sắm', 'review'],
   openGraph: {
-    title: 'Tạp Chí Đời Sống | GMall',
+    title: 'Tạp Chí Đời Sống | LoveGifts',
     description: 'Nơi chia sẻ kiến thức và trải nghiệm mua sắm.',
     type: 'website',
   },

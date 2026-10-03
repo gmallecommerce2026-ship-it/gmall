@@ -103,7 +103,7 @@ export default function ReportsPage() {
         relatedOrderId: orderId || undefined,
         attachments: attachments.filter(Boolean) as string[],
       });
-      toast.success('Đã gửi khiếu nại! GMall sẽ phản hồi trong 24h làm việc.');
+      toast.success('Đã gửi khiếu nại! LoveGifts sẽ phản hồi trong 24h làm việc.');
       resetForm();
       setActiveTab('history');
     } catch (err: any) {
@@ -119,7 +119,7 @@ export default function ReportsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Giải quyết khiếu nại & Báo cáo</h1>
         <p className="text-gray-500 text-sm mt-1">
-          GMall cam kết xử lý các khiếu nại của Đối tác trong vòng 24h làm việc.
+          LoveGifts cam kết xử lý các khiếu nại của Đối tác trong vòng 24h làm việc.
         </p>
       </div>
 

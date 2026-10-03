@@ -62,7 +62,7 @@ export const BlogHeader = ({ categories, onSearch, searchValue, onCategorySelect
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <Link href="/blog" className="group">
             <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-black group-hover:opacity-80 transition">
-              GMALL<span className="text-blue-600">.MAG</span>
+              LoveGifts<span className="text-blue-600">.MAG</span>
             </h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] text-center md:text-left mt-1">
               Tạp chí đời sống & mua sắm

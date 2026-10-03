@@ -14,13 +14,13 @@ export const BlogFooter = () => {
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           
-          {/* CỘT 1: VỀ GMALL BLOG & SOCIAL */}
+          {/* CỘT 1: VỀ LoveGifts BLOG & SOCIAL */}
           <div className="space-y-4">
             <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide mb-4">
-              Về Gmall Blog
+              Về LoveGifts Blog
             </h4>
             <p className="text-sm text-gray-500 leading-relaxed mb-4">
-              Gmall Blog là kênh thông tin chia sẻ kiến thức mua sắm, review sản phẩm uy tín và cập nhật các xu hướng đời sống mới nhất dành cho người tiêu dùng thông thái.
+              LoveGifts Blog là kênh thông tin chia sẻ kiến thức mua sắm, review sản phẩm uy tín và cập nhật các xu hướng đời sống mới nhất dành cho người tiêu dùng thông thái.
             </p>
             <div className="flex items-center gap-3">
               <Link href="#" className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition">
@@ -81,12 +81,12 @@ export const BlogFooter = () => {
           {/* CỘT 4: TẢI ỨNG DỤNG (QR Code) */}
           <div>
              <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide mb-4">
-              Tải ứng dụng Gmall
+              Tải ứng dụng LoveGifts
             </h4>
             <div className="flex gap-3">
                <div className="relative w-24 h-24 bg-white border border-gray-200 p-1 rounded shadow-sm">
                   {/* Thay thế bằng QR Code thật của bạn */}
-                  <Image src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://gmall.vn" alt="QR Code" fill className="object-contain p-1" />
+                  <Image src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://lovegifts.vn" alt="QR Code" fill className="object-contain p-1" />
                </div>
                <div className="flex flex-col justify-between h-24">
                   <Link href="#" className="relative w-32 h-10 block">
@@ -97,7 +97,7 @@ export const BlogFooter = () => {
                   </Link>
                </div>
             </div>
-            <p className="text-xs text-gray-400 mt-3">Trải nghiệm mua sắm tốt hơn trên ứng dụng Gmall Mobile App.</p>
+            <p className="text-xs text-gray-400 mt-3">Trải nghiệm mua sắm tốt hơn trên ứng dụng LoveGifts Mobile App.</p>
           </div>
         </div>
 
@@ -105,13 +105,13 @@ export const BlogFooter = () => {
         <div className="border-t border-gray-100 pt-8">
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs text-gray-500">
               <div>
-                 <h5 className="font-bold text-gray-700 uppercase mb-2">Công ty TNHH Gmall Việt Nam</h5>
-                 <p className="mb-1">Địa chỉ: Tòa nhà Gmall, 123 Đường Công Nghệ, Quận 1, TP. Hồ Chí Minh</p>
+                 <h5 className="font-bold text-gray-700 uppercase mb-2">Công ty TNHH LoveGifts Việt Nam</h5>
+                 <p className="mb-1">Địa chỉ: Tòa nhà LoveGifts, 123 Đường Công Nghệ, Quận 1, TP. Hồ Chí Minh</p>
                  <p className="mb-1">Giấy chứng nhận Đăng ký Kinh doanh số 0309532xxx do Sở Kế hoạch và Đầu tư Thành phố Hồ Chí Minh cấp ngày 01/01/2025</p>
               </div>
               <div className="lg:text-right">
-                 <p className="mb-1">© 2026 - Bản quyền của Công ty TNHH Gmall Việt Nam</p>
-                 <p>Email: <a href="mailto:support@gmall.vn" className="text-blue-600">support@gmall.vn</a></p>
+                 <p className="mb-1">© 2026 - Bản quyền của Công ty TNHH LoveGifts Việt Nam</p>
+                 <p>Email: <a href="mailto:support@lovegifts.vn" className="text-blue-600">support@lovegifts.vn</a></p>
               </div>
            </div>
         </div>

@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { X, Gift } from "lucide-react";
 
-const STORAGE_KEY = "gmall:welcome-seen";
+const STORAGE_KEY = "lovegifts:welcome-seen";
 
 /**
  * #34 — popup chào mừng lần đầu vào website.
  *
- * Flag lưu localStorage ("gmall:welcome-seen") thay vì cookie/sessionStorage:
+ * Flag lưu localStorage ("lovegifts:welcome-seen") thay vì cookie/sessionStorage:
  *   - localStorage: persist qua close-tab → user thấy 1 lần duy nhất.
  *   - cookie: tốn bandwidth + trùng với accessToken concerns.
  *   - sessionStorage: hiện lại mỗi tab mới — quá phiền.
@@ -67,7 +67,7 @@ const WelcomePopup: React.FC = () => {
           </button>
           <Gift className="w-14 h-14 mx-auto mb-3" />
           <h2 id="welcome-popup-title" className="text-2xl font-bold">
-            Chào mừng đến với GMall!
+            Chào mừng đến với LoveGifts!
           </h2>
           {/* wiki 0108: bỏ mã "NEWUSER". Mã đó KHÔNG tồn tại trong DB — đã tra toàn bảng
               `Voucher`, không có mã nào tên NEWUSER/FIRST/ĐẦU, và cũng không có cờ đánh

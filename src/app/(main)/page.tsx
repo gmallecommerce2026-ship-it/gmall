@@ -5,13 +5,13 @@ import { apiClient } from "@/lib/api/ApiClient";
 
 // Wiki 0104: trang chủ là trang được share và lập chỉ mục nhiều nhất, mà trước đây
 // KHÔNG có thẻ title/description/og nào (root layout cũng trống). Khai riêng ở đây
-// để trang chủ có mô tả và ảnh preview của chính nó, không dùng chung mẫu `%s | GMall`.
+// để trang chủ có mô tả và ảnh preview của chính nó, không dùng chung mẫu `%s | LoveGifts`.
 export const metadata: Metadata = {
   title: {
-    absolute: 'GMall — Nền tảng quà tặng & mua sắm trực tuyến',
+    absolute: 'LoveGifts — Nền tảng quà tặng & mua sắm trực tuyến',
   },
   description:
-    'Mua quà tặng và hàng chính hãng trên GMall: gợi ý quà theo dịp, gói quà tận tâm, ' +
+    'Mua quà tặng và hàng chính hãng trên LoveGifts: gợi ý quà theo dịp, gói quà tận tâm, ' +
     'giao nhanh toàn quốc. Mỗi đơn hàng đóng góp 1% cho quỹ từ thiện.',
   alternates: { canonical: '/' },
 };
@@ -72,7 +72,7 @@ export default async function ContentPage() {
       {/* Wiki 0104: trang chủ không có `<h1>` nào — heading nhảy thẳng vào h2/h3.
           Google dùng h1 để hiểu chủ đề trang, trình đọc màn hình dùng nó để định vị.
           Dùng `sr-only` để thêm mốc ngữ nghĩa mà KHÔNG đụng tới bố cục đang chạy. */}
-      <h1 className="sr-only">GMall — Nền tảng quà tặng và mua sắm trực tuyến</h1>
+      <h1 className="sr-only">LoveGifts — Nền tảng quà tặng và mua sắm trực tuyến</h1>
       <HomeClient
         initialSections={dynamicSections}
         suggestedProducts={suggestedProducts}

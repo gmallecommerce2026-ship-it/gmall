@@ -55,10 +55,10 @@ export const getSearchUrl = (params: {
  * Chuẩn hoá đường dẫn do admin nhập trong CMS (footer, menu, banner).
  *
  * Wiki 0104. Đo dữ liệu thật trên prod (`GET /content/config/FOOTER_DATA`) thấy 3 dạng hỏng:
- *   1. `"/https://gmall.onrender.com/blog/..."` — dán URL tuyệt đối vào ô vốn dành cho
+ *   1. `"/https://lovegifts.onrender.com/blog/..."` — dán URL tuyệt đối vào ô vốn dành cho
  *      đường dẫn tương đối, thành ra một đường dẫn dính liền không tồn tại (404).
- *   2. `"https://gmall.onrender.com/blog/..."` — trỏ đúng bài viết nhưng qua domain Render
- *      CŨ đã ngừng dùng; khách bấm là rời khỏi gmall.vn sang một địa chỉ chết.
+ *   2. `"https://lovegifts.onrender.com/blog/..."` — trỏ đúng bài viết nhưng qua domain Render
+ *      CŨ đã ngừng dùng; khách bấm là rời khỏi lovegifts.vn sang một địa chỉ chết.
  *   3. Chuỗi rỗng — Next `<Link href="">` không điều hướng đi đâu cả.
  *
  * Vì sao chuẩn hoá ở FE chứ không chỉ sửa dữ liệu một lần: ô nhập trong trang quản trị
@@ -67,7 +67,7 @@ export const getSearchUrl = (params: {
  *
  * Link ra ngoài hệ thống được GIỮ NGUYÊN: không phải cái gì cũng là link nội bộ.
  */
-const OWN_HOSTS = ['gmall.vn', 'www.gmall.vn', 'gmall.onrender.com', 'localhost'];
+const OWN_HOSTS = ['lovegifts.vn', 'www.lovegifts.vn', 'lovegifts.onrender.com', 'localhost'];
 
 export function normalizeCmsHref(raw?: string | null): string {
   let h = (raw || '').trim();

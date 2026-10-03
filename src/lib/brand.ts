@@ -1,9 +1,9 @@
 export const BRAND = {
-  name: 'GMall',
-  legalName: 'GMall',
-  domain: 'gmall.vn',
-  email: 'support@gmall.vn',
-  adminEmail: 'admin@gmall.vn',
+  name: 'LoveGifts',
+  legalName: 'LoveGifts',
+  domain: 'lovegifts.vn',
+  email: 'support@lovegifts.vn',
+  adminEmail: 'admin@lovegifts.vn',
   hotline: '1900 1221',
   techHotline: '1900 6868',
 } as const;

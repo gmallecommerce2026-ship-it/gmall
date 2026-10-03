@@ -328,7 +328,7 @@ const HomeClient = ({ initialSections = [], suggestedProducts = [], flashSaleDat
       .map((b: any) => ({
         id: b.id,
         src: b.src,
-        alt: b.alt || b.title || 'Banner khuyến mãi GMall',
+        alt: b.alt || b.title || 'Banner khuyến mãi LoveGifts',
         ctaLink: (b.ctaLink || '').trim() || undefined,
         // Bản thiết kế đặt tiêu đề + nút ở nửa trái; khung hero hẹp hơn ảnh nên
         // cắt canh giữa sẽ ăn mất đúng phần đó.

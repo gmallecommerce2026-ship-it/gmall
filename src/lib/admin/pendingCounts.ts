@@ -19,7 +19,7 @@
  * đăng nhập) thì sự kiện rơi vào hư không, hoàn toàn vô hại.
  */
 
-export const PENDING_COUNTS_REFRESH_EVENT = 'gmall:pending-counts-refresh';
+export const PENDING_COUNTS_REFRESH_EVENT = 'lovegifts:pending-counts-refresh';
 
 /** Gọi sau MỖI thao tác duyệt/từ chối/đổi trạng thái thành công. */
 export function notifyPendingCountsChanged() {

@@ -45,11 +45,11 @@ export class ApiClient {
           useUserStore.setState({ user: null, isAuthenticated: false });
           localStorage.removeItem('user-storage');
           // [round15 L2 FIX] Trước đây 401 chỉ xoá user-storage → cart-storage +
-          // gmall-checkout-storage còn nguyên → máy dùng chung rehydrate giỏ hàng
+          // lovegifts-checkout-storage còn nguyên → máy dùng chung rehydrate giỏ hàng
           // user cũ sang user mới (cross-user leak). Mirror đầy đủ useUserStore.logout()
           // (trừ redirect, vì block dưới đã có redirect có-định-hướng riêng).
           localStorage.removeItem('cart-storage');
-          localStorage.removeItem('gmall-checkout-storage');
+          localStorage.removeItem('lovegifts-checkout-storage');
         } catch { /* ignore */ }
         // [round15 L2 FIX] Reset in-memory cart + tear down chat socket (lazy import
         // tránh circular dependency) — khớp logout() để badge/MiniCart/widget chat

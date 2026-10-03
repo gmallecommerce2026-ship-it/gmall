@@ -12,8 +12,8 @@ export type AppRole = User['role']; // 'BUYER' | 'SELLER' | 'ADMIN'
 // TẠI SAO GUARD PHÂN QUYỀN NẰM Ở CLIENT, KHÔNG Ở `src/proxy.tsx` (wiki 0108)
 //
 // Phiên đăng nhập của site dựa trên cookie `accessToken` do BE set, và BE nằm ở
-// HOST KHÁC với FE (`103-82-194-218.sslip.io` vs `gmall.vn`). Cookie được gắn vào
-// đúng host của BE, nên request trỏ `gmall.vn` KHÔNG BAO GIỜ mang theo nó →
+// HOST KHÁC với FE (`103-82-194-218.sslip.io` vs `lovegifts.vn`). Cookie được gắn vào
+// đúng host của BE, nên request trỏ `lovegifts.vn` KHÔNG BAO GIỜ mang theo nó →
 // `req.cookies.get('accessToken')` trong proxy LUÔN undefined, kể cả với người đã
 // đăng nhập. Mọi kiểu chặn-theo-cookie ở tầng server vì thế sẽ đá CẢ người dùng
 // thật ra ngoài — đã xảy ra thật: khối chặn `/checkout` cũ đá người đang giữa

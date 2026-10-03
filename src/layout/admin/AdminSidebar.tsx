@@ -376,7 +376,7 @@ const AdminSidebar = () => {
       useUserStore.setState({ user: null, isAuthenticated: false });
       localStorage.removeItem('user-storage');
       localStorage.removeItem('cart-storage');
-      localStorage.removeItem('gmall-checkout-storage');
+      localStorage.removeItem('lovegifts-checkout-storage');
     } catch { /* ignore */ }
   };
 
@@ -405,7 +405,7 @@ const AdminSidebar = () => {
           <FiShield size={18}/>
         </div>
         <div>
-            <h1 className="font-bold text-lg text-gray-800 leading-none">GMall</h1>
+            <h1 className="font-bold text-lg text-gray-800 leading-none">LoveGifts</h1>
             <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">Admin Portal</span>
         </div>
         {/* Nút đóng chỉ có nghĩa khi đang là drawer. Overlay cũng đóng được, nhưng nút X là

@@ -41,7 +41,7 @@ export default function InvitePage() {
   const [copied, setCopied] = useState(false);
   const { user } = useUserStore(); // Lấy user ID
 
-  // B3.6: dùng origin hiện tại (gmall.onrender.com, gmall.vn, localhost...) thay vì
+  // B3.6: dùng origin hiện tại (lovegifts.onrender.com, lovegifts.vn, localhost...) thay vì
   // hardcode lovegifts.vn. SSR fallback về env NEXT_PUBLIC_SITE_URL hoặc empty string.
   const origin =
     typeof window !== 'undefined'
@@ -125,7 +125,7 @@ export default function InvitePage() {
                  mời có ĐƠN ĐẦU TIÊN đạt giá trị tối thiểu VÀ đã giao thành công.
                  Hứa sai về tiền/điểm là thứ user sẽ khiếu nại. */}
              <p className="text-sm text-gray-700 leading-relaxed">
-                Mời bạn bè đăng ký GMall qua link của bạn. Khi bạn ấy nhận thành công đơn hàng đầu tiên đạt giá trị tối thiểu, bạn được cộng <span className="font-bold text-brand-orange text-orange-600">điểm thưởng</span> vào tài khoản tích lũy.{' '}
+                Mời bạn bè đăng ký LoveGifts qua link của bạn. Khi bạn ấy nhận thành công đơn hàng đầu tiên đạt giá trị tối thiểu, bạn được cộng <span className="font-bold text-brand-orange text-orange-600">điểm thưởng</span> vào tài khoản tích lũy.{' '}
                 <a href="/user/affiliate" className="text-orange-600 font-medium hover:underline">Xem link giới thiệu &amp; tiến độ →</a>
              </p>
          </div>
@@ -214,7 +214,7 @@ export default function InvitePage() {
               <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col justify-between">
                   <div>
                     <p className="text-sm text-gray-500 mb-4">
-                        Hãy copy link dưới đây vào email, facebook để gửi cho bạn bè của bạn cùng tham gia GMall.
+                        Hãy copy link dưới đây vào email, facebook để gửi cho bạn bè của bạn cùng tham gia LoveGifts.
                     </p>
                     
                     <div className="space-y-3">

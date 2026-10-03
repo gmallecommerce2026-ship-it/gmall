@@ -4,11 +4,11 @@ import type { Metadata } from 'next';
 import RegisterClient from './registerClient';
 
 // Wiki 0104: trang này trước đây KHÔNG khai metadata và root layout cũng trống
-// → HTML ra không có thẻ <title>, tab trình duyệt chỉ hiện "gmall.vn".
+// → HTML ra không có thẻ <title>, tab trình duyệt chỉ hiện "lovegifts.vn".
 // `(auth)/layout.tsx` đã đặt `robots: noindex` cho cả nhóm.
 export const metadata: Metadata = {
   title: 'Đăng ký',
-  description: 'Tạo tài khoản GMall miễn phí để mua sắm, tích điểm và nhận voucher chào mừng.',
+  description: 'Tạo tài khoản LoveGifts miễn phí để mua sắm, tích điểm và nhận voucher chào mừng.',
 };
 
 // Bắt buộc render động để tránh lỗi Prerender với Client Component

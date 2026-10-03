@@ -6,14 +6,14 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Liên hệ",
-  description: "Hotline 19001221 — Email support@gmall.com.vn. Liên hệ với GMall qua hotline, email hoặc tạo khiếu nại trực tiếp.",
+  description: "Hotline 19001221 — Email support@LoveGifts.com.vn. Liên hệ với LoveGifts qua hotline, email hoặc tạo khiếu nại trực tiếp.",
 };
 
 export default function ContactPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-        Liên hệ với GMall
+        Liên hệ với LoveGifts
       </h1>
       <p className="text-gray-500 mb-10">
         Đội hỗ trợ trả lời trong 24h cho mọi yêu cầu trong giờ làm việc.
@@ -36,10 +36,10 @@ export default function ContactPage() {
           <div className="text-brand-orange text-4xl mb-2">✉️</div>
           <h3 className="font-semibold text-lg mb-1">Email</h3>
           <a
-            href="mailto:support@gmall.com.vn"
+            href="mailto:support@lovegifts.com.vn"
             className="text-brand-orange font-medium hover:underline"
           >
-            support@gmall.com.vn
+            support@lovegifts.com.vn
           </a>
           <p className="text-sm text-gray-500 mt-2">Phản hồi trong 24h</p>
         </div>
@@ -71,7 +71,7 @@ export default function ContactPage() {
       <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
         <h3 className="font-semibold text-lg mb-2">Trở thành đối tác</h3>
         <p className="text-gray-700 mb-3">
-          Bạn muốn bán hàng trên GMall? Đăng ký Seller miễn phí — không phí
+          Bạn muốn bán hàng trên lovegifts? Đăng ký Seller miễn phí — không phí
           niêm yết.
         </p>
         <Link

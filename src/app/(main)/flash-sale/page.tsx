@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api/ApiClient';
 
 export const metadata: Metadata = {
   title: 'Flash Deal',
-  description: 'Tất cả sản phẩm Flash Deal đang giảm giá sốc trên GMall.',
+  description: 'Tất cả sản phẩm Flash Deal đang giảm giá sốc trên LoveGifts.',
 };
 
 interface FlashSaleProduct {

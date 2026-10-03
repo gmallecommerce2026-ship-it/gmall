@@ -90,7 +90,7 @@ export default function ReferralTab() {
   }, []);
 
   const shareText =
-    'Mình đang dùng GMall - sàn quà tặng nhiều ưu đãi. Đăng ký qua link của mình nhé!';
+    'Mình đang dùng LoveGifts - sàn quà tặng nhiều ưu đãi. Đăng ký qua link của mình nhé!';
 
   const shareTargets = [
     {
@@ -109,7 +109,7 @@ export default function ReferralTab() {
       label: 'Email',
       icon: Mail,
       className: 'bg-gray-600 hover:bg-gray-700',
-      href: `mailto:?subject=${encodeURIComponent('Mời bạn tham gia GMall')}&body=${encodeURIComponent(`${shareText}\n\n${referralLink}`)}`,
+      href: `mailto:?subject=${encodeURIComponent('Mời bạn tham gia LoveGifts')}&body=${encodeURIComponent(`${shareText}\n\n${referralLink}`)}`,
     },
   ];
 
@@ -297,7 +297,7 @@ export default function ReferralTab() {
             <h4 className="mb-2 text-sm font-semibold text-gray-800">Cách nhận điểm</h4>
             <ol className="mb-6 list-inside list-decimal space-y-2 text-sm text-gray-600">
               <li>Sao chép link ở bên cạnh và gửi cho bạn bè.</li>
-              <li>Bạn ấy bấm link rồi đăng ký tài khoản GMall.</li>
+              <li>Bạn ấy bấm link rồi đăng ký tài khoản LoveGifts.</li>
               <li>
                 Bạn ấy đặt và nhận thành công đơn hàng đầu tiên
                 {stats ? ` từ ${formatNumber(stats.minOrderValue)}đ` : ''}.

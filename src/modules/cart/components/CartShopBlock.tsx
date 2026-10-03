@@ -49,7 +49,7 @@ const CartShopBlock: React.FC<CartShopBlockProps> = ({
           <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
           */}
 
-          {/* [TẠM THỜI]: Chỉ hiển thị chữ tên GMall, không gắn link shop */}
+          {/* [TẠM THỜI]: Chỉ hiển thị chữ tên LoveGifts, không gắn link shop */}
           <span className="font-bold text-gray-800">
             {shopName}
           </span>

@@ -275,12 +275,12 @@ const PaymentPage = () => {
     return null;
   }, [receiverInfo, selectedAddressId]);
 
-  // Gộp toàn bộ vào 1 shop duy nhất (web thương mại riêng của GMall)
+  // Gộp toàn bộ vào 1 shop duy nhất (web thương mại riêng của lovegifts)
   const groupedItems = useMemo(() => {
     if (!validPaymentItems || validPaymentItems.length === 0) return {};
     return {
-      gmall: {
-        shopName: 'GMall',
+      lovegifts: {
+        shopName: 'LoveGifts',
         items: validPaymentItems,
       },
     };
@@ -595,7 +595,7 @@ const PaymentPage = () => {
                   {/* Nhóm 2: Voucher Toàn Đơn Hàng / Sàn */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center justify-between">
-                      <span>Voucher Toàn Đơn Hàng (GMall)</span>
+                      <span>Voucher Toàn Đơn Hàng (LoveGifts)</span>
                       <span className="text-orange-600 font-normal normal-case">Tối đa 1 mã</span>
                     </h4>
                     {availableVouchers.global.length > 0 ? (

@@ -99,11 +99,11 @@ export default function LoginClient() {
          // Lưu flag để Logout-on-close hook biết khi nào cần auto-logout.
          try {
            if (rememberMe) {
-             localStorage.setItem('gmall:remember', '1');
-             sessionStorage.removeItem('gmall:logout-on-close');
+             localStorage.setItem('lovegifts:remember', '1');
+             sessionStorage.removeItem('lovegifts:logout-on-close');
            } else {
-             localStorage.removeItem('gmall:remember');
-             sessionStorage.setItem('gmall:logout-on-close', '1');
+             localStorage.removeItem('lovegifts:remember');
+             sessionStorage.setItem('lovegifts:logout-on-close', '1');
            }
          } catch { /* storage có thể fail trong incognito */ }
          toast.success("Chào mừng bạn quay trở lại!");

@@ -18,8 +18,8 @@ const LoadingFallback = () => (
 // đều mang tiêu đề sai chính tả và Google lập chỉ mục đúng cái sai đó
 // ("Danh Cho Me Va Be" thay vì "Dành cho Mẹ và Bé"). Nay lấy TÊN THẬT từ BE.
 //
-// Cũng bỏ hậu tố "| G-Mall" viết tay: root layout đã có `title.template = '%s | GMall'`
-// nên viết lại ở đây sẽ ra "... | G-Mall | GMall" và tiếp tục làm lệch tên thương hiệu.
+// Cũng bỏ hậu tố "| G-Mall" viết tay: root layout đã có `title.template = '%s | LoveGifts'`
+// nên viết lại ở đây sẽ ra "... | G-Mall | LoveGifts" và tiếp tục làm lệch tên thương hiệu.
 export async function generateMetadata({ params }: any): Promise<Metadata> {
   // [Next.js 15 Fix] Await params trước khi dùng
   const resolvedParams = await params;
@@ -30,11 +30,11 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
 
   return {
     title: name,
-    description: `Mua ${name} chính hãng, giá tốt tại GMall. Giao nhanh toàn quốc, hỗ trợ gói quà.`,
+    description: `Mua ${name} chính hãng, giá tốt tại LoveGifts. Giao nhanh toàn quốc, hỗ trợ gói quà.`,
     alternates: { canonical: `/category/${slug}` },
     openGraph: {
-      title: `${name} | GMall`,
-      description: `Khám phá ${name} trên GMall.`,
+      title: `${name} | LoveGifts`,
+      description: `Khám phá ${name} trên LoveGifts.`,
       url: `/category/${slug}`,
     },
   };

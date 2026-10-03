@@ -212,13 +212,13 @@ const GiftPaymentPage: React.FC = () => {
         return cartItems.filter(item => selectedIds.includes(item.id));
     }, [parsedDataItems, isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
 
-    // Gộp vào 1 shop GMall duy nhất (Web bán lẻ/thương mại)
+    // Gộp vào 1 shop LoveGifts duy nhất (Web bán lẻ/thương mại)
     const groupedItems = useMemo(() => {
         if (!validPaymentItems || validPaymentItems.length === 0) return [];
         return [
             {
-                shopId: 'gmall',
-                shopName: 'GMall',
+                shopId: 'lovegifts',
+                shopName: 'LoveGifts',
                 items: validPaymentItems,
             }
         ];
@@ -628,7 +628,7 @@ const GiftPaymentPage: React.FC = () => {
                                     {/* Nhóm Voucher Toàn đơn */}
                                     <div>
                                         <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center justify-between">
-                                            <span>Voucher Toàn Đơn Hàng (GMall)</span>
+                                            <span>Voucher Toàn Đơn Hàng (LoveGifts)</span>
                                             <span className="text-orange-600 font-normal normal-case">Tối đa 1 mã</span>
                                         </h4>
                                         {voucherPool.global.length > 0 ? (
