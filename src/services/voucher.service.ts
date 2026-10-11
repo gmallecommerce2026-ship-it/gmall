@@ -14,8 +14,10 @@ export interface Voucher {
   usageLimit: number;
   usageCount: number;
   isActive: boolean;
-  scope: 'GLOBAL' | 'SHOP' | 'PRODUCT'; 
-  seller?: { shopName: string }; 
+  scope: 'GLOBAL' | 'SHOP' | 'PRODUCT' | 'CATEGORY';
+  shopId?: string | null;
+  shopName?: string | null;
+  seller?: { shopName: string };
   discountValue?: number; // Alias cho amount để tránh lỗi UI
   discountType?: 'FIXED_AMOUNT' | 'PERCENTAGE'; // Alias cho type
   minOrder?: number; // Alias cho minOrderValue
@@ -60,7 +62,7 @@ export const VoucherService = {
     const params = new URLSearchParams();
     if (scope) params.append('scope', scope);
     if (search) params.append('search', search);
-    
+
     const res = await apiClient.get<any[]>(`/promotions/admin/all?${params.toString()}`);
     return res;
   },
@@ -73,9 +75,14 @@ export const VoucherService = {
 
   // --- BUYER ---
   getShopVouchersPublic: async (sellerId: string) => {
-    return []; 
+    return [];
   },
-
+  getAvailableVouchers: async (productIds: string[]) => {
+    const res = await apiClient.get<Voucher[]>('/promotions/available', {
+      params: { productIds: productIds.join(',') },
+    });
+    return res as unknown as Voucher[];
+  },
   claimVoucher: async (code: string) => {
     const res = await apiClient.post(`/promotions/${code}/claim`);
     return res;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -191,7 +191,15 @@ const PaymentPage = () => {
     }
     return cartItems.filter(item => selectedIds.includes(item.id));
   }, [isBuyNowFlow, checkoutItems, cartItems, selectedIds]);
+  const orderPlacedRef = useRef(false);
 
+  // GUARD: vào /payment mà không có sản phẩm → về giỏ hàng
+  useEffect(() => {
+    if (!isAuthenticated || orderPlacedRef.current) return;
+    if (validPaymentItems.length === 0) {
+      router.replace('/cart');
+    }
+  }, [isAuthenticated, validPaymentItems.length, router]);
   // --- LOGIC: Fetch Addresses ---
   useEffect(() => {
     fetchAddresses();
@@ -347,11 +355,12 @@ const PaymentPage = () => {
     setIsMultiVoucherModalOpen(true);
     try {
       setIsVoucherLoading(true);
-      const res = await VoucherService.getMyVouchers();
+      const res = await VoucherService.getAvailableVouchers(
+        validPaymentItems.map(i => String(i.productId))
+      );
       const all = Array.isArray(res) ? res : [];
-      // Phân chia voucher theo phạm vi
       const global = all.filter(v => v.scope === 'GLOBAL');
-      const product = all.filter(v => ['SHOP', 'PRODUCT'].includes(v.scope));
+      const product = all.filter(v => ['SHOP', 'PRODUCT', 'CATEGORY'].includes(v.scope));
       setAvailableVouchers({ global, product });
     } catch (error) {
       console.error("Lỗi lấy danh sách voucher", error);
@@ -367,13 +376,10 @@ const PaymentPage = () => {
     if (isSelected) {
       setSelectedVoucherList(prev => prev.filter(v => v.id !== voucher.id));
     } else {
-      if (voucher.scope === 'GLOBAL') {
-        // Chỉ chọn tối đa 1 voucher toàn sàn: thay thế voucher toàn sàn cũ
-        setSelectedVoucherList(prev => [...prev.filter(v => v.scope !== 'GLOBAL'), voucher]);
-      } else {
-        // Cho phép chọn nhiều voucher sản phẩm/mặt hàng
-        setSelectedVoucherList(prev => [...prev, voucher]);
-      }
+      setSelectedVoucherList(prev => [
+        ...prev.filter(v => v.scope === 'GLOBAL' || v.shopId !== voucher.shopId),
+        voucher,
+      ]);
     }
   };
 
@@ -443,6 +449,8 @@ const PaymentPage = () => {
 
   // --- LOGIC 4: HANDLE CHECKOUT ---
   const handlePlaceOrder = async () => {
+    if (isProcessing) return;
+
     if (!receiverInfo.address?.trim() || !receiverInfo.phone?.trim() || !receiverInfo.name?.trim()) {
       toast.error("Vui lòng chọn hoặc thêm địa chỉ nhận hàng!");
       fetchAddresses();
@@ -460,27 +468,31 @@ const PaymentPage = () => {
       setIsProcessing(true);
       const res = await OrderService.createOrder(payload);
 
-      toast.success("Đặt hàng thành công!");
+      // 1. Chặn guard redirect về /cart
+      orderPlacedRef.current = true;
 
-      if (!isBuyNowFlow) {
-        await removeMultipleItems(selectedIds);
+      // 2. Dọn giỏ hàng. Lỗi ở bước này KHÔNG được coi là "đặt hàng thất bại"
+      try {
+        if (!isBuyNowFlow) await removeMultipleItems(selectedIds);
+      } catch (e) {
+        console.error("Lỗi xoá giỏ hàng sau khi đặt:", e);
       }
-
       resetCheckout();
 
+      // 3. Điều hướng bằng replace để thay entry /payment trong history
       if (res.paymentUrl) {
-        window.location.href = res.paymentUrl;
+        window.location.replace(res.paymentUrl);
       } else {
         const orderIds = res.orders.map(o => o.id).join(',');
-        router.push(`/payment/success?orderIds=${orderIds}`);
+        router.replace(`/payment/success?orderIds=${orderIds}`);
       }
     } catch (error: any) {
       const raw = error?.response?.data?.message;
       const msg = Array.isArray(raw) ? raw.join('\n') : (raw || error?.message || 'Đặt hàng thất bại');
       toast.error(msg);
-    } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); // chỉ mở lại nút khi lỗi
     }
+    // Bỏ `finally`: khi thành công giữ nút disabled đến lúc chuyển trang, tránh bấm đúp
   };
 
   if (!isAuthenticated) return null;
@@ -554,9 +566,8 @@ const PaymentPage = () => {
                           <div
                             key={v.id}
                             onClick={() => isEligible && handleToggleVoucher(v)}
-                            className={`flex items-stretch bg-white border rounded-xl overflow-hidden mb-3 transition-all cursor-pointer ${
-                              isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
-                            } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex items-stretch bg-white border rounded-xl overflow-hidden mb-3 transition-all cursor-pointer ${isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
+                              } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="w-24 bg-orange-50 flex flex-col items-center justify-center p-2 border-r border-dashed border-orange-200">
                               <span className="text-xs font-bold text-orange-600">SẢN PHẨM</span>
@@ -607,9 +618,8 @@ const PaymentPage = () => {
                           <div
                             key={v.id}
                             onClick={() => isEligible && handleToggleVoucher(v)}
-                            className={`flex items-stretch bg-white border rounded-xl overflow-hidden mb-3 transition-all cursor-pointer ${
-                              isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
-                            } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex items-stretch bg-white border rounded-xl overflow-hidden mb-3 transition-all cursor-pointer ${isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-gray-200 hover:border-orange-200'
+                              } ${!isEligible ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="w-24 bg-red-50 flex flex-col items-center justify-center p-2 border-r border-dashed border-red-200">
                               <span className="text-xs font-bold text-red-600">ĐƠN HÀNG</span>
@@ -717,7 +727,7 @@ const PaymentPage = () => {
                 </div>
 
                 <div className="border-t border-dashed border-gray-200 bg-[#FDFDFD]">
-                  
+
                   {/* === [CODE CŨ VOUCHER TỪNG SHOP - ĐÃ COMMENT LẠI ĐỂ DÙNG VOUCHER CHUNG] ===
                   <div className="px-5 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 cursor-pointer group"
                     onClick={() => handleOpenVoucherModal(shopId)}>
@@ -751,12 +761,12 @@ const PaymentPage = () => {
                   <div className="px-5 py-4 flex items-center gap-3">
                     <span className="text-gray-400"><Icons.Message /></span>
                     <span className="text-sm text-gray-600 min-w-[60px]">Lời nhắn:</span>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       maxLength={191}
-                      placeholder="Lưu ý cho người bán..." 
+                      placeholder="Lưu ý cho người bán..."
                       onChange={(e) => setShopMessage(shopId, e.target.value)}
-                      className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1" 
+                      className="flex-1 text-sm border-b border-gray-200 focus:border-orange-400 outline-none bg-transparent py-1"
                     />
                   </div>
 
@@ -827,12 +837,12 @@ const PaymentPage = () => {
         </div>
 
         <div className="w-full lg:w-[380px] flex-shrink-0 lg:sticky lg:top-4 z-10 h-fit">
-          <PaymentSummary 
+          <PaymentSummary
             subtotal={frontendCalculations.subtotal}
             shopDiscount={frontendCalculations.shopDiscount}
             systemDiscount={frontendCalculations.systemDiscount}
             shippingFee={frontendCalculations.shippingFee}
-            shippingDiscount={0} 
+            shippingDiscount={0}
             coinDiscount={frontendCalculations.coinDiscount}
             total={frontendCalculations.total}
             onPlaceOrder={handlePlaceOrder}
