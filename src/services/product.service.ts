@@ -24,7 +24,7 @@ export const ProductService = {
   getBoughtTogether: async (id: string) => {
     // [FIX] Bỏ .data vì interceptor đã xử lý
     const res = await api.get(`/store/products/${id}/bought-together`);
-    return res; 
+    return res;
   },
 
   updateDiscount: async (productId: string, data: DiscountPayload) => {
@@ -42,7 +42,17 @@ export const ProductService = {
     const res = await api.patch(`/seller/products/${productId}/affiliate`, data);
     return res;
   },
-  
+  searchByKeyword: async (params: {
+    search: string;
+    categoryId?: string;
+    limit?: number;
+    signal?: AbortSignal;
+  }) => {
+    const { signal, ...query } = params;
+    const res: any = await api.get('/store/products', { params: query, signal });
+    if (Array.isArray(res)) return res;
+    return Array.isArray(res?.data) ? res.data : [];
+  },
   // 2. More from this Shop
   getMoreFromShop: async (id: string) => {
     // [FIX] Bỏ .data

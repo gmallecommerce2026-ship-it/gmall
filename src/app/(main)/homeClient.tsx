@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { ProductService } from "@/services/product.service";
 import Link from "next/link";
 import dynamic from 'next/dynamic';
 import HeroCarousel from "@/modules/home/components/HeroCarousel";
@@ -216,39 +217,78 @@ const SmartProductSection = ({ title, emoji, headerColor, viewAllLink, productsD
 };
 
 // 3. SPECIAL: TWO ROW SECTION WRAPPER (ĐÃ CẬP NHẬT: KHÔNG FETCH NỮA)
+const mapList = (list: any[]) =>
+  list.map(mapApiToUI).filter((p): p is NonNullable<typeof p> => !!p);
+
+// Giữ chip đang chọn + sản phẩm đã lọc cho MỘT cột
+function useColumnFilter(col: any) {
+  const [activeFilter, setActiveFilter] = useState<string | undefined>();
+  const [filtered, setFiltered] = useState<any[] | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // useMemo để identity ổn định: SectionColumn có effect shuffle phụ thuộc `products`
+  const baseProducts = useMemo(() => mapList(col?.products || []), [col?.products]);
+
+  const onFilterSelect = useCallback(
+    async (keyword: string) => {
+      abortRef.current?.abort();
+
+      // Bấm lại chip đang chọn => bỏ lọc, quay về danh sách gốc
+      if (keyword === activeFilter) {
+        setActiveFilter(undefined);
+        setFiltered(null);
+        return;
+      }
+
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      setActiveFilter(keyword);
+
+      try {
+        const raw = await ProductService.searchByKeyword({
+          search: keyword,
+          categoryId: col?.categoryId,
+          limit: 4, // khối chỉ hiển thị 3 (desktop) / 4 (mobile) sản phẩm
+          signal: ctrl.signal,
+        });
+        if (!ctrl.signal.aborted) setFiltered(mapList(raw));
+      } catch {
+        if (!ctrl.signal.aborted) setFiltered([]);
+      }
+    },
+    [activeFilter, col?.categoryId],
+  );
+
+  return { activeFilter, onFilterSelect, products: filtered ?? baseProducts };
+}
+
 const TwoRowSectionWrapper = ({ config }: { config: any }) => {
-  // Config bây giờ đã chứa sẵn products (được Backend fetch và populate)
-  // config.left.products và config.right.products
-  
-  const leftRawData = config?.left?.products || [];
-  const rightRawData = config?.right?.products || [];
+  // Hooks phải đứng TRƯỚC early return
+  const left = useColumnFilter(config?.left);
+  const right = useColumnFilter(config?.right);
 
-  if (leftRawData.length === 0 && rightRawData.length === 0) return null;
+  if ((config?.left?.products?.length ?? 0) === 0 && (config?.right?.products?.length ?? 0) === 0) {
+    return null;
+  }
 
-  // Helper map dữ liệu
-  const filterValidProducts = (list: any[]) => list.map(mapApiToUI).filter((p): p is NonNullable<typeof p> => p !== undefined && p !== null);
+  const buildCol = (side: any, state: ReturnType<typeof useColumnFilter>): SectionColumnData => ({
+    title: side?.title || '',
+    emoji: side?.emoji,
+    headerColor: side?.headerColor,
+    products: state.products,
+    viewAllLink: side?.categoryId ? `/category/${side.categoryId}` : '/search',
+    filters: side?.filters || [],
+    activeFilter: state.activeFilter,
+    onFilterSelect: state.onFilterSelect,
+  });
 
-  const leftCol: SectionColumnData = {
-     title: config?.left?.title || '',
-     emoji: config?.left?.emoji,
-     headerColor: config?.left?.headerColor,
-     products: filterValidProducts(leftRawData), // Truyền data đã map vào
-     viewAllLink: config?.left?.categoryId ? `/category/${config.left.categoryId}` : '/search',
-     filters: config?.left?.filters || [] 
-  };
-
-  const rightCol: SectionColumnData = {
-     title: config?.right?.title || '',
-     emoji: config?.right?.emoji,
-     headerColor: config?.right?.headerColor,
-     products: filterValidProducts(rightRawData), // Truyền data đã map vào
-     viewAllLink: config?.right?.categoryId ? `/category/${config.right.categoryId}` : '/search',
-     filters: config?.right?.filters || []
-  };
-
-  return <CategoryTwoRowSection leftColumnData={leftCol} rightColumnData={rightCol} />;
+  return (
+    <CategoryTwoRowSection
+      leftColumnData={buildCol(config?.left, left)}
+      rightColumnData={buildCol(config?.right, right)}
+    />
+  );
 };
-
 // 4. SUGGESTED SECTION
 // #18 + #19: "Xem thêm" load thêm SP inline thay vì navigate; ưu tiên SP
 // popular (theo soldCount/rating) thay vì SP mới đăng (logic ở BE).
