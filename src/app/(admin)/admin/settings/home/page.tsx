@@ -281,6 +281,268 @@ export default function HomeSettingsPage() {
   );
 }
 
+// --- FLASH SALE: QUẢN LÝ SẢN PHẨM TRONG KHUNG GIỜ ---
+// Sản phẩm gắn vào KHUNG GIỜ (FlashSaleProduct), không gắn vào khối, nên thêm/gỡ
+// có hiệu lực ngay (không cần bấm "Lưu Cấu Hình" của khối).
+type FsItem = {
+  id: string;
+  productId: string;
+  name: string;
+  image: string | null;
+  variantLabel: string;
+  originalPrice: number;
+  salePrice: number;
+  stock: number;
+  sold: number;
+  status: string;
+};
+type FsVariant = { id: string; label: string; price: number; stock: number };
+type FsProduct = { id: string; name: string; image: string | null; shopName: string | null; variants: FsVariant[] };
+type FsDraft = { productId: string; productName: string; variantId: string; variantLabel: string; price: number; stock: number };
+
+const fsMoney = (n: number) => `${Number(n || 0).toLocaleString('vi-VN')}đ`;
+const fsArr = (res: any): any[] => (Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []);
+
+function FlashSaleItemsPanel({ sessionId, ended, onChanged }: { sessionId: string; ended?: boolean; onChanged?: () => void }) {
+  const [items, setItems] = useState<FsItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [results, setResults] = useState<FsProduct[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [draft, setDraft] = useState<FsDraft | null>(null);
+  const [promoPrice, setPromoPrice] = useState('');
+  const [promoStock, setPromoStock] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const loadItems = useCallback(async () => {
+    if (!sessionId) return;
+    setLoading(true);
+    try {
+      const res = await apiClient.get(`/admin/flash-sale/sessions/${sessionId}/products`);
+      setItems(fsArr(res));
+    } catch (e: any) {
+      toast.error(e?.message || 'Không tải được sản phẩm của khung giờ');
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId]);
+
+  // Đổi khung giờ => reset form + tải lại danh sách
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    setDraft(null);
+    setResults([]);
+    setKeyword('');
+    loadItems();
+  }, [loadItems]);
+
+  // Tìm sản phẩm (debounce 400ms)
+  useEffect(() => {
+    const kw = keyword.trim();
+    if (kw.length < 2) { setResults([]); return; }
+    let alive = true;
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await apiClient.get('/admin/flash-sale/product-search', { params: { keyword: kw } });
+        if (alive) setResults(fsArr(res));
+      } catch (e: any) {
+        if (alive) toast.error(e?.message || 'Tìm kiếm thất bại');
+      } finally {
+        if (alive) setSearching(false);
+      }
+    }, 400);
+    return () => { alive = false; clearTimeout(t); };
+  }, [keyword]);
+
+  const pickVariant = (p: FsProduct, v: FsVariant) => {
+    setDraft({ productId: p.id, productName: p.name, variantId: v.id, variantLabel: v.label, price: v.price, stock: v.stock });
+    setPromoPrice('');
+    setPromoStock(String(Math.min(v.stock, 10)));
+  };
+
+  const submit = async () => {
+    if (!draft) return;
+    const price = Number(promoPrice);
+    const stock = Math.floor(Number(promoStock));
+    if (!Number.isFinite(price) || price <= 0 || price >= draft.price) {
+      toast.error(`Giá flash sale phải nhỏ hơn giá gốc (${fsMoney(draft.price)})`);
+      return;
+    }
+    if (!Number.isFinite(stock) || stock < 1 || stock > draft.stock) {
+      toast.error(`Số suất phải từ 1 đến tồn kho (${draft.stock})`);
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiClient.post(`/admin/flash-sale/sessions/${sessionId}/products`, {
+        productId: draft.productId,
+        variantId: draft.variantId,
+        promoPrice: price,
+        promoStock: stock,
+      });
+      toast.success('Đã thêm sản phẩm vào khung giờ');
+      setDraft(null);
+      await loadItems();
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message || 'Không thêm được sản phẩm');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (it: FsItem) => {
+    if (!confirm(`Gỡ "${it.name}" khỏi khung giờ này?`)) return;
+    try {
+      await apiClient.delete(`/admin/flash-sale/products/${it.id}`);
+      toast.success('Đã gỡ sản phẩm');
+      await loadItems();
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message || 'Không gỡ được sản phẩm');
+    }
+  };
+
+  const percent = draft && Number(promoPrice) > 0 && Number(promoPrice) < draft.price
+    ? Math.round(((draft.price - Number(promoPrice)) / draft.price) * 100)
+    : null;
+
+  return (
+    <div className="space-y-4 rounded-xl border border-orange-200 bg-orange-50/40 p-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-bold uppercase text-gray-800">Sản phẩm trong khung giờ này</h4>
+        <span className="text-xs text-gray-500">{items.length} sản phẩm</span>
+      </div>
+
+      {/* DANH SÁCH ĐÃ THÊM */}
+      <div className="max-h-64 overflow-y-auto rounded border border-gray-200 bg-white">
+        {loading ? (
+          <p className="p-3 text-sm text-gray-500">Đang tải...</p>
+        ) : items.length === 0 ? (
+          <p className="p-3 text-sm text-gray-500">Chưa có sản phẩm nào — khối sẽ không hiện trên trang chủ cho tới khi có ít nhất 1 sản phẩm.</p>
+        ) : (
+          items.map(it => (
+            <div key={it.id} className="flex items-center gap-3 border-b border-gray-100 p-2 last:border-0">
+              {it.image
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={it.image} alt="" className="h-12 w-12 flex-shrink-0 rounded object-cover" />
+                : <div className="h-12 w-12 flex-shrink-0 rounded bg-gray-100" />}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-800">{it.name}</p>
+                <p className="truncate text-xs text-gray-500">{it.variantLabel}</p>
+                <p className="text-xs">
+                  <span className="font-bold text-orange-600">{fsMoney(it.salePrice)}</span>{' '}
+                  <span className="text-gray-400 line-through">{fsMoney(it.originalPrice)}</span>
+                  <span className="ml-2 text-gray-500">Đã bán {it.sold}/{it.stock}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => remove(it)}
+                disabled={it.sold > 0}
+                title={it.sold > 0 ? 'Đã có người mua, không thể gỡ' : 'Gỡ khỏi khung giờ'}
+                className="rounded border border-red-200 p-1.5 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* THÊM SẢN PHẨM */}
+      {ended ? (
+        <p className="text-xs italic text-gray-500">Khung giờ đã kết thúc nên không thể thêm sản phẩm.</p>
+      ) : (
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase text-gray-600">Thêm sản phẩm</label>
+          <input
+            value={keyword}
+            onChange={e => setKeyword(e.target.value)}
+            placeholder="Nhập tên sản phẩm (từ 2 ký tự)..."
+            className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
+          />
+          {searching && <p className="text-xs text-gray-500">Đang tìm...</p>}
+
+          {results.length > 0 && (
+            <div className="max-h-72 overflow-y-auto rounded border border-gray-200 bg-white">
+              {results.map(p => (
+                <div key={p.id} className="border-b border-gray-100 p-2 last:border-0">
+                  <div className="flex items-center gap-2">
+                    {p.image
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={p.image} alt="" className="h-10 w-10 flex-shrink-0 rounded object-cover" />
+                      : <div className="h-10 w-10 flex-shrink-0 rounded bg-gray-100" />}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-800">{p.name}</p>
+                      {p.shopName && <p className="text-xs text-gray-400">{p.shopName}</p>}
+                    </div>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1 pl-12">
+                    {p.variants.length === 0 ? (
+                      <span className="text-xs text-red-500">Sản phẩm chưa có biến thể nên không thể thêm</span>
+                    ) : p.variants.map(v => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => pickVariant(p, v)}
+                        disabled={v.stock < 1}
+                        className={`rounded border px-2 py-1 text-xs hover:border-orange-500 hover:text-orange-600 disabled:opacity-40 ${draft?.variantId === v.id ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-300'}`}
+                      >
+                        {v.label} · {fsMoney(v.price)} · kho {v.stock}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {draft && (
+            <div className="space-y-3 rounded border border-orange-300 bg-white p-3">
+              <p className="text-sm">
+                <span className="font-semibold">{draft.productName}</span>{' '}
+                <span className="text-gray-500">({draft.variantLabel})</span>
+              </p>
+              <p className="text-xs text-gray-500">Giá gốc {fsMoney(draft.price)} · Tồn kho {draft.stock}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-600">Giá flash sale (đ)</label>
+                  <input
+                    type="number" min={1} value={promoPrice}
+                    onChange={e => setPromoPrice(e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-orange-500"
+                  />
+                  {percent !== null && <p className="mt-1 text-xs text-green-600">Giảm {percent}%</p>}
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600">Số suất (tối đa {draft.stock})</label>
+                  <input
+                    type="number" min={1} max={draft.stock} value={promoStock}
+                    onChange={e => setPromoStock(e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setDraft(null)} className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Huỷ</button>
+                <button
+                  type="button" onClick={submit} disabled={saving}
+                  className="rounded bg-brand-orange px-4 py-1.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {saving ? 'Đang lưu...' : 'Thêm vào flash sale'}
+                </button>
+              </div>
+              <p className="text-[10px] italic text-gray-400">* Thêm lại cùng biến thể sẽ cập nhật giá/số suất.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- MODAL EDITOR COMPONENT ---
 function EditorModal({ initialData, onClose, onSave }: any) {
   const [type, setType] = useState<SectionType>(initialData?.type || 'CATEGORY');
@@ -320,6 +582,8 @@ function EditorModal({ initialData, onClose, onSave }: any) {
 
   const previewData = { title, type, config };
   const [sessions, setSessions] = useState<any[]>([]);
+  // Tăng số này để tải lại danh sách khung giờ (cập nhật số "SP" sau khi thêm/gỡ sản phẩm)
+  const [sessionsTick, setSessionsTick] = useState(0);
   useEffect(() => {
     if (type !== 'FLASH_SALE') return;
     let alive = true;
@@ -327,7 +591,7 @@ function EditorModal({ initialData, onClose, onSave }: any) {
       .then((res: any) => { if (alive) setSessions(Array.isArray(res) ? res : (res?.data || [])); })
       .catch(() => { if (alive) setSessions([]); });
     return () => { alive = false; };
-  }, [type]);
+  }, [type, sessionsTick]);
   const handleChangeConfig = (key: string, val: any) => setConfig((prev: any) => ({ ...prev, [key]: val }));
 
   const handleDeepConfig = (section: 'left' | 'right', key: string, val: any) => {
@@ -610,9 +874,18 @@ function EditorModal({ initialData, onClose, onSave }: any) {
                         ))}
                     </select>
                     <p className="text-xs text-gray-400 mt-2 italic">
-                      * Trang chủ hiện đồng hồ đếm ngược ở góc phải. Hết giờ, khối tự ẩn.
+                      * Trang chủ hiện đồng hồ đếm ngược ở góc phải. Hết giờ, khối tự ẩn. Khung giờ chưa bắt đầu thì khối chưa hiện.
                     </p>
                   </div>
+
+                  {/* Thêm / gỡ sản phẩm của khung giờ đã chọn */}
+                  {config.sessionId && (
+                    <FlashSaleItemsPanel
+                      sessionId={config.sessionId}
+                      ended={sessions.find(s => s.id === config.sessionId)?.timeStatus === 'ENDED'}
+                      onChanged={() => setSessionsTick(t => t + 1)}
+                    />
+                  )}
                 </div>
               )}
             </section>
