@@ -7,7 +7,8 @@ import { FiPlus, FiClock, FiCalendar, FiMoreVertical, FiPlayCircle, FiCheckCircl
 import { Zap } from 'lucide-react';
 import { AdminService } from '@/services/AdminService';
 import { FlashSaleSession, FlashSaleStatus, CreateFlashSaleDto } from '@/types/admin';
-
+import { FiPackage, FiSearch } from 'react-icons/fi';
+import { apiClient } from '@/lib/api/ApiClient';
 // Helper function format date for input datetime-local
 const formatDateForInput = (isoString: string) => {
   if (!isoString) return '';
@@ -22,16 +23,182 @@ const formatDisplayDate = (isoString: string) => {
   const date = new Date(isoString);
   return date.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 };
+const vnd = (n: number) => `${Number(n || 0).toLocaleString('vi-VN')}đ`;
 
+function FlashSaleItemsModal({ session, onClose, onChanged }: {
+  session: FlashSaleSession; onClose: () => void; onChanged: () => void;
+}) {
+  const [items, setItems] = useState<any[]>([]);
+  const [keyword, setKeyword] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  // draft theo productId: { variantId, price, stock }
+  const [drafts, setDrafts] = useState<Record<string, { variantId: string; price: string; stock: string }>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const loadItems = useCallback(async () => {
+    try {
+      const res: any = await apiClient.get(`/admin/flash-sale/sessions/${session.id}/products`);
+      setItems(Array.isArray(res) ? res : res?.data || []);
+    } catch (e) { console.error(e); }
+  }, [session.id]);
+
+  useEffect(() => { loadItems(); }, [loadItems]);
+
+  const search = async () => {
+    if (!keyword.trim()) return;
+    setSearching(true);
+    try {
+      const res: any = await apiClient.get('/admin/flash-sale/product-search', { params: { keyword: keyword.trim() } });
+      const list = Array.isArray(res) ? res : res?.data || [];
+      setResults(list);
+      setDrafts((prev) => {
+        const next = { ...prev };
+        list.forEach((p: any) => {
+          if (!next[p.id]) next[p.id] = { variantId: p.variants[0]?.id || '', price: '', stock: '' };
+        });
+        return next;
+      });
+    } catch (e: any) {
+      alert(e?.message || 'Không tìm được sản phẩm');
+    } finally { setSearching(false); }
+  };
+
+  const setDraft = (pid: string, patch: Partial<{ variantId: string; price: string; stock: string }>) =>
+    setDrafts((p) => ({ ...p, [pid]: { ...p[pid], ...patch } }));
+
+  const add = async (p: any) => {
+    const d = drafts[p.id];
+    if (!d?.variantId) return alert('Sản phẩm chưa có biến thể');
+    setBusy(p.id);
+    try {
+      await apiClient.post(`/admin/flash-sale/sessions/${session.id}/products`, {
+        productId: p.id,
+        variantId: d.variantId,
+        promoPrice: Number(d.price),
+        promoStock: Number(d.stock),
+      });
+      await loadItems();
+      onChanged();
+      setDraft(p.id, { price: '', stock: '' });
+    } catch (e: any) {
+      alert(e?.message || 'Không thêm được sản phẩm');
+    } finally { setBusy(null); }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm('Gỡ sản phẩm này khỏi khung giờ?')) return;
+    setBusy(id);
+    try {
+      await apiClient.delete(`/admin/flash-sale/products/${id}`);
+      await loadItems();
+      onChanged();
+    } catch (e: any) {
+      alert(e?.message || 'Không gỡ được');
+    } finally { setBusy(null); }
+  };
+
+  const inputCls = 'border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-brand-orange';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
+          <div>
+            <h3 className="font-bold text-lg text-gray-800">Sản phẩm trong khung giờ</h3>
+            <p className="text-xs text-gray-500">{formatDisplayDate(session.startTime)} → {formatDisplayDate(session.endTime)}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><FiX size={24} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Đã thêm */}
+          <div>
+            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Đã thêm ({items.length})</h4>
+            {items.length === 0 ? (
+              <p className="text-sm text-gray-400 py-3">Chưa có sản phẩm nào.</p>
+            ) : (
+              <div className="divide-y border rounded-lg">
+                {items.map((it) => (
+                  <div key={it.id} className="flex items-center gap-3 p-3">
+                    {it.image ? <img src={it.image} alt="" className="w-12 h-12 rounded object-cover border" /> : <div className="w-12 h-12 rounded bg-gray-100" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{it.name}</p>
+                      <p className="text-xs text-gray-500">{it.variantLabel}</p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p><span className="text-gray-400 line-through mr-2">{vnd(it.originalPrice)}</span><span className="font-bold text-red-600">{vnd(it.salePrice)}</span></p>
+                      <p className="text-xs text-gray-500">Đã bán {it.sold}/{it.stock}</p>
+                    </div>
+                    <button onClick={() => remove(it.id)} disabled={busy === it.id}
+                      className="text-red-400 hover:text-red-600 p-1 disabled:opacity-40" title="Gỡ"><FiTrash2 size={18} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tìm & thêm */}
+          <div>
+            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Thêm sản phẩm</h4>
+            <div className="flex gap-2 mb-3">
+              <input className={`${inputCls} flex-1 py-2`} placeholder="Nhập tên sản phẩm..." value={keyword}
+                onChange={(e) => setKeyword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} />
+              <button onClick={search} disabled={searching}
+                className="bg-brand-orange text-white px-4 rounded flex items-center gap-2 text-sm font-medium disabled:opacity-50">
+                <FiSearch size={16} /> {searching ? 'Đang tìm...' : 'Tìm'}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {results.map((p) => {
+                const d = drafts[p.id] || { variantId: '', price: '', stock: '' };
+                const cur = p.variants.find((v: any) => v.id === d.variantId);
+                return (
+                  <div key={p.id} className="border rounded-lg p-3 flex flex-col md:flex-row md:items-center gap-3">
+                    <div className="flex items-center gap-3 md:w-64 shrink-0 min-w-0">
+                      {p.image ? <img src={p.image} alt="" className="w-12 h-12 rounded object-cover border" /> : <div className="w-12 h-12 rounded bg-gray-100" />}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 line-clamp-2">{p.name}</p>
+                        {p.shopName && <p className="text-xs text-gray-400 truncate">{p.shopName}</p>}
+                      </div>
+                    </div>
+                    <select className={`${inputCls} flex-1 min-w-0`} value={d.variantId}
+                      onChange={(e) => setDraft(p.id, { variantId: e.target.value })}>
+                      {p.variants.map((v: any) => (
+                        <option key={v.id} value={v.id}>{v.label} • {vnd(v.price)} • kho {v.stock}</option>
+                      ))}
+                    </select>
+                    <input type="number" className={`${inputCls} w-32`} placeholder="Giá sale" value={d.price}
+                      onChange={(e) => setDraft(p.id, { price: e.target.value })} />
+                    <input type="number" className={`${inputCls} w-24`} placeholder={cur ? `≤ ${cur.stock}` : 'SL'} value={d.stock}
+                      onChange={(e) => setDraft(p.id, { stock: e.target.value })} />
+                    <button onClick={() => add(p)} disabled={busy === p.id || !d.price || !d.stock}
+                      className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-green-700 disabled:opacity-40 whitespace-nowrap">
+                      {busy === p.id ? '...' : 'Thêm'}
+                    </button>
+                  </div>
+                );
+              })}
+              {results.length === 0 && keyword && !searching && (
+                <p className="text-sm text-gray-400">Bấm "Tìm" để xem kết quả.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 export default function FlashSalePage() {
   const [sessions, setSessions] = useState<FlashSaleSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<FlashSaleSession | null>(null);
-
+  const [itemsSession, setItemsSession] = useState<FlashSaleSession | null>(null);
   // Form handling
   const { register, handleSubmit, reset, setValue, setError, formState: { errors, isSubmitting } } = useForm<CreateFlashSaleDto>();
 
@@ -122,14 +289,14 @@ export default function FlashSalePage() {
       } else {
         await AdminService.createFlashSaleSession(payload);
       }
-      
+
       setIsModalOpen(false);
       fetchSessions();
-      alert('Thao tác thành công!'); 
+      alert('Thao tác thành công!');
     } catch (error: any) {
       console.error(error);
-      const errorMessage = Array.isArray(error.message) 
-        ? error.message.join(', ') 
+      const errorMessage = Array.isArray(error.message)
+        ? error.message.join(', ')
         : error.message || 'Có lỗi xảy ra.';
       alert(`Lỗi API: ${errorMessage}`);
     }
@@ -144,13 +311,13 @@ export default function FlashSalePage() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
-           <div className="flex items-center gap-2 mb-1">
-             <div className="bg-yellow-400 text-red-600 p-1.5 rounded-full"><Zap size={20} fill="currentColor" /></div>
-             <h1 className="text-2xl font-bold text-gray-800">Quản Lý Flash Sale</h1>
-           </div>
-           <p className="text-gray-500 text-sm">Tạo khung giờ & Duyệt sản phẩm đăng ký từ Seller</p>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="bg-yellow-400 text-red-600 p-1.5 rounded-full"><Zap size={20} fill="currentColor" /></div>
+            <h1 className="text-2xl font-bold text-gray-800">Quản Lý Flash Sale</h1>
+          </div>
+          <p className="text-gray-500 text-sm">Tạo khung giờ & Duyệt sản phẩm đăng ký từ Seller</p>
         </div>
-        <button 
+        <button
           onClick={handleCreate}
           className="bg-brand-orange text-white px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-600 font-medium shadow-sm transition"
         >
@@ -160,42 +327,42 @@ export default function FlashSalePage() {
 
       {/* STATS CARDS */}
       <div className="grid grid-cols-3 gap-6 mb-8">
-         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Đang Diễn Ra</p>
-               <h3 className="text-2xl font-bold text-blue-600 mt-1">{ongoingCount} Session{ongoingCount !== 1 && 's'}</h3>
-            </div>
-            <div className="bg-blue-50 p-3 rounded-full text-blue-600"><FiPlayCircle size={24} /></div>
-         </div>
-         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Sắp Diễn Ra</p>
-               <h3 className="text-2xl font-bold text-orange-600 mt-1">{upcomingCount} Session{upcomingCount !== 1 && 's'}</h3>
-            </div>
-            <div className="bg-orange-50 p-3 rounded-full text-orange-600"><FiClock size={24} /></div>
-         </div>
-         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Tổng Session (Ngày)</p>
-               <h3 className="text-2xl font-bold text-green-600 mt-1">{sessions.length}</h3>
-            </div>
-            <div className="bg-green-50 p-3 rounded-full text-green-600"><FiCheckCircle size={24} /></div>
-         </div>
+        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Đang Diễn Ra</p>
+            <h3 className="text-2xl font-bold text-blue-600 mt-1">{ongoingCount} Session{ongoingCount !== 1 && 's'}</h3>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-full text-blue-600"><FiPlayCircle size={24} /></div>
+        </div>
+        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Sắp Diễn Ra</p>
+            <h3 className="text-2xl font-bold text-orange-600 mt-1">{upcomingCount} Session{upcomingCount !== 1 && 's'}</h3>
+          </div>
+          <div className="bg-orange-50 p-3 rounded-full text-orange-600"><FiClock size={24} /></div>
+        </div>
+        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Tổng Session (Ngày)</p>
+            <h3 className="text-2xl font-bold text-green-600 mt-1">{sessions.length}</h3>
+          </div>
+          <div className="bg-green-50 p-3 rounded-full text-green-600"><FiCheckCircle size={24} /></div>
+        </div>
       </div>
 
       {/* SESSION LIST */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-           <h3 className="font-bold text-gray-700">Danh Sách Khung Giờ</h3>
-           <div className="flex gap-2 text-sm items-center">
-              <span className="text-gray-500 mr-2">Lọc theo ngày:</span>
-              <input 
-                type="date" 
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-1.5 border rounded shadow-sm text-gray-700 focus:outline-brand-orange"
-              />
-           </div>
+          <h3 className="font-bold text-gray-700">Danh Sách Khung Giờ</h3>
+          <div className="flex gap-2 text-sm items-center">
+            <span className="text-gray-500 mr-2">Lọc theo ngày:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-1.5 border rounded shadow-sm text-gray-700 focus:outline-brand-orange"
+            />
+          </div>
         </div>
 
         {loading ? (
@@ -216,48 +383,49 @@ export default function FlashSalePage() {
             <tbody className="text-sm">
               {sessions.map(session => (
                 <tr key={session.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
-                    <td className="px-6 py-4 font-bold text-gray-800">
-                      <div className="flex items-center gap-2">
-                         <FiClock className="text-gray-400"/> 
-                         <span>{formatDisplayDate(session.startTime)} <br/> <span className="text-gray-400 text-xs font-normal">đến</span> {formatDisplayDate(session.endTime)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold
+                  <td className="px-6 py-4 font-bold text-gray-800">
+                    <div className="flex items-center gap-2">
+                      <FiClock className="text-gray-400" />
+                      <span>{formatDisplayDate(session.startTime)} <br /> <span className="text-gray-400 text-xs font-normal">đến</span> {formatDisplayDate(session.endTime)}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold
                           ${session.timeStatus === 'ONGOING' ? 'bg-red-100 text-red-600 animate-pulse' : ''}
                           ${session.timeStatus === 'UPCOMING' ? 'bg-blue-100 text-blue-600' : ''}
                           ${session.timeStatus === 'ENDED' ? 'bg-gray-100 text-gray-500' : ''}
                       `}>
-                          {session.timeStatus === 'ONGOING' && '⚡ Đang diễn ra'}
-                          {session.timeStatus === 'UPCOMING' && 'Sắp diễn ra'}
-                          {session.timeStatus === 'ENDED' && 'Đã kết thúc'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <span className="font-bold">{session._count?.products || 0}</span> sản phẩm
-                    </td>
-                    <td className="px-6 py-4">
-                        <button 
-                          onClick={() => handleToggleStatus(session)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            session.status === FlashSaleStatus.ENABLED ? 'bg-brand-orange' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                            session.status === FlashSaleStatus.ENABLED ? 'translate-x-6' : 'translate-x-1'
-                          }`}/>
-                        </button>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button onClick={() => handleEdit(session)} className="text-blue-500 hover:text-blue-700 p-1" title="Chỉnh sửa">
-                          <FiEdit2 size={18}/>
-                        </button>
-                        <button onClick={() => handleDelete(session.id)} className="text-red-400 hover:text-red-600 p-1" title="Xóa">
-                          <FiTrash2 size={18}/>
-                        </button>
-                      </div>
-                    </td>
+                      {session.timeStatus === 'ONGOING' && '⚡ Đang diễn ra'}
+                      {session.timeStatus === 'UPCOMING' && 'Sắp diễn ra'}
+                      {session.timeStatus === 'ENDED' && 'Đã kết thúc'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    <span className="font-bold">{session._count?.products || 0}</span> sản phẩm
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => handleToggleStatus(session)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${session.status === FlashSaleStatus.ENABLED ? 'bg-brand-orange' : 'bg-gray-300'
+                        }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${session.status === FlashSaleStatus.ENABLED ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={() => setItemsSession(session)} className="text-green-600 hover:text-green-800 p-1" title="Quản lý sản phẩm">
+                        <FiPackage size={18} />
+                      </button>
+                      <button onClick={() => handleEdit(session)} className="text-blue-500 hover:text-blue-700 p-1" title="Chỉnh sửa">
+                        <FiEdit2 size={18} />
+                      </button>
+                      <button onClick={() => handleDelete(session.id)} className="text-red-400 hover:text-red-600 p-1" title="Xóa">
+                        <FiTrash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -273,13 +441,13 @@ export default function FlashSalePage() {
               <h3 className="font-bold text-lg text-gray-800">{editingSession ? 'Cập Nhật Khung Giờ' : 'Tạo Khung Giờ Mới'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><FiX size={24} /></button>
             </div>
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
               {/* Start Time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian bắt đầu</label>
-                <input 
-                  type="datetime-local" 
+                <input
+                  type="datetime-local"
                   {...register('startTime', { required: 'Vui lòng chọn thời gian bắt đầu' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange outline-none"
                 />
@@ -289,8 +457,8 @@ export default function FlashSalePage() {
               {/* End Time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian kết thúc</label>
-                <input 
-                  type="datetime-local" 
+                <input
+                  type="datetime-local"
                   {...register('endTime', { required: 'Vui lòng chọn thời gian kết thúc' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange outline-none"
                 />
@@ -299,8 +467,8 @@ export default function FlashSalePage() {
 
               {/* Status */}
               <div className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="statusCheckbox"
                   className="w-4 h-4 text-brand-orange rounded border-gray-300 focus:ring-brand-orange"
                   {...register('status')}
@@ -312,15 +480,15 @@ export default function FlashSalePage() {
               </div>
 
               <div className="pt-2 flex gap-3">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
                 >
                   Hủy
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 bg-brand-orange text-white rounded-lg hover:bg-orange-600 font-medium disabled:opacity-50 flex justify-center items-center"
                 >
@@ -334,6 +502,13 @@ export default function FlashSalePage() {
             </form>
           </div>
         </div>
+      )}
+      {itemsSession && (
+        <FlashSaleItemsModal
+          session={itemsSession}
+          onClose={() => setItemsSession(null)}
+          onChanged={fetchSessions}
+        />
       )}
     </div>
   );
