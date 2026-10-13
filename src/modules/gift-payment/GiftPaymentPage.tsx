@@ -826,25 +826,50 @@ const GiftPaymentPage: React.FC = () => {
                     })}
 
                     {/* 3. DỊCH VỤ GÓI QUÀ (ĐỒNG BỘ ROUNDED-LG VÀ BORDER CHUẨN) */}
+                    {/* 3. DỊCH VỤ GÓI QUÀ */}
                     <div className="bg-white rounded-lg shadow-sm border border-orange-200/80 overflow-hidden">
                         <div className="bg-orange-50/70 px-5 py-3.5 border-b border-orange-100 flex items-center gap-2">
                             <GiftIcon className="text-orange-600" size={18} />
                             <h3 className="font-bold text-gray-800 text-sm sm:text-base">Dịch vụ Gói Quà</h3>
                         </div>
                         <div className="p-5">
-                            <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
-                                {giftWrapData.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        onClick={() => setSelectedGiftWrap(selectedGiftWrap === index ? null : index)}
-                                        className={`
-                      cursor-pointer rounded-xl p-[2px] transition-all duration-200 flex-shrink-0
-                      ${selectedGiftWrap === index ? 'ring-2 ring-orange-500 scale-102 shadow-md' : 'hover:opacity-90 opacity-75'}
-                    `}
-                                    >
-                                        <GiftWrapCard {...item} selected={selectedGiftWrap === index} />
-                                    </div>
-                                ))}
+                            {/* p-1.5: chừa chỗ cho viền/bóng không bị overflow cắt */}
+                            <div className="flex gap-4 overflow-x-auto p-1.5 pb-3 custom-scrollbar">
+                                {giftWrapData.map((item, index) => {
+                                    const isSelected = selectedGiftWrap === index;
+                                    return (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            aria-pressed={isSelected}
+                                            onClick={() => setSelectedGiftWrap(isSelected ? null : index)}
+                                            className={`relative flex-shrink-0 rounded-xl border-2 text-left select-none touch-manipulation
+                                                transition-all duration-200 focus:outline-none
+                                                focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2
+                                                ${isSelected
+                                                    ? 'border-orange-500 bg-orange-50/60 shadow-md'
+                                                    : 'border-gray-200 bg-white [@media(hover:hover)]:hover:border-orange-300 [@media(hover:hover)]:hover:shadow-sm'
+                                                }`}
+                                        >
+                                            {/* pointer-events-none: chỉ nút ngoài nhận click, tránh bấm đúp từ onClick bên trong card */}
+                                            <div className="pointer-events-none p-1">
+                                                <GiftWrapCard {...item} selected={isSelected} />
+                                            </div>
+
+                                            {/* Huy hiệu góc phải: tròn đầy khi chọn, vòng rỗng khi chưa chọn */}
+                                            <span
+                                                aria-hidden="true"
+                                                className={`pointer-events-none absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all duration-200
+                                                    ${isSelected
+                                                        ? 'border-orange-500 bg-orange-500 text-white shadow'
+                                                        : 'border-gray-300 bg-white/90 text-transparent'
+                                                    }`}
+                                            >
+                                                <CheckIcon className="h-3.5 w-3.5" strokeWidth={3} />
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
